@@ -1,0 +1,36 @@
+# Kleiner Build-Context = schnellere Deploys
+
+.git
+.gitignore
+.github
+
+# Virtuelle Umgebungen
+.venv
+venv
+
+# Python-Artefakte
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Nicht Teil des Laufzeit-Images
+tests
+tools
+requirements-dev.txt
+pytest.ini
+README.md
+
+# Secrets und lokaler Zustand
+.env
+.env.*
+!.env.example
+data
+*.log
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store

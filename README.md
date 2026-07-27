@@ -128,10 +128,22 @@ Ohne aktivierte Intents startet der Bot trotzdem — setze
 
 1. **New Project → Deploy from GitHub Repo**
 2. Unter **Variables**: `DISCORD_TOKEN` und `ENABLE_PRIVILEGED_INTENTS=true`
-3. Unter **Settings → Volumes**: ein Volume auf `/app/data` mounten
+3. Unter **Settings → Volumes**: **Add Volume**, Mount path `/app/data`
 
 > Ohne Volume gehen die Premium-Freischaltungen bei jedem Redeploy verloren,
 > weil der Container-Speicher flüchtig ist.
+
+> **Warum kein `VOLUME` im Dockerfile?** Railway lehnt das ab
+> (`docker VOLUME ... is not supported, use Railway Volumes`) und bricht den
+> Build sofort ab. Persistenter Speicher wird dort ausschließlich im Dashboard
+> konfiguriert. Ein Test stellt sicher, dass die Anweisung nicht zurückkehrt.
+
+Bei reinem Docker ohne Railway wird das Volume beim Start gemountet:
+
+```bash
+docker build -t architect .
+docker run -d --env-file .env -v architect-data:/app/data architect
+```
 
 `/health` liefert Live-Status:
 
@@ -197,7 +209,7 @@ templates/*.json        Die 10 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   preview.py            Templates im Terminal ansehen
-tests/                  78 Tests
+tests/                  94 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -213,7 +225,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 78 Tests
+python -m pytest tests/ -v          # 94 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -228,6 +240,8 @@ Die Testsuite prüft unter anderem:
   Kategorien für `@everyone` unsichtbar sind
 - **Berechtigungen** — dass jede Stufe eine Obermenge der vorherigen ist und
   nur der Inhaber `Administrator` bekommt
+- **Deployment** — dass kein `VOLUME` im Dockerfile steht (Railway bricht sonst
+  den Build ab) und jeder `COPY`-Pfad die `.dockerignore` überlebt
 - **Premium** — dass der Key nie auf der Festplatte landet und eine
   Freischaltung nicht auf andere Nutzer oder Server überspringt
 
