@@ -159,10 +159,10 @@ async def start_slash(interaction: discord.Interaction) -> None:
 async def ping(ctx: commands.Context) -> None:
     await ctx.send(
         view=notice(
-            "🏓  Pong",
-            f"Latenz: **{round(bot.latency * 1000)} ms**\n"
-            f"-# {len(bot.registry)} Templates geladen",
+            "Pong",
+            f"Latenz **{round(bot.latency * 1000)} ms**",
             tone="neutral",
+            hint=f"{len(bot.registry)} Vorlagen geladen",
         )
     )
 
@@ -173,11 +173,15 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError) 
         return
     if isinstance(error, commands.NoPrivateMessage):
         await ctx.send(
-            view=notice("❌  Nur auf Servern", "Dieser Befehl funktioniert nur in einem Server.", tone="error")
+            view=notice(
+                "Nur auf Servern verfügbar",
+                "Dieser Befehl funktioniert nur innerhalb eines Servers.",
+                tone="error",
+            )
         )
         return
     if isinstance(error, (commands.MissingPermissions, commands.BotMissingPermissions)):
-        await ctx.send(view=notice("🔐  Keine Berechtigung", str(error), tone="error"))
+        await ctx.send(view=notice("Keine Berechtigung", str(error), tone="error"))
         return
     LOGGER.exception("Command-Fehler in '%s'", ctx.command, exc_info=error)
 

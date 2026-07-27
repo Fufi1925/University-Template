@@ -13,7 +13,7 @@ Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 ## Was der Bot macht
 
 Nach `!start` erscheint ein Menü mit drei kostenlosen Vorlagen. Ein Klick auf
-den grünen Premium-Button öffnet ein Key-Fenster; nach Eingabe des Keys stehen
+„Premium freischalten" öffnet ein Key-Fenster; nach Eingabe des Keys stehen
 sieben weitere Vorlagen zur Verfügung.
 
 | | Template | Kategorien | Kanäle | Voice |
@@ -81,15 +81,44 @@ Dazu in **jeder** Vorlage die vollständige Log-Suite:
 ### 3 · Components V2 statt Embeds
 
 Die gesamte Oberfläche nutzt `LayoutView` mit Containern, Sections, Separatoren
-und Action-Rows. Kein einziges `discord.Embed` ist übrig — das wird sogar
-[per Test erzwungen](tests/test_architect.py). Dazu gehört ein **Live-Fortschrittsbalken**
-während des Baus:
+und Action-Rows. Kein einziges `discord.Embed` ist übrig — das wird
+[per Test erzwungen](tests/test_architect.py).
+
+Das Layout folgt bewusst wenigen Regeln, damit es ruhig bleibt und nicht nach
+Baukasten aussieht:
+
+- **Blockzitate** (`>`) rücken Inhalt ein und erzeugen eine klare Spalte
+- **Emojis sind Navigation**, keine Dekoration — höchstens eines pro Überschrift
+- **Eine Betonungsebene**: fett nur für Zahlen und Namen, keine Ausrufezeichen
+- **Grau** (`-#`) für alles Nebensächliche
+
+So sieht das Startmenü aus:
 
 ```
-⚙️  Community Discord wird gebaut
-────────────────────────────────
-`████████░░░░`  67%
-Schritt 9/14 · 🔊・ᴠᴏɪᴄᴇ ʟᴏᴜɴɢᴇ
+## Discord Architect
+-# Server-Templates in Sekunden
+────────────────────────────────────────────────
+**Kostenlos**
+> 🌐  Community Discord — Der Allrounder
+> -# 15 Kategorien · 93 Kanäle · 21 Sprachkanäle
+> 🎭  RP Server — Fraktionen, Behörden, Wirtschaft
+> -# 17 Kategorien · 100 Kanäle · 27 Sprachkanäle
+
+**Premium**  ·  7 weitere
+> 🌸  Anime & Manga Hub — Seasonals, Fanart
+> 🏢  Business & Company — Abteilungen, Kunden
+────────────────────────────────────────────────
+  [ Vorlage auswählen ▾ ]   [ 💎 Premium freischalten ]
+```
+
+Während des Einrichtens läuft ein Fortschrittsbalken:
+
+```
+### Community Discord wird eingerichtet
+-# Schritt 9 von 16
+────────────────────────────────────────────────
+> `━━━━━━━━━━━━━━──────────`  56%
+> 🔊・ꜱᴘʀᴀᴄʜᴋᴀɴᴀᴇʟᴇ
 ```
 
 ### 4 · Berechtigungen, die halten
@@ -174,6 +203,12 @@ Benutzer-ID, und der Vergleich läuft über `hmac.compare_digest`, damit die
 Antwortzeit nichts über den Key verrät. Mit `PREMIUM_UNLOCKS_GUILD=true` gilt
 eine Freischaltung für den ganzen Server statt nur für den Einlöser.
 
+Der Key erscheint außerdem **nirgends in der Oberfläche**. Das Eingabefeld
+zeigt nur „Key hier eingeben" — ein Platzhalter mit Beispiel-Key wäre für
+jeden lesbar, der den Button anklickt, und würde Premium wertlos machen. Vier
+Tests halten das fest, unter anderem ein Abgleich des gesamten UI-Quelltexts
+gegen den konfigurierten Key.
+
 > Vor dem öffentlichen Einsatz den Standard-Key ersetzen — er steht hier im
 > Klartext in der Dokumentation.
 
@@ -221,7 +256,7 @@ templates/*.json        Die 10 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   preview.py            Templates im Terminal ansehen
-tests/                  98 Tests
+tests/                  113 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -237,7 +272,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 98 Tests
+python -m pytest tests/ -v          # 113 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -254,8 +289,12 @@ Die Testsuite prüft unter anderem:
   nur der Inhaber `Administrator` bekommt
 - **Deployment** — dass kein `VOLUME` im Dockerfile steht (Railway bricht sonst
   den Build ab) und jeder `COPY`-Pfad die `.dockerignore` überlebt
-- **Premium** — dass der Key nie auf der Festplatte landet und eine
-  Freischaltung nicht auf andere Nutzer oder Server überspringt
+- **Premium** — dass der Key nie auf der Festplatte landet, **nirgends in der
+  Oberfläche auftaucht** und eine Freischaltung nicht auf andere Nutzer oder
+  Server überspringt
+- **Layout** — dass Blockzitate genutzt werden, keine H1-Überschriften und
+  keine Emoji-Häufung vorkommen, und dass eine Zitatzeile nicht versehentlich
+  als Markdown-Überschrift gerendert wird
 
 ---
 

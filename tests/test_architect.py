@@ -603,6 +603,208 @@ class TestComponentsV2:
             assert "discord.Embed" not in source, f"{path.name} nutzt noch Embeds"
         assert "discord.Embed" not in (BASE_DIR / "bot.py").read_text(encoding="utf-8")
 
+
+class TestPremiumKeyLeak:
+    """Der Key darf nirgends in der Oberfläche auftauchen.
+
+    Ein Platzhalter wie „z. B. Vexo x Fufi KEY 2354" macht Premium wertlos:
+    jeder, der auf den Button klickt, kann den Key ablesen.
+    """
+
+    @staticmethod
+    def _ui_sources() -> list[tuple[str, str]]:
+        paths = list((BASE_DIR / "ui").glob("*.py")) + [BASE_DIR / "bot.py"]
+        return [(p.name, p.read_text(encoding="utf-8")) for p in paths]
+
+    def test_key_not_in_ui_source(self):
+        import config
+
+        secret = config.PREMIUM_KEY
+        for name, source in self._ui_sources():
+            assert secret not in source, f"{name} enthält den Premium-Key im Klartext"
+
+    def test_default_key_fragments_not_in_ui(self):
+        """Auch Teile des Standard-Keys dürfen nicht auftauchen."""
+
+        for name, source in self._ui_sources():
+            for fragment in ("Vexo", "2354"):
+                assert fragment not in source, f"{name} verrät ein Key-Fragment"
+
+    def test_modal_placeholder_is_generic(self):
+        from ui.views import PremiumModal
+
+        placeholder = PremiumModal.key.component.placeholder or ""
+        assert placeholder, "Ein Platzhalter sollte vorhanden sein"
+        for fragment in ("Vexo", "2354", "z. B.", "z.B.", "Beispiel"):
+            assert fragment.lower() not in placeholder.lower(), (
+                f"Platzhalter '{placeholder}' enthält ein Key-Beispiel"
+            )
+
+    def test_modal_description_guides_without_leaking(self):
+        """Der Nutzer soll wissen, woher er den Key bekommt — nicht wie er lautet."""
+
+        import config
+        from ui.views import PremiumModal
+
+        description = PremiumModal.key.description or ""
+        assert description, "Eine Hilfestellung sollte vorhanden sein"
+        assert config.PREMIUM_KEY not in description
+        for fragment in ("Vexo", "2354"):
+            assert fragment not in description
+
+    def test_key_never_rendered_in_premium_notice(self, registry):
+        """Die Sperr-Meldung darf den Key nicht nennen."""
+
+        import config
+        from ui.components import notice
+
+        view = notice(
+            "Premium erforderlich",
+            "Dies ist eine Premium-Vorlage.",
+            tone="premium",
+            hint="Im Hauptmenü auf Premium freischalten klicken.",
+        )
+        blob = "".join(
+            component.get("content", "")
+            for component in TestComponentsV2._walk(view.to_components())
+        )
+        assert config.PREMIUM_KEY not in blob
+        assert "Vexo" not in blob
+
+
+class TestVisualPolish:
+    """Regeln, die das Interface ruhig und professionell halten."""
+
+    @staticmethod
+    def _texts(view) -> list[str]:
+        return [
+            component["content"]
+            for component in TestComponentsV2._walk(view.to_components())
+            if component.get("type") == 10
+        ]
+
+    def test_start_view_uses_blockquotes(self, registry):
+        from ui.views import StartView
+
+        texts = self._texts(StartView(_FakeBot(registry), premium=False))
+        assert any(line.startswith(">") for text in texts for line in text.splitlines())
+
+    def test_detail_views_use_blockquotes(self, registry):
+        from ui.views import DetailView
+
+        bot = _FakeBot(registry)
+        for template in registry:
+            texts = self._texts(DetailView(bot, template))
+            quoted = [l for t in texts for l in t.splitlines() if l.startswith(">")]
+            assert quoted, f"{template.key}: Detailansicht ohne Blockzitat"
+
+    def test_no_h1_headings(self, registry):
+        """``#`` ist in einer Nachricht zu laut — ``##``/``###`` reichen."""
+
+        from ui.views import ConfirmView, DetailView, StartView
+
+        bot = _FakeBot(registry)
+        views = [StartView(bot, premium=False), StartView(bot, premium=True)]
+        views += [DetailView(bot, t) for t in registry]
+        views += [ConfirmView(bot, t) for t in registry]
+
+        for view in views:
+            for text in self._texts(view):
+                for line in text.splitlines():
+                    assert not line.startswith("# "), f"H1-Überschrift gefunden: {line}"
+
+    def test_headings_have_at_most_one_emoji(self, registry):
+        """Emojis sind Navigation, keine Dekoration."""
+
+        import unicodedata
+
+        from ui.views import ConfirmView, DetailView, StartView
+
+        bot = _FakeBot(registry)
+        views = [StartView(bot, premium=False)]
+        views += [DetailView(bot, t) for t in registry]
+        views += [ConfirmView(bot, t) for t in registry]
+
+        for view in views:
+            for text in self._texts(view):
+                for line in text.splitlines():
+                    if not line.startswith("#"):
+                        continue
+                    emojis = [
+                        ch for ch in line
+                        if unicodedata.category(ch) == "So"
+                    ]
+                    assert len(emojis) <= 1, f"Zu viele Emojis in Überschrift: {line}"
+
+    def test_no_exclamation_marketing(self, registry):
+        from ui.views import ConfirmView, DetailView, StartView
+
+        bot = _FakeBot(registry)
+        views = [StartView(bot, premium=False), StartView(bot, premium=True)]
+        views += [DetailView(bot, t) for t in registry]
+        views += [ConfirmView(bot, t) for t in registry]
+
+        for view in views:
+            for text in self._texts(view):
+                assert "!" not in text.replace("!start", ""), (
+                    f"Ausrufezeichen im Interface: {text[:80]}"
+                )
+
+    def test_quote_helper_prefixes_every_line(self):
+        from ui.components import quote
+
+        result = quote("erste", "zweite\ndritte")
+        assert all(line.startswith(">") for line in result.splitlines())
+
+    def test_quote_keeps_block_together_on_empty_line(self):
+        """Eine echte Leerzeile würde das Zitat in zwei Blöcke zerreißen."""
+
+        from ui.components import quote
+
+        result = quote("oben", "", "unten")
+        assert "\n\n" not in result
+        assert all(line.startswith(">") for line in result.splitlines())
+
+    def test_progress_bar_is_monospaced_and_bounded(self):
+        from ui.components import progress_bar
+
+        for current, total in ((0, 10), (5, 10), (10, 10), (99, 10)):
+            bar = progress_bar(current, total)
+            assert bar.count("`") == 2, "Balken muss in Codeformat stehen"
+
+    def test_quoted_lines_never_start_a_heading(self, registry):
+        """``> # kanal`` würde Discord als riesige Überschrift rendern.
+
+        Der Fehler ist im Quelltext unsichtbar und fällt erst im Client auf,
+        deshalb prüft ihn ein Test.
+        """
+
+        from ui.views import DetailView, StartView, _preview_views
+
+        bot = _FakeBot(registry)
+        views = [StartView(bot, premium=False), StartView(bot, premium=True)]
+        for template in registry:
+            views.append(DetailView(bot, template))
+            views.extend(_preview_views(template))
+
+        for view in views:
+            for text in self._texts(view):
+                for line in text.splitlines():
+                    if not line.startswith(">"):
+                        continue
+                    body = line.lstrip(">").lstrip()
+                    assert not body.startswith("#") or body.startswith("`"), (
+                        f"Zitatzeile wird als Überschrift gerendert: {line!r}"
+                    )
+
+    def test_preview_marks_text_channels(self, registry):
+        from ui.views import _preview_views
+
+        blob = ""
+        for view in _preview_views(registry.get("community")):
+            blob += "".join(self._texts(view))
+        assert "`#`" in blob, "Textkanäle brauchen ein erkennbares Symbol"
+
     def test_progress_bar_bounds(self):
         from ui.components import progress_bar
 
