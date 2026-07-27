@@ -15,7 +15,9 @@ from core.registry import TemplateRegistry  # noqa: E402
 from core.rulesets import (  # noqa: E402
     RULESETS,
     RuleLength,
+    RuleScope,
     by_length,
+    by_scope,
     get_ruleset,
 )
 from core.small_caps import strip_decoration  # noqa: E402
@@ -44,12 +46,12 @@ def _texts(view) -> list[str]:
 # --------------------------------------------------------------------------- #
 
 class TestRulesetCollection:
-    def test_exactly_twenty(self):
-        assert len(RULESETS) == 20
+    def test_at_least_twenty(self):
+        assert len(RULESETS) >= 20
 
     def test_keys_and_names_unique(self):
-        assert len({r.key for r in RULESETS}) == 20
-        assert len({r.name for r in RULESETS}) == 20
+        assert len({r.key for r in RULESETS}) == len(RULESETS)
+        assert len({r.name for r in RULESETS}) == len(RULESETS)
 
     def test_lengths_are_actually_different(self):
         """Kurz muss kürzer sein als lang — sonst ist die Einteilung gelogen."""
@@ -72,35 +74,52 @@ class TestRulesetCollection:
 
     def test_every_ruleset_has_content(self):
         for ruleset in RULESETS:
-            assert ruleset.sections, f"{ruleset.key} hat keine Abschnitte"
-            assert ruleset.rule_count >= 4, f"{ruleset.key} hat zu wenige Regeln"
+            assert ruleset.paragraphs, f"{ruleset.key} hat keine Paragraphen"
+            assert ruleset.rule_count >= 5, f"{ruleset.key} hat zu wenige Paragraphen"
             assert ruleset.tagline
             assert ruleset.emoji
+            assert ruleset.display_title
 
-    def test_no_empty_sections(self):
+    def test_paragraphs_are_complete(self):
         for ruleset in RULESETS:
-            for section in ruleset.sections:
-                assert section.items, f"{ruleset.key}/{section.heading} ist leer"
-                assert section.heading
+            for paragraph in ruleset.paragraphs:
+                assert paragraph.title, f"{ruleset.key}: Paragraph ohne Titel"
+                assert paragraph.text, f"{ruleset.key}/{paragraph.title}: kein Text"
 
-    def test_rules_are_full_sentences(self):
+    def test_paragraph_text_is_prose_not_bullets(self):
+        """Der Text soll ein ausformulierter Satz sein, keine Stichpunktliste."""
+
         for ruleset in RULESETS:
-            for section in ruleset.sections:
-                for item in section.items:
-                    assert len(item) > 10, f"{ruleset.key}: '{item}' ist kein Satz"
-                    assert item[0].isupper(), f"{ruleset.key}: '{item}' klein geschrieben"
+            for paragraph in ruleset.paragraphs:
+                text = paragraph.text
+                # Leitet der Text eine Aufzaehlung ein, darf er kurz sein.
+                minimum = 30 if paragraph.bullets else 40
+                assert len(text) >= minimum, (
+                    f"{ruleset.key}/{paragraph.title}: '{text}' ist zu knapp"
+                )
+                assert text[0].isupper(), f"{ruleset.key}/{paragraph.title}: klein"
+                assert text.rstrip().endswith((".", "!", "?", ":")), (
+                    f"{ruleset.key}/{paragraph.title}: kein Satzende"
+                )
+                assert not text.lstrip().startswith(("-", "•", "*")), (
+                    f"{ruleset.key}/{paragraph.title}: sieht aus wie ein Stichpunkt"
+                )
+
+    def test_paragraph_titles_are_short(self):
+        """Der Titel steht in der Überschrift — lange Titel brechen um."""
+
+        for ruleset in RULESETS:
+            for paragraph in ruleset.paragraphs:
+                assert len(paragraph.title) <= 32, (
+                    f"{ruleset.key}: '{paragraph.title}' ist zu lang"
+                )
 
     def test_select_menu_limits_are_respected(self):
         """Discord erlaubt 25 Optionen mit je 100 Zeichen Beschreibung."""
 
-        assert len(RULESETS) <= 25
+        assert len(RULESETS) <= 25, "Mehr als 25 passen nicht in ein Dropdown"
         for ruleset in RULESETS:
-            label = ruleset.name
-            description = (
-                f"{ruleset.length.label} · {ruleset.rule_count} Regeln · {ruleset.tagline}"
-            )
-            assert len(label) <= 100
-            assert len(description[:100]) <= 100
+            assert len(ruleset.name) <= 100
 
     def test_get_ruleset(self):
         assert get_ruleset("standard") is not None
@@ -134,7 +153,7 @@ class TestRuleRendering:
                 assert chars <= self.MAX_CHARS, f"{ruleset.key}#{index}: {chars} Zeichen"
 
     def test_every_rule_appears_in_the_output(self):
-        """Kein Regelwerk darf beim Rendern Punkte verlieren."""
+        """Kein Regelwerk darf beim Rendern Paragraphen verlieren."""
 
         from ui.rules import ruleset_views
 
@@ -142,10 +161,15 @@ class TestRuleRendering:
             blob = ""
             for view in ruleset_views(ruleset):
                 blob += "".join(_texts(view))
-            for section in ruleset.sections:
-                assert section.heading in blob, f"{ruleset.key}: '{section.heading}' fehlt"
-                for item in section.items:
-                    assert item in blob, f"{ruleset.key}: '{item[:40]}…' fehlt"
+            for paragraph in ruleset.paragraphs:
+                assert paragraph.title in blob, (
+                    f"{ruleset.key}: '{paragraph.title}' fehlt"
+                )
+                assert paragraph.text in blob, (
+                    f"{ruleset.key}: Text von '{paragraph.title}' fehlt"
+                )
+                for bullet in paragraph.bullets:
+                    assert bullet in blob, f"{ruleset.key}: '{bullet}' fehlt"
 
     def test_rules_use_blockquotes(self):
         from ui.rules import ruleset_views
@@ -174,12 +198,21 @@ class TestRuleRendering:
                                 f"{ruleset.key}: Zitatzeile wird Überschrift"
                             )
 
-    def test_sections_restart_numbering(self):
+    def test_paragraphs_are_numbered_continuously(self):
+        """§1, §2, §3 … ohne Sprung und ohne Neustart."""
+
         from ui.rules import ruleset_views
 
-        blob = "\n".join(_texts(ruleset_views(get_ruleset("standard"))[0]))
-        # Jeder Abschnitt beginnt wieder bei 1.
-        assert blob.count("> 1.") == len(get_ruleset("standard").sections)
+        for ruleset in RULESETS:
+            blob = ""
+            for view in ruleset_views(ruleset):
+                blob += "\n".join(_texts(view))
+            for number in range(1, ruleset.rule_count + 1):
+                assert f"**§{number} •" in blob, (
+                    f"{ruleset.key}: §{number} fehlt in der Ausgabe"
+                )
+            missing = f"**§{ruleset.rule_count + 1} •"
+            assert missing not in blob, f"{ruleset.key}: zu viele Paragraphen"
 
     def test_guild_name_is_used_as_subtitle(self):
         from ui.rules import ruleset_views
@@ -310,7 +343,7 @@ class TestPickerView:
         payload = RulesetPicker(_FakeBot(), _FakeChannel()).to_components()
         selects = [c for c in _walk(payload) if c.get("type") == 3]
         assert selects
-        assert len(selects[0]["options"]) == 20
+        assert len(selects[0]["options"]) == len(RULESETS)
 
     def test_picker_offers_all_four_options(self):
         from ui.rules import RulesetPicker
@@ -366,11 +399,11 @@ class TestPickerView:
     def test_only_one_option_marked_default(self):
         from ui.rules import RulesetPicker
 
-        payload = RulesetPicker(_FakeBot(), _FakeChannel(), selected="roleplay").to_components()
+        payload = RulesetPicker(_FakeBot(), _FakeChannel(), selected="rp_ic").to_components()
         select = next(c for c in _walk(payload) if c.get("type") == 3)
         defaults = [o for o in select["options"] if o.get("default")]
         assert len(defaults) == 1
-        assert defaults[0]["value"] == "roleplay"
+        assert defaults[0]["value"] == "rp_ic"
 
 
 # --------------------------------------------------------------------------- #
@@ -614,3 +647,134 @@ class TestWriting:
             interaction = _InteractionStub(_GuildStub(channel))
             await _post(interaction, channel, ruleset_views(ruleset), reset=False)
             assert channel.sent, f"{ruleset.key} wurde nicht gesendet"
+
+
+# --------------------------------------------------------------------------- #
+# Rollenspiel: IC und OOC
+# --------------------------------------------------------------------------- #
+
+class TestRoleplayScopes:
+    """RP-Server brauchen getrennte Regeln für Discord (OOC) und Spiel (IC)."""
+
+    def test_all_three_variants_exist(self):
+        assert by_scope(RuleScope.OOC), "Kein OOC-Regelwerk"
+        assert by_scope(RuleScope.IC), "Kein IC-Regelwerk"
+        assert by_scope(RuleScope.BOTH), "Keine kombinierte Fassung"
+
+    def test_ic_covers_the_classic_rp_rules(self):
+        """FailRP, RDM, VDM und Metagaming gehören in jedes IC-Regelwerk."""
+
+        ic = by_scope(RuleScope.IC)[0]
+        titles = " ".join(p.title for p in ic.paragraphs)
+        for term in ("Roleplay", "FearRP", "RDM", "VDM", "Combat Logging",
+                     "New Life Rule", "Powergaming", "Metagaming"):
+            assert term in titles, f"IC-Regelwerk ohne '{term}'"
+
+    def test_ooc_covers_discord_topics(self):
+        ooc = by_scope(RuleScope.OOC)[0]
+        titles = " ".join(p.title for p in ooc.paragraphs)
+        for term in ("Respekt", "Werbung", "Datenschutz", "Team"):
+            assert term in titles, f"OOC-Regelwerk ohne '{term}'"
+
+    def test_ooc_explains_the_ic_separation(self):
+        """Der wichtigste Grundsatz: Spielkonflikte bleiben im Spiel."""
+
+        ooc = by_scope(RuleScope.OOC)[0]
+        blob = ooc.intro + " ".join(p.title + p.text for p in ooc.paragraphs)
+        assert "OOC" in blob
+        assert "IC" in blob
+
+    def test_ic_has_no_discord_only_rules(self):
+        """Profilbilder und Werbung sind OOC-Themen, nicht IC."""
+
+        ic = by_scope(RuleScope.IC)[0]
+        titles = [p.title.lower() for p in ic.paragraphs]
+        for off_topic in ("profil", "werbung", "tickets"):
+            assert off_topic not in titles, f"IC enthält OOC-Thema '{off_topic}'"
+
+    def test_intros_name_the_scope(self):
+        for scope, needle in ((RuleScope.OOC, "OOC"), (RuleScope.IC, "IC")):
+            ruleset = by_scope(scope)[0]
+            assert needle in ruleset.intro, f"{ruleset.key}: Einleitung erklärt {needle} nicht"
+
+    def test_combined_contains_both_sides(self):
+        combined = by_scope(RuleScope.BOTH)[0]
+        titles = " ".join(p.title for p in combined.paragraphs)
+        assert "Metagaming" in titles, "IC-Teil fehlt"
+        assert "Werbung" in titles, "OOC-Teil fehlt"
+
+    def test_combined_is_the_longest(self):
+        combined = by_scope(RuleScope.BOTH)[0]
+        assert combined.rule_count > by_scope(RuleScope.OOC)[0].rule_count
+        assert combined.rule_count > by_scope(RuleScope.IC)[0].rule_count
+
+    def test_ic_and_ooc_use_distinct_titles(self):
+        """Die Überschrift muss auf einen Blick zeigen, worum es geht."""
+
+        assert "IN GAME" in by_scope(RuleScope.IC)[0].display_title
+        assert "DISCORD" in by_scope(RuleScope.OOC)[0].display_title
+
+    def test_scope_is_visible_in_the_picker(self):
+        from ui.rules import RulesetPicker
+
+        payload = RulesetPicker(_FakeBot(), _FakeChannel()).to_components()
+        select = next(c for c in _walk(payload) if c.get("type") == 3)
+        descriptions = " ".join(o.get("description", "") for o in select["options"])
+        assert "IC" in descriptions
+        assert "OOC" in descriptions
+
+
+class TestParagraphStyle:
+    """Das Format aus dem Vorbild: §n • Titel, darunter Fließtext."""
+
+    def test_rendered_paragraphs_use_the_section_sign(self):
+        from ui.rules import ruleset_views
+
+        blob = "\n".join(_texts(ruleset_views(get_ruleset("standard"))[0]))
+        assert "**§1 • Respekt**" in blob
+        assert "**§2 • Chat**" in blob
+
+    def test_title_and_text_are_on_separate_lines(self):
+        from ui.rules import ruleset_views
+
+        blob = "\n".join(_texts(ruleset_views(get_ruleset("standard"))[0]))
+        lines = [l for l in blob.splitlines() if l.startswith("> **§")]
+        assert lines
+        for line in lines:
+            # Die Überschrift steht allein in ihrer Zeile.
+            assert line.rstrip().endswith("**"), f"Titelzeile enthält Text: {line}"
+
+    def test_bullets_render_below_their_paragraph(self):
+        from ui.rules import ruleset_views
+
+        blob = "\n".join(_texts(ruleset_views(get_ruleset("standard"))[0]))
+        assert "> • Verwarnung bei leichten Verstößen" in blob
+
+    def test_document_title_is_uppercase(self):
+        for ruleset in RULESETS:
+            title = ruleset.display_title
+            assert title == title.upper(), f"{ruleset.key}: '{title}' nicht in Versalien"
+
+    def test_long_rulesets_split_at_paragraph_boundaries(self):
+        """Ein Paragraph darf niemals über zwei Nachrichten zerrissen werden."""
+
+        from ui.rules import ruleset_views
+
+        for ruleset in RULESETS:
+            views = ruleset_views(ruleset)
+            if len(views) < 2:
+                continue
+            for paragraph in ruleset.paragraphs:
+                hits = sum(
+                    1 for view in views if paragraph.text in "".join(_texts(view))
+                )
+                assert hits == 1, (
+                    f"{ruleset.key}: '{paragraph.title}' steht {hits}× — zerrissen?"
+                )
+
+    def test_continuation_messages_are_marked(self):
+        from ui.rules import ruleset_views
+
+        views = ruleset_views(get_ruleset("rp_komplett"))
+        assert len(views) >= 2
+        assert "Fortsetzung" in "".join(_texts(views[1]))

@@ -1,24 +1,48 @@
-"""Zwanzig fertige Regelwerke.
+"""Die fertigen Regelwerke.
 
 Nach dem Bau eines Templates bietet der Bot an, den Regelkanal zu fuellen.
-Die Auswahl deckt bewusst sehr unterschiedliche Laengen ab: von vier Zeilen
-fuer einen kleinen Freundeskreis bis zu einem ausformulierten Regelwerk mit
-Paragraphen fuer grosse oeffentliche Server.
+Die Auswahl deckt bewusst sehr unterschiedliche Laengen ab: von einem
+Kurzregelwerk fuer einen Freundeskreis bis zu einer ausformulierten Ordnung
+mit ueber zwanzig Paragraphen fuer grosse oeffentliche Server.
 
-Alle Regeln werden als Blockzitat gerendert (``>``), damit sie im Kanal als
-ruhige, eingerueckte Spalte stehen statt als Textwand.
+Aufbau
+------
+Jeder Paragraph hat eine **Ueberschrift** und einen **Fliesstext**. Das liest
+sich fluessiger als eine Stichpunktliste und entspricht dem, was Discord-Nutzer
+von Regelkanaelen kennen:
+
+    §1 • Respekt
+    Behandle alle Mitglieder respektvoll. Beleidigungen, Mobbing,
+    Diskriminierung und Provokationen sind verboten.
+
+Rollenspiel-Server brauchen zwei getrennte Regelwerke, weil Discord und
+Ingame unterschiedlichen Regeln folgen:
+
+* **OOC** (Out of Character) — das Verhalten auf dem Discord-Server
+* **IC** (In Character) — das Verhalten im Spiel
+
+Beide gibt es hier einzeln und als kombinierte Fassung.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-__all__ = ["RuleLength", "RuleSet", "RULESETS", "get_ruleset", "by_length"]
+__all__ = [
+    "RuleLength",
+    "RuleScope",
+    "Paragraph",
+    "RuleSet",
+    "RULESETS",
+    "get_ruleset",
+    "by_length",
+    "by_scope",
+]
 
 
 class RuleLength(str, Enum):
-    """Grobe Groessenordnung — steuert nur die Anzeige in der Auswahl."""
+    """Grobe Groessenordnung — steuert die Gruppierung in der Auswahl."""
 
     SHORT = "kurz"
     MEDIUM = "mittel"
@@ -29,12 +53,37 @@ class RuleLength(str, Enum):
         return {"kurz": "Kurz", "mittel": "Mittel", "lang": "Ausführlich"}[self.value]
 
 
-@dataclass(frozen=True, slots=True)
-class RuleSection:
-    """Ein Abschnitt mit Ueberschrift und Punkten."""
+class RuleScope(str, Enum):
+    """Wofuer das Regelwerk gilt."""
 
-    heading: str
-    items: tuple[str, ...]
+    DISCORD = "discord"  # allgemeiner Discord-Server
+    OOC = "ooc"          # Discord-Teil eines Rollenspiel-Projekts
+    IC = "ic"            # Ingame-Regeln eines Rollenspiel-Projekts
+    BOTH = "both"        # OOC und IC in einem Regelwerk
+
+    @property
+    def label(self) -> str:
+        return {
+            "discord": "Discord",
+            "ooc": "OOC · Discord",
+            "ic": "IC · Ingame",
+            "both": "OOC + IC",
+        }[self.value]
+
+
+@dataclass(frozen=True, slots=True)
+class Paragraph:
+    """Ein Paragraph: Ueberschrift plus ausformulierter Text."""
+
+    title: str
+    text: str
+    #: Optionale Unterpunkte fuer Aufzaehlungen, die als Fliesstext
+    #: unuebersichtlich waeren (etwa Strafstufen).
+    bullets: tuple[str, ...] = ()
+
+    @property
+    def char_count(self) -> int:
+        return len(self.title) + len(self.text) + sum(len(b) for b in self.bullets)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,762 +93,1483 @@ class RuleSet:
     emoji: str
     tagline: str
     length: RuleLength
+    scope: RuleScope = RuleScope.DISCORD
+    title: str = ""
     intro: str = ""
-    sections: tuple[RuleSection, ...] = ()
+    paragraphs: tuple[Paragraph, ...] = ()
     closing: str = ""
 
     @property
+    def display_title(self) -> str:
+        return self.title or "REGELWERK"
+
+    @property
     def rule_count(self) -> int:
-        return sum(len(section.items) for section in self.sections)
+        return len(self.paragraphs)
 
     @property
     def char_count(self) -> int:
-        total = len(self.intro) + len(self.closing)
-        for section in self.sections:
-            total += len(section.heading) + sum(len(item) for item in section.items)
-        return total
+        total = len(self.intro) + len(self.closing) + len(self.display_title)
+        return total + sum(p.char_count for p in self.paragraphs)
 
 
-def _s(heading: str, *items: str) -> RuleSection:
-    return RuleSection(heading=heading, items=items)
+def _p(title: str, text: str, *bullets: str) -> Paragraph:
+    return Paragraph(title=title, text=text, bullets=bullets)
 
 
 # --------------------------------------------------------------------------- #
-# Die Regelwerke
+# Wiederverwendete Paragraphen
+# --------------------------------------------------------------------------- #
+
+_DISCORD_TOS = _p(
+    "Discord",
+    "Zusätzlich gelten die Discord Community-Richtlinien und die "
+    "Nutzungsbedingungen von Discord. Sie stehen über diesem Regelwerk.",
+)
+
+_PENALTIES = _p(
+    "Strafen",
+    "Verstöße werden je nach Schwere und Wiederholung geahndet. Das Team "
+    "entscheidet im Einzelfall und ist nicht verpflichtet, jede Maßnahme "
+    "vorher anzukündigen.",
+    "Verwarnung bei leichten Verstößen",
+    "Timeout zwischen einer Stunde und sieben Tagen",
+    "Kick bei wiederholtem Fehlverhalten",
+    "Bann bei schweren oder andauernden Verstößen",
+)
+
+
+# --------------------------------------------------------------------------- #
+# Discord-Regelwerke
+# --------------------------------------------------------------------------- #
+
+_MINIMAL = RuleSet(
+    key="minimal",
+    name="Minimal",
+    emoji="🌱",
+    tagline="Fünf Paragraphen für kleine Server",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="SERVERREGELN",
+    intro="Mit dem Betreten dieses Servers akzeptierst du die folgenden Regeln.",
+    paragraphs=(
+        _p(
+            "Respekt",
+            "Behandle alle Mitglieder so, wie du selbst behandelt werden "
+            "möchtest. Beleidigungen und persönliche Angriffe haben hier "
+            "keinen Platz.",
+        ),
+        _p(
+            "Chat",
+            "Kein Spam, kein Flood, kein Dauer-Caps. Schreibe in dem Kanal, "
+            "der zum Thema passt.",
+        ),
+        _p(
+            "Werbung",
+            "Werbung für andere Server, Kanäle oder Produkte ist ohne "
+            "Absprache mit dem Team nicht gestattet. Das gilt auch für "
+            "Direktnachrichten an Mitglieder.",
+        ),
+        _p(
+            "Inhalte",
+            "Keine NSFW-, Gewalt- oder illegalen Inhalte. Im Zweifel gilt: "
+            "lieber nicht posten.",
+        ),
+        _p(
+            "Team",
+            "Den Anweisungen des Teams ist Folge zu leisten. Wer eine "
+            "Entscheidung für falsch hält, klärt das ruhig in einem Ticket.",
+        ),
+    ),
+    closing="Danke, dass du dich an die Regeln hältst.",
+)
+
+_FREUNDESKREIS = RuleSet(
+    key="freundeskreis",
+    name="Freundeskreis",
+    emoji="🫶",
+    tagline="Locker formuliert für private Server",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="UNSERE REGELN",
+    intro=(
+        "Wir sind hier unter Freunden. Trotzdem ein paar Grundsätze, damit es "
+        "das auch bleibt."
+    ),
+    paragraphs=(
+        _p(
+            "Miteinander",
+            "Behandelt euch fair. Wenn es Streit gibt, wird er geklärt und "
+            "nicht vor allen ausgetragen.",
+        ),
+        _p(
+            "Vertrauen",
+            "Was hier gesagt wird, bleibt hier. Screenshots aus privaten "
+            "Gesprächen gehen niemanden von außen etwas an.",
+        ),
+        _p(
+            "Gäste",
+            "Ladet niemanden ohne Absprache ein. Dieser Server ist ein "
+            "geschlossener Kreis, und das soll so bleiben.",
+        ),
+        _p(
+            "Kanäle",
+            "Nutzt die Kanäle, für die sie gedacht sind. Es sind nicht viele, "
+            "also ist das keine große Aufgabe.",
+        ),
+        _p(
+            "Grenzen",
+            "Ein Nein ist ein Nein. Das gilt für Themen, für Späße und für "
+            "alles andere.",
+        ),
+    ),
+)
+
+_KURZ_STRENG = RuleSet(
+    key="kurz_streng",
+    name="Kurz & Streng",
+    emoji="⚖️",
+    tagline="Wenige Paragraphen, klare Konsequenzen",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="SERVERREGELN",
+    intro=(
+        "Diese Regeln sind bewusst kurz gehalten. Sie werden konsequent "
+        "durchgesetzt."
+    ),
+    paragraphs=(
+        _p(
+            "Verbotenes Verhalten",
+            "Beleidigungen, Rassismus, Sexismus, Hetze und jede Form von "
+            "Diskriminierung führen zum sofortigen Ausschluss. Es gibt hier "
+            "keine Verwarnung und keine zweite Chance.",
+        ),
+        _p(
+            "Inhalte",
+            "NSFW-Inhalte, Gewaltdarstellungen und illegale Inhalte sind "
+            "verboten. Das gilt auch für Profilbilder und Nicknamen.",
+        ),
+        _p(
+            "Werbung",
+            "Jede Form von Werbung ohne vorherige Erlaubnis wird als Spam "
+            "gewertet und entsprechend behandelt.",
+        ),
+        _p(
+            "Spam und Raids",
+            "Spam, Massenpings und Raid-Versuche führen ohne Vorwarnung zum "
+            "dauerhaften Bann.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+    closing="Bei schweren Verstößen entfällt die Abstufung der Strafen.",
+)
+
+_GAMING_KURZ = RuleSet(
+    key="gaming_kurz",
+    name="Gaming kompakt",
+    emoji="🎮",
+    tagline="Das Nötigste für Gaming-Communities",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="GAMING REGELWERK",
+    intro="Diese Regeln gelten im Chat, im Voice und in gemeinsamen Runden.",
+    paragraphs=(
+        _p(
+            "Fairplay",
+            "Cheats, Hacks und Exploits sind verboten. Wer beim Betrügen "
+            "erwischt wird, fliegt aus der Community.",
+        ),
+        _p(
+            "Umgangston",
+            "Kein Flame, kein Blaming nach einer Niederlage. Toxisches "
+            "Verhalten wird auch dann geahndet, wenn es außerhalb dieses "
+            "Servers stattgefunden hat.",
+        ),
+        _p(
+            "Sprachkanäle",
+            "Stelle dein Mikrofon vernünftig ein. Kein Hintergrundlärm, kein "
+            "Soundboard-Spam, keine ungefragte Musik.",
+        ),
+        _p(
+            "Spoiler",
+            "Markiere Spoiler zu Spielen und Filmen. Auch ein Screenshot "
+            "kann spoilern.",
+        ),
+        _p(
+            "Handel",
+            "Der Verkauf von Accounts, Keys oder Ingame-Währung ist auf "
+            "diesem Server nicht gestattet.",
+        ),
+    ),
+)
+
+_VOICE = RuleSet(
+    key="voice_fokus",
+    name="Voice-Knigge",
+    emoji="🎙️",
+    tagline="Für Server, auf denen vor allem gesprochen wird",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="SPRACHKANAL-REGELN",
+    intro="Diese Regeln gelten in allen Sprachkanälen dieses Servers.",
+    paragraphs=(
+        _p(
+            "Technik",
+            "Nutze Push-to-Talk, wenn deine Umgebung laut ist. Tastaturlärm, "
+            "Rückkopplungen und offene Lautsprecher stören alle anderen.",
+        ),
+        _p(
+            "Lautstärke",
+            "Kein Schreien, kein absichtliches Übersteuern. Wer dauerhaft zu "
+            "laut ist, wird stummgeschaltet.",
+        ),
+        _p(
+            "Musik und Soundboards",
+            "Musik läuft ausschließlich im dafür vorgesehenen Kanal. "
+            "Soundboards sind nur erlaubt, solange sich niemand gestört fühlt.",
+        ),
+        _p(
+            "Gesprächskultur",
+            "Lasst einander ausreden. Wer dauerhaft dazwischenredet, wird "
+            "aus dem Kanal entfernt.",
+        ),
+        _p(
+            "Aufnahmen",
+            "Mitschnitte und Streams sind nur zulässig, wenn alle Beteiligten "
+            "vorher zugestimmt haben.",
+        ),
+        _p(
+            "Kanalwechsel",
+            "Ständiges Betreten und Verlassen von Kanälen gilt als Störung "
+            "und wird entsprechend behandelt.",
+        ),
+    ),
+)
+
+_LERNSERVER = RuleSet(
+    key="lernserver",
+    name="Lerngruppe",
+    emoji="📚",
+    tagline="Ruhe, Fairness und Urheberrecht",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="REGELN DER LERNGRUPPE",
+    intro="Hier wird gearbeitet. Darauf beruhen diese Regeln.",
+    paragraphs=(
+        _p(
+            "Arbeitsklima",
+            "In den Lernräumen ist Stille die Grundeinstellung. Wer reden "
+            "möchte, wechselt in den Pausenkanal.",
+        ),
+        _p(
+            "Fragen",
+            "Stelle deine Frage im passenden Fachkanal und beschreibe, was du "
+            "schon versucht hast. Das erhöht die Chance auf eine gute Antwort "
+            "erheblich.",
+        ),
+        _p(
+            "Zusammenarbeit",
+            "Erklären ja, abschreiben lassen nein. Wer fremde Arbeiten als "
+            "eigene ausgibt, riskiert mehr als eine Serverstrafe.",
+        ),
+        _p(
+            "Material",
+            "Teile nur Unterlagen, die weitergegeben werden dürfen. "
+            "Kostenpflichtige Skripte und Prüfungsunterlagen gehören nicht "
+            "hierher.",
+        ),
+        _p(
+            "Quellen",
+            "Gib bei geteilten Materialien an, woher sie stammen. Das "
+            "schützt dich und hilft allen anderen.",
+        ),
+    ),
+)
+
+_KREATIV = RuleSet(
+    key="kreativ",
+    name="Kreativ-Community",
+    emoji="🎨",
+    tagline="Feedback, Urheberrecht und Aufträge",
+    length=RuleLength.SHORT,
+    scope=RuleScope.DISCORD,
+    title="REGELWERK",
+    intro="Ein Ort für eigene Werke, ehrliches Feedback und faire Aufträge.",
+    paragraphs=(
+        _p(
+            "Eigene Werke",
+            "Poste nur Arbeiten, die von dir stammen. Bei Vorlagen, "
+            "Referenzen und Pinseln gehört die Quelle dazu.",
+        ),
+        _p(
+            "KI-Inhalte",
+            "Mit KI erzeugte Werke müssen als solche gekennzeichnet werden. "
+            "Sie sind erlaubt, aber sie werden nicht als eigene Handarbeit "
+            "ausgegeben.",
+        ),
+        _p(
+            "Feedback",
+            "Kritik richtet sich immer an das Werk, niemals an die Person. "
+            "Wer Feedback gibt, benennt auch, was gelungen ist.",
+        ),
+        _p(
+            "Ungefragte Kritik",
+            "Ein Verriss ohne Bitte um Feedback ist keine Kritik, sondern "
+            "eine Störung. Frag nach, bevor du zerlegst.",
+        ),
+        _p(
+            "Aufträge",
+            "Preise, Fristen und Nutzungsrechte werden vorher schriftlich "
+            "geklärt. Der Server vermittelt nicht und haftet nicht für "
+            "Absprachen zwischen Mitgliedern.",
+        ),
+        _p(
+            "Diebstahl",
+            "Das Hochladen fremder Werke als eigene führt zum sofortigen "
+            "Ausschluss.",
+        ),
+    ),
+)
+
+_STANDARD = RuleSet(
+    key="standard",
+    name="Standard",
+    emoji="📋",
+    tagline="Der ausgewogene Allrounder mit elf Paragraphen",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="DISCORD REGELWERK",
+    intro=(
+        "Mit dem Betreten dieses Servers akzeptierst du automatisch alle "
+        "folgenden Regeln."
+    ),
+    paragraphs=(
+        _p(
+            "Respekt",
+            "Behandle alle Mitglieder respektvoll. Beleidigungen, Mobbing, "
+            "Diskriminierung, Hass und Provokationen sind verboten.",
+        ),
+        _p(
+            "Chat",
+            "Spam, Flood, Capslock und sinnlose Nachrichten sind nicht "
+            "erlaubt. Nutze die passenden Kanäle.",
+        ),
+        _p(
+            "Werbung",
+            "Werbung für Discord-Server, Webseiten oder Social Media ist ohne "
+            "Erlaubnis verboten. Einladungslinks per Direktnachricht sind "
+            "ebenfalls untersagt.",
+        ),
+        _p(
+            "Inhalte",
+            "NSFW-, illegale, extremistische oder gewaltverherrlichende "
+            "Inhalte sind verboten. Schadsoftware und IP-Logger dürfen nicht "
+            "verbreitet werden.",
+        ),
+        _p(
+            "Sprachkanäle",
+            "Kein Schreien, Trollen, Soundboard-Spam oder absichtliches "
+            "Stören. Verhalte dich respektvoll.",
+        ),
+        _p(
+            "Datenschutz",
+            "Teile keine persönlichen Daten von dir oder anderen. Dazu "
+            "gehören Adressen, Telefonnummern und Bilder ohne Einwilligung.",
+        ),
+        _p(
+            "Profil",
+            "Nicknamen, Profilbilder, Banner und Status dürfen keine "
+            "unangemessenen Inhalte enthalten.",
+        ),
+        _p(
+            "Tickets",
+            "Erstelle Tickets nur für ernst gemeinte Anliegen. Wer das "
+            "System missbraucht, verliert den Zugriff darauf.",
+        ),
+        _p(
+            "Team",
+            "Den Anweisungen des Teams ist Folge zu leisten. Diskussionen "
+            "über Strafen gehören in ein Ticket und nicht in den Chat.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+    closing="Vielen Dank, dass du die Regeln einhältst.",
+)
+
+_COMMUNITY = RuleSet(
+    key="community",
+    name="Community",
+    emoji="🌐",
+    tagline="Für wachsende öffentliche Server",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="DISCORD REGELWERK",
+    intro=(
+        "Damit sich hier alle wohlfühlen, gelten die folgenden Regeln. Sie "
+        "gelten für jeden, unabhängig von Rolle oder Verweildauer."
+    ),
+    paragraphs=(
+        _p(
+            "Respekt",
+            "Ein respektvoller Umgang ist Pflicht und keine Höflichkeitsfloskel. "
+            "Diskutiert Meinungen, nicht Menschen.",
+        ),
+        _p(
+            "Diskriminierung",
+            "Herabwürdigungen wegen Herkunft, Hautfarbe, Geschlecht, "
+            "Orientierung, Religion, Alter oder Behinderung führen zum "
+            "sofortigen Ausschluss.",
+        ),
+        _p(
+            "Mobbing",
+            "Gezieltes Bloßstellen, Nachtreten und das Aufhetzen anderer gegen "
+            "einzelne Mitglieder werden wie schwere Verstöße behandelt.",
+        ),
+        _p(
+            "Kanalordnung",
+            "Halte dich an das Thema des jeweiligen Kanals. Was das Thema ist, "
+            "steht in der angehefteten Nachricht.",
+        ),
+        _p(
+            "Spam",
+            "Kettennachrichten, Massenpings, Buchstabenketten und wiederholte "
+            "Beiträge sind untersagt.",
+        ),
+        _p(
+            "Werbung",
+            "Selbstpromotion ist ausschließlich im dafür vorgesehenen Kanal "
+            "erlaubt. Werbung per Direktnachricht führt zum Ausschluss.",
+        ),
+        _p(
+            "Zweitaccounts",
+            "Pro Person ist ein Account zulässig. Zweitaccounts zur Umgehung "
+            "einer Strafe führen zum dauerhaften Bann beider Konten.",
+        ),
+        _p(
+            "Identität",
+            "Das Vortäuschen einer fremden Identität oder einer Teamrolle ist "
+            "verboten.",
+        ),
+        _p(
+            "Datenschutz",
+            "Veröffentliche keine Daten anderer Personen. Screenshots privater "
+            "Gespräche benötigen die Zustimmung aller Beteiligten.",
+        ),
+        _p(
+            "Meldungen",
+            "Melde Verstöße über ein Ticket, statt sie öffentlich zu "
+            "diskutieren. Eine öffentliche Anklage macht die Sache selten besser.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+    closing="Unwissenheit schützt nicht vor Konsequenzen.",
+)
+
+_GAMING_VOLL = RuleSet(
+    key="gaming_voll",
+    name="Gaming ausführlich",
+    emoji="🕹️",
+    tagline="Mit Fairplay, Turnieren und Voice-Regeln",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="GAMING REGELWERK",
+    intro=(
+        "Diese Regeln gelten im gesamten Server sowie in allen Spielrunden und "
+        "Turnieren, die hier organisiert werden."
+    ),
+    paragraphs=(
+        _p(
+            "Fairplay",
+            "Cheats, Hacks, Exploits und Drittanbieter-Software sind in jeder "
+            "Form verboten. Das gilt auch für Spiele außerhalb dieses Servers, "
+            "wenn du dabei als Mitglied auftrittst.",
+        ),
+        _p(
+            "Smurfing",
+            "Das Spielen auf Zweitkonten in Ranglistenrunden der Community ist "
+            "nicht gestattet.",
+        ),
+        _p(
+            "Griefing",
+            "Absichtliches Verlieren, Sabotage, Trollen und grundloses "
+            "Abwesendsein zerstören die Runde für alle anderen und werden "
+            "geahndet.",
+        ),
+        _p(
+            "Umgangston",
+            "Kein Flame, kein Blaming nach einer Niederlage. Kritik im Spiel "
+            "bleibt sachlich und kurz.",
+        ),
+        _p(
+            "Sprachkanäle",
+            "Wer im Team spielt, hört auf Ansagen. Soundboard-Spam während "
+            "laufender Runden ist untersagt.",
+        ),
+        _p(
+            "Turnieranmeldung",
+            "Eine Anmeldung ist verbindlich. Wer unentschuldigt nicht antritt, "
+            "wird beim nächsten Turnier nachrangig berücksichtigt.",
+        ),
+        _p(
+            "Turnierleitung",
+            "Entscheidungen der Turnierleitung sind endgültig. Einsprüche "
+            "werden nach dem Turnier in einem Ticket behandelt.",
+        ),
+        _p(
+            "Ergebnisse",
+            "Absprachen über Spielausgänge sind Betrug und führen zum "
+            "Ausschluss aus allen künftigen Turnieren.",
+        ),
+        _p(
+            "Handel",
+            "Der Verkauf von Accounts, Keys oder Ingame-Währung ist verboten. "
+            "Tauschgeschäfte zwischen Mitgliedern sind Privatsache und erfolgen "
+            "auf eigenes Risiko.",
+        ),
+        _p(
+            "Spoiler",
+            "Markiere Spoiler zu Spielen, Turnieren und Übertragungen.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+)
+
+_CREATOR = RuleSet(
+    key="creator",
+    name="Creator & Community",
+    emoji="🎬",
+    tagline="Für Kanäle mit Publikum",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="COMMUNITY REGELWERK",
+    intro="Dieser Server gehört zur Community rund um den Kanal.",
+    paragraphs=(
+        _p(
+            "Respekt",
+            "Respekt gilt gegenüber allen, auch gegenüber Kritikern. "
+            "Meinungsverschiedenheiten sind erlaubt, Anfeindungen nicht.",
+        ),
+        _p(
+            "Drama",
+            "Dieser Server ist kein Ort für Auseinandersetzungen mit anderen "
+            "Creators oder Communities. Solche Themen werden kommentarlos "
+            "entfernt.",
+        ),
+        _p(
+            "Leaks",
+            "Unveröffentlichte Inhalte, Vorabversionen und interne "
+            "Informationen dürfen nicht geteilt werden.",
+        ),
+        _p(
+            "Spoiler",
+            "Spoiler zu neuen Videos gehören in den dafür vorgesehenen Kanal, "
+            "und zwar für mindestens achtundvierzig Stunden nach "
+            "Veröffentlichung.",
+        ),
+        _p(
+            "Clips",
+            "Ausschnitte dürfen geteilt werden, solange die Quelle genannt "
+            "wird und der Zusammenhang erhalten bleibt.",
+        ),
+        _p(
+            "Selbstpromotion",
+            "Eigene Projekte gehören ausschließlich in den Promo-Kanal. "
+            "Abo-Betteln und Follow-for-Follow sind untersagt.",
+        ),
+        _p(
+            "Direktnachrichten",
+            "Werbung per Direktnachricht an Mitglieder führt zum sofortigen "
+            "Ausschluss.",
+        ),
+        _p(
+            "Kontakt",
+            "Geschäftliche Anfragen laufen über die angegebene Adresse. Das "
+            "Team antwortet nicht auf private Anfragen zu Videos.",
+        ),
+        _p(
+            "Moderation",
+            "Moderationsentscheidungen werden nicht im öffentlichen Chat "
+            "diskutiert.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+)
+
+_SUPPORT = RuleSet(
+    key="support",
+    name="Support-Server",
+    emoji="🛟",
+    tagline="Tickets, Reaktionszeiten und Umgangston",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="SUPPORT REGELWERK",
+    intro="Damit dir schnell geholfen werden kann, beachte bitte Folgendes.",
+    paragraphs=(
+        _p(
+            "Vorab",
+            "Sieh zuerst in die häufigen Fragen und die Anleitungen. Viele "
+            "Anliegen sind dort bereits beantwortet.",
+        ),
+        _p(
+            "Ticketinhalt",
+            "Beschreibe dein Problem in ganzen Sätzen. Nenne, was du bereits "
+            "versucht hast, und füge Screenshots oder Fehlermeldungen bei.",
+        ),
+        _p(
+            "Ein Ticket pro Anliegen",
+            "Mehrere Tickets für dasselbe Problem verlangsamen die Bearbeitung "
+            "für alle.",
+        ),
+        _p(
+            "Geduld",
+            "Das Team hilft freiwillig und in seiner Freizeit. Nachfassen im "
+            "Minutentakt beschleunigt nichts.",
+        ),
+        _p(
+            "Direktnachrichten",
+            "Schreibe einzelne Teammitglieder nicht privat an. Alle Anliegen "
+            "laufen über das Ticketsystem.",
+        ),
+        _p(
+            "Umgangston",
+            "Beleidigungen gegenüber dem Team führen zum sofortigen Schließen "
+            "des Tickets.",
+        ),
+        _p(
+            "Missbrauch",
+            "Tickets ohne ernstes Anliegen und Scherzanfragen führen zum "
+            "Entzug der Ticketberechtigung.",
+        ),
+        _p(
+            "Abschluss",
+            "Gib kurz Bescheid, wenn dein Problem gelöst ist. Geschlossene "
+            "Tickets werden archiviert, nicht gelöscht.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+)
+
+_BUSINESS = RuleSet(
+    key="business",
+    name="Business",
+    emoji="🏢",
+    tagline="Für Firmen- und Projektserver",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="NUTZUNGSORDNUNG",
+    intro=(
+        "Dieser Server ist ein Arbeitsmittel. Es gelten die Regeln des "
+        "Unternehmens sowie die folgenden Bestimmungen."
+    ),
+    paragraphs=(
+        _p(
+            "Vertraulichkeit",
+            "Interne Informationen verlassen diesen Server nicht. Das gilt "
+            "auch nach dem Ausscheiden aus dem Projekt.",
+        ),
+        _p(
+            "Kundendaten",
+            "Daten von Kunden werden ausschließlich in den dafür vorgesehenen "
+            "Kanälen behandelt und niemals in offenen Bereichen.",
+        ),
+        _p(
+            "Screenshots",
+            "Bildschirmaufnahmen interner Kanäle sind untersagt.",
+        ),
+        _p(
+            "Zugangsdaten",
+            "Passwörter und Zugangsdaten werden niemals im Chat geteilt, auch "
+            "nicht in privaten Kanälen.",
+        ),
+        _p(
+            "Kommunikation",
+            "Schreibe sachlich, knapp und nachvollziehbar. Entscheidungen "
+            "gehören dokumentiert in den Projektkanal.",
+        ),
+        _p(
+            "Erreichbarkeit",
+            "Antworten werden innerhalb der Arbeitszeiten erwartet. Außerhalb "
+            "besteht keine Antwortpflicht.",
+        ),
+        _p(
+            "Abwesenheit",
+            "Urlaub und längere Abwesenheiten gehören rechtzeitig in den "
+            "Kalender.",
+        ),
+        _p(
+            "Externe",
+            "Gäste und Kunden erhalten ausschließlich Zugriff auf den "
+            "Kundenbereich.",
+        ),
+        _p(
+            "Verstöße",
+            "Verstöße gegen die Vertraulichkeit werden nicht als Serversache "
+            "behandelt, sondern arbeitsrechtlich.",
+        ),
+    ),
+)
+
+_ANIME = RuleSet(
+    key="anime",
+    name="Anime & Manga",
+    emoji="🌸",
+    tagline="Spoiler, Fanart und Quellen",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="REGELWERK",
+    intro="Ein Server für alle, die Anime und Manga mögen.",
+    paragraphs=(
+        _p(
+            "Spoiler",
+            "Alles, was noch nicht offiziell erschienen ist, gilt als Spoiler "
+            "und gehört in den Spoiler-Kanal oder hinter Spoilertags.",
+        ),
+        _p(
+            "Titel und Bilder",
+            "Auch Nachrichtentitel und Vorschaubilder können spoilern. Denke "
+            "daran, bevor du etwas verlinkst.",
+        ),
+        _p(
+            "Fanart",
+            "Poste nur eigene Werke oder solche mit ausdrücklicher "
+            "Quellenangabe. Reposts ohne Erlaubnis sind untersagt.",
+        ),
+        _p(
+            "KI-Bilder",
+            "Mit KI erzeugte Bilder müssen gekennzeichnet werden.",
+        ),
+        _p(
+            "Inhalte",
+            "Keine NSFW-Inhalte, auch nicht als Zeichnung. Das gilt "
+            "ausdrücklich auch für Profilbilder.",
+        ),
+        _p(
+            "Illegale Quellen",
+            "Links zu illegalen Streaming- oder Scanseiten werden entfernt.",
+        ),
+        _p(
+            "Geschmack",
+            "Geschmack ist keine Verhandlungssache. Fandom-Kriege und das "
+            "Herabsetzen anderer Serien haben hier keinen Platz.",
+        ),
+        _p(
+            "Empfehlungen",
+            "Empfehlungen sind willkommen. Ein Nein zu einer Empfehlung ist "
+            "keine Beleidigung.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+)
+
+_SOCIAL = RuleSet(
+    key="social",
+    name="Social & Lounge",
+    emoji="☕",
+    tagline="Für Server, auf denen vor allem geredet wird",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="REGELWERK",
+    intro="Hier geht es ums Reden. Damit das für alle angenehm bleibt:",
+    paragraphs=(
+        _p(
+            "Gesprächskultur",
+            "Lasst einander ausreden, auch im Text. Wer eine Frage nicht "
+            "beantworten möchte, muss das nicht begründen.",
+        ),
+        _p(
+            "Grenzen",
+            "Ein Nein ist ein Nein, beim Thema wie beim Kontakt. Ungefragte "
+            "Annäherungsversuche per Direktnachricht führen zum Ausschluss.",
+        ),
+        _p(
+            "Vertraulichkeit",
+            "Was hier im Vertrauen gesagt wird, bleibt hier. Das Weitergeben "
+            "privater Gespräche ist ein schwerer Verstoß.",
+        ),
+        _p(
+            "Ernste Themen",
+            "Belastende Themen gehören in den dafür vorgesehenen Kanal und "
+            "werden dort mit dem nötigen Ernst behandelt.",
+        ),
+        _p(
+            "Keine Therapie",
+            "Dieser Server ersetzt weder eine Therapie noch einen Notruf. Bei "
+            "akuter Not wende dich bitte an professionelle Hilfe. Das Team "
+            "nennt dir auf Wunsch Anlaufstellen.",
+        ),
+        _p(
+            "Ratschläge",
+            "Gib keine ungefragten Ratschläge. Frage vorher, ob jemand "
+            "Lösungen hören möchte oder einfach nur reden will.",
+        ),
+        _p(
+            "Alltag",
+            "Kein Dauerspam, keine Massenpings. Musik läuft nur im Musikkanal.",
+        ),
+        _p(
+            "Trigger",
+            "Kennzeichne Inhalte, die belasten können. Ein kurzer Hinweis "
+            "kostet nichts.",
+        ),
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+)
+
+_ESPORTS = RuleSet(
+    key="esports",
+    name="Esports-Organisation",
+    emoji="🏆",
+    tagline="Kader, Auftreten und Vertraulichkeit",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.DISCORD,
+    title="ORGANISATIONSREGELN",
+    intro=(
+        "Wer diese Organisation vertritt, vertritt sie auch außerhalb dieses "
+        "Servers."
+    ),
+    paragraphs=(
+        _p(
+            "Auftreten",
+            "Kein toxisches Verhalten in Spielen, Streams oder sozialen "
+            "Medien. Dein Verhalten fällt auf die gesamte Organisation zurück.",
+        ),
+        _p(
+            "Kritik",
+            "Kritik an Mitspielern oder Gegnern wird intern geäußert, niemals "
+            "öffentlich.",
+        ),
+        _p(
+            "Sponsoren",
+            "Partner und Sponsoren werden nicht negativ erwähnt. Anfragen "
+            "dazu laufen über die Leitung.",
+        ),
+        _p(
+            "Training",
+            "Trainingszeiten sind verbindlich. Absagen erfolgen rechtzeitig "
+            "und mit Begründung.",
+        ),
+        _p(
+            "Matchtermine",
+            "Offizielle Matchtermine haben Vorrang vor privaten Spielrunden.",
+        ),
+        _p(
+            "Vertraulichkeit",
+            "Strategien, Aufstellungen und Analysen bleiben intern. Die "
+            "Weitergabe an Dritte gilt als schwerer Vertrauensbruch.",
+        ),
+        _p(
+            "Presse",
+            "Presseanfragen werden nicht eigenständig beantwortet, sondern an "
+            "die Organisation weitergeleitet.",
+        ),
+        _p(
+            "Kaderwechsel",
+            "Wechselabsichten werden zuerst mit der Leitung besprochen. "
+            "Doppelmitgliedschaften in konkurrierenden Teams sind "
+            "ausgeschlossen.",
+        ),
+        _p(
+            "Ausrüstung",
+            "Gestellte Ausrüstung und Accounts bleiben Eigentum der "
+            "Organisation.",
+        ),
+        _PENALTIES,
+    ),
+)
+
+_AUSFUEHRLICH = RuleSet(
+    key="ausfuehrlich",
+    name="Ausführlich",
+    emoji="📖",
+    tagline="Vollständige Serverordnung mit 20 Paragraphen",
+    length=RuleLength.LONG,
+    scope=RuleScope.DISCORD,
+    title="SERVERORDNUNG",
+    intro=(
+        "Diese Serverordnung gilt für alle Mitglieder. Mit dem Verbleib auf "
+        "dem Server erkennst du sie an. Ergänzend gelten die "
+        "Discord-Nutzungsbedingungen und die Community-Richtlinien."
+    ),
+    paragraphs=(
+        _p(
+            "Geltungsbereich",
+            "Diese Ordnung gilt in allen Text- und Sprachkanälen, in Threads "
+            "sowie in Direktnachrichten zwischen Mitgliedern, soweit diese den "
+            "Server betreffen.",
+        ),
+        _p(
+            "Umgangston",
+            "Begegne allen Mitgliedern mit Respekt. Beleidigungen, Drohungen "
+            "und Herabwürdigungen sind untersagt. Ironie entschuldigt keinen "
+            "verletzenden Inhalt.",
+        ),
+        _p(
+            "Diskriminierung",
+            "Herabwürdigungen wegen Herkunft, Hautfarbe, Geschlecht, "
+            "Orientierung, Religion, Alter oder Behinderung führen zum "
+            "sofortigen und dauerhaften Ausschluss.",
+        ),
+        _p(
+            "Belästigung",
+            "Wiederholte unerwünschte Kontaktaufnahme, Nachstellen und "
+            "sexuelle Belästigung werden ohne Verwarnung mit einem Bann "
+            "geahndet.",
+        ),
+        _p(
+            "Verbotene Inhalte",
+            "Pornografische, gewaltverherrlichende, extremistische und "
+            "verstörende Inhalte sind verboten. Das gilt für Nachrichten, "
+            "Dateien, Links und Profilangaben gleichermaßen.",
+        ),
+        _p(
+            "Illegale Inhalte",
+            "Inhalte, die gegen geltendes Recht verstoßen, werden entfernt und "
+            "können zur Anzeige gebracht werden.",
+        ),
+        _p(
+            "Urheberrecht",
+            "Teile nur Werke, an denen du die nötigen Rechte besitzt. Bei "
+            "fremden Werken ist die Quelle zu nennen.",
+        ),
+        _p(
+            "Schadsoftware",
+            "Das Verbreiten von Schadsoftware, Phishing-Links oder IP-Loggern "
+            "führt zum sofortigen dauerhaften Bann.",
+        ),
+        _p(
+            "Chatverhalten",
+            "Schreibe im thematisch passenden Kanal. Spam, Buchstabenketten "
+            "und wiederholte Beiträge sind untersagt.",
+        ),
+        _p(
+            "Erwähnungen",
+            "Massenpings sowie die Erwähnung von @everyone und @here sind dem "
+            "Team vorbehalten. Pinge einzelne Personen nicht wiederholt ohne "
+            "Anlass.",
+        ),
+        _p(
+            "Sprachkanäle",
+            "Störgeräusche, Rückkopplungen und Soundboard-Spam sind zu "
+            "unterlassen. Wiederholtes Betreten und Verlassen gilt als "
+            "Störung.",
+        ),
+        _p(
+            "Aufnahmen",
+            "Mitschnitte und Streams aus Sprachkanälen sind nur mit "
+            "Zustimmung aller Beteiligten zulässig.",
+        ),
+        _p(
+            "Werbung",
+            "Werbung für Server, Kanäle, Produkte oder Dienstleistungen ist "
+            "genehmigungspflichtig. Werbung per Direktnachricht ist stets "
+            "untersagt.",
+        ),
+        _p(
+            "Accounts",
+            "Pro Person ist ein Account zulässig. Zweitaccounts zur Umgehung "
+            "von Sanktionen führen zum dauerhaften Ausschluss aller beteiligten "
+            "Konten.",
+        ),
+        _p(
+            "Identität",
+            "Das Vortäuschen einer fremden Identität, einer Teamrolle oder "
+            "einer Partnerschaft ist verboten.",
+        ),
+        _p(
+            "Profil",
+            "Benutzernamen, Nicknamen, Profilbilder, Banner und Statusangaben "
+            "müssen dieser Ordnung entsprechen.",
+        ),
+        _p(
+            "Datenschutz",
+            "Persönliche Daten Dritter dürfen nicht veröffentlicht werden. "
+            "Screenshots privater Gespräche bedürfen der Zustimmung.",
+        ),
+        _p(
+            "Team",
+            "Den Anweisungen des Teams ist Folge zu leisten. Beschwerden über "
+            "Maßnahmen gehören ausschließlich in ein Ticket.",
+        ),
+        _p(
+            "Sanktionen",
+            "Als Maßnahmen kommen Verwarnung, Stummschaltung, Timeout, "
+            "Ausschluss und dauerhafte Sperre in Betracht. Die Wahl richtet "
+            "sich nach Schwere, Vorsatz und Wiederholung.",
+        ),
+        _p(
+            "Änderungen",
+            "Das Team kann diese Ordnung anpassen. Änderungen werden im "
+            "Ankündigungskanal bekanntgegeben. Regelungslücken werden im Sinne "
+            "dieser Ordnung ausgelegt.",
+        ),
+    ),
+    closing="Fragen zu einzelnen Punkten beantwortet das Team in einem Ticket.",
+)
+
+_RECHTSSICHER = RuleSet(
+    key="rechtssicher",
+    name="Rechtlich abgesichert",
+    emoji="⚖️",
+    tagline="Mit Jugendschutz, Haftung und Datenverarbeitung",
+    length=RuleLength.LONG,
+    scope=RuleScope.DISCORD,
+    title="NUTZUNGSBEDINGUNGEN",
+    intro=(
+        "Diese Bedingungen richten sich an öffentliche Server mit vielen "
+        "Mitgliedern und ergänzen die geltenden gesetzlichen Bestimmungen."
+    ),
+    paragraphs=(
+        _p(
+            "Geltungsbereich",
+            "Diese Bedingungen gelten für alle Kanäle, Threads und "
+            "Sprachkanäle dieses Servers. Mit dem Beitritt werden sie "
+            "anerkannt.",
+        ),
+        _p(
+            "Mindestalter",
+            "Die Nutzung von Discord setzt ein Mindestalter von dreizehn "
+            "Jahren voraus. In einzelnen Ländern gelten höhere Altersgrenzen. "
+            "Bei begründeten Zweifeln kann der Zugang gesperrt werden.",
+        ),
+        _p(
+            "Jugendschutz",
+            "Inhalte, die die Entwicklung Minderjähriger beeinträchtigen "
+            "können, sind unzulässig. Altersbeschränkte Bereiche sind "
+            "entsprechend gekennzeichnet.",
+        ),
+        _p(
+            "Verbotene Inhalte",
+            "Unzulässig sind insbesondere Volksverhetzung, Gewaltdarstellung, "
+            "kinder- und jugendgefährdende Inhalte sowie Aufrufe zu "
+            "Straftaten.",
+        ),
+        _p(
+            "Urheberrecht",
+            "Es dürfen nur Inhalte geteilt werden, an denen die erforderlichen "
+            "Rechte bestehen. Rechteinhaber können die Entfernung über ein "
+            "Ticket verlangen.",
+        ),
+        _p(
+            "Persönlichkeitsrechte",
+            "Die Veröffentlichung von Bildern, Aufnahmen oder Daten anderer "
+            "Personen bedarf deren Einwilligung.",
+        ),
+        _p(
+            "Datenverarbeitung",
+            "Über die von Discord bereitgestellten Daten hinaus werden keine "
+            "personenbezogenen Daten gespeichert. Moderationsprotokolle dienen "
+            "ausschließlich der Durchsetzung dieser Bedingungen.",
+        ),
+        _p(
+            "Auskunft",
+            "Auf Anfrage wird Auskunft über gespeicherte Moderationsvermerke "
+            "erteilt. Die Anfrage erfolgt über ein Ticket.",
+        ),
+        _p(
+            "Haftung",
+            "Für veröffentlichte Inhalte haften die Mitglieder selbst. Der "
+            "Betreiber übernimmt keine Haftung für Absprachen zwischen "
+            "Mitgliedern.",
+        ),
+        _p(
+            "Externe Inhalte",
+            "Verlinkte externe Angebote liegen außerhalb der Verantwortung "
+            "dieses Servers. Für deren Inhalte wird keine Gewähr übernommen.",
+        ),
+        _p(
+            "Hausrecht",
+            "Der Betreiber übt das virtuelle Hausrecht aus. Ein Anspruch auf "
+            "Mitgliedschaft oder auf bestimmte Rollen besteht nicht.",
+        ),
+        _p(
+            "Sanktionen",
+            "Bei Verstößen kommen Verwarnung, Stummschaltung, Ausschluss und "
+            "Sperre in Betracht. Die Maßnahme wird nach Schwere, Vorsatz und "
+            "Wiederholung gewählt.",
+        ),
+        _p(
+            "Widerspruch",
+            "Gegen Maßnahmen kann über ein Ticket Widerspruch eingelegt "
+            "werden. Der Widerspruch wird von einer nicht beteiligten Person "
+            "geprüft und die Entscheidung begründet mitgeteilt.",
+        ),
+        _p(
+            "Löschung",
+            "Auf Wunsch werden von dir verfasste Beiträge entfernt, soweit dies "
+            "technisch möglich und rechtlich zulässig ist.",
+        ),
+        _p(
+            "Änderungen",
+            "Änderungen dieser Bedingungen werden mit einer Frist von sieben "
+            "Tagen angekündigt. Die fortgesetzte Nutzung gilt als Zustimmung.",
+        ),
+        _p(
+            "Salvatorische Klausel",
+            "Sollte eine Bestimmung unwirksam sein, bleibt die Wirksamkeit der "
+            "übrigen Bestimmungen unberührt.",
+        ),
+    ),
+    closing=(
+        "Dieses Regelwerk ist eine Vorlage und ersetzt keine Rechtsberatung. "
+        "Prüfe es vor dem Einsatz auf deinen Anwendungsfall."
+    ),
+)
+
+_GROSSSERVER = RuleSet(
+    key="grossserver",
+    name="Großer Server",
+    emoji="🏙️",
+    tagline="Für Server ab mehreren tausend Mitgliedern",
+    length=RuleLength.LONG,
+    scope=RuleScope.DISCORD,
+    title="SERVERREGELN",
+    intro=(
+        "Je größer eine Community, desto klarer müssen die Regeln sein. Dieses "
+        "Regelwerk ist bewusst ausführlich."
+    ),
+    paragraphs=(
+        _p(
+            "Grundsatz",
+            "Respektvoller Umgang ohne Ausnahme. Wer das nicht leisten kann, "
+            "ist hier falsch.",
+        ),
+        _p(
+            "Diskriminierung",
+            "Jede Form von Diskriminierung führt zum Ausschluss. Darüber wird "
+            "nicht diskutiert.",
+        ),
+        _p(
+            "Belästigung",
+            "Belästigung, Stalking und Nachstellen werden ohne Verwarnung mit "
+            "einem dauerhaften Bann geahndet.",
+        ),
+        _p(
+            "Selbstschädigung",
+            "Aufrufe zu Gewalt oder Selbstschädigung sind verboten. Wer Hilfe "
+            "braucht, findet beim Team Anlaufstellen.",
+        ),
+        _p(
+            "Kanalordnung",
+            "Jeder Kanal hat ein Thema, das in der angehefteten Nachricht "
+            "steht. Medienkanäle sind für Medien, nicht für Diskussionen.",
+        ),
+        _p(
+            "Bot-Befehle",
+            "Bot-Befehle gehören in den dafür vorgesehenen Kanal.",
+        ),
+        _p(
+            "Sprachkanäle",
+            "Kein Missbrauch von Stummschaltung oder Verschiebefunktion, kein "
+            "Dauerbelegen leerer Kanäle.",
+        ),
+        _p(
+            "Events",
+            "Bei Events gelten die Anweisungen der Moderation. Störungen "
+            "führen zum Ausschluss vom Event.",
+        ),
+        _p(
+            "Werbung",
+            "Werbung ist ausschließlich im Promo-Kanal und höchstens einmal pro "
+            "Woche gestattet.",
+        ),
+        _p(
+            "Handel",
+            "Der Handel mit Accounts, Währungen oder Dienstleistungen ist "
+            "untersagt. Spendenaufrufe bedürfen der Absprache.",
+        ),
+        _p(
+            "Automatisierung",
+            "Selfbots und die Automatisierung des eigenen Accounts sind "
+            "verboten. Das gilt auch für Scraper und Massen-Direktnachrichten.",
+        ),
+        _p(
+            "Moderation",
+            "Moderationsentscheidungen werden nicht öffentlich diskutiert. Wer "
+            "eine Entscheidung für falsch hält, nutzt den Widerspruchsweg.",
+        ),
+        _p(
+            "Direktnachrichten an das Team",
+            "Das Anschreiben einzelner Moderatoren ist unerwünscht. Alle "
+            "Anliegen laufen über Tickets.",
+        ),
+        _p(
+            "Sanktionsstufen",
+            "Maßnahmen werden abgestuft verhängt:",
+            "Stufe 1: Hinweis ohne Eintrag",
+            "Stufe 2: Verwarnung mit Eintrag",
+            "Stufe 3: Timeout zwischen einer Stunde und sieben Tagen",
+            "Stufe 4: Ausschluss mit Rückkehrmöglichkeit",
+            "Stufe 5: dauerhafte Sperre",
+        ),
+        _p(
+            "Schwere Verstöße",
+            "Bei Doxxing, Raids, Schadsoftware oder Straftaten entfällt die "
+            "Abstufung. In diesen Fällen erfolgt die sofortige Sperre.",
+        ),
+        _p(
+            "Verjährung",
+            "Verwarnungen verfallen nach sechs Monaten ohne weiteren Verstoß.",
+        ),
+        _p(
+            "Überprüfung",
+            "Diese Regeln werden regelmäßig überprüft und bei Bedarf "
+            "angepasst.",
+        ),
+        _DISCORD_TOS,
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# Rollenspiel: OOC (Discord) und IC (Ingame)
+# --------------------------------------------------------------------------- #
+
+_RP_OOC_PARAGRAPHS: tuple[Paragraph, ...] = (
+    _p(
+        "Respekt",
+        "Behandle alle Mitglieder respektvoll. Beleidigungen, Mobbing, "
+        "Diskriminierung, Hass und Provokationen sind verboten.",
+    ),
+    _p(
+        "IC und OOC trennen",
+        "Was deinem Charakter im Spiel widerfährt, hat nichts mit dir als "
+        "Person zu tun. Konflikte aus dem Spiel werden nicht auf Discord "
+        "weitergeführt.",
+    ),
+    _p(
+        "Chat",
+        "Spam, Flood, Capslock und sinnlose Nachrichten sind nicht erlaubt. "
+        "Nutze die passenden Kanäle.",
+    ),
+    _p(
+        "Werbung",
+        "Werbung für andere Server, Webseiten oder Social Media ist ohne "
+        "Erlaubnis verboten. Einladungslinks per Direktnachricht sind ebenfalls "
+        "untersagt.",
+    ),
+    _p(
+        "Inhalte",
+        "NSFW-, illegale, extremistische oder gewaltverherrlichende Inhalte "
+        "sind verboten. Schadsoftware und IP-Logger dürfen nicht verbreitet "
+        "werden.",
+    ),
+    _p(
+        "Sprachkanäle",
+        "Kein Schreien, Trollen oder Soundboard-Spam. Wer andere absichtlich "
+        "stört, wird aus dem Kanal entfernt.",
+    ),
+    _p(
+        "Datenschutz",
+        "Teile keine persönlichen Daten von dir oder anderen. Das gilt auch "
+        "für Angaben, die du im Rollenspiel erfahren hast.",
+    ),
+    _p(
+        "Profil",
+        "Nicknamen, Profilbilder, Banner und Status dürfen keine "
+        "unangemessenen Inhalte enthalten.",
+    ),
+    _p(
+        "Bewerbungen",
+        "Bewerbungen werden eigenständig verfasst. Abgeschriebene oder mit KI "
+        "erzeugte Bewerbungen werden abgelehnt.",
+    ),
+    _p(
+        "Tickets",
+        "Erstelle Tickets nur für ernst gemeinte Anliegen. Laufende "
+        "Spielsituationen werden nicht über Tickets unterbrochen.",
+    ),
+    _p(
+        "Beschwerden",
+        "Beschwerden über andere Spieler gehören in ein Ticket, niemals in den "
+        "öffentlichen Chat. Füge nach Möglichkeit Belege bei.",
+    ),
+    _p(
+        "Team",
+        "Den Anweisungen des Teams ist Folge zu leisten. Diskussionen über "
+        "Strafen gehören in ein Ticket.",
+    ),
+)
+
+_RP_IC_PARAGRAPHS: tuple[Paragraph, ...] = (
+    _p(
+        "Roleplay",
+        "Realistisches Rollenspiel ist jederzeit Pflicht. Unrealistisches "
+        "Verhalten, das die Spielwelt bricht, wird als FailRP gewertet.",
+    ),
+    _p(
+        "FearRP",
+        "Habe Angst um das Leben deines Charakters. Wer mit einer Waffe "
+        "bedroht wird, verhält sich entsprechend und spielt nicht den Helden.",
+    ),
+    _p(
+        "RDM",
+        "Random Deathmatch, also das grundlose Verletzen oder Töten anderer "
+        "Spieler, ist verboten. Jeder Angriff braucht einen nachvollziehbaren "
+        "Grund im Rollenspiel.",
+    ),
+    _p(
+        "VDM",
+        "Fahrzeuge dürfen nicht als Waffe eingesetzt werden. Absichtliches "
+        "Überfahren und Rammen ist untersagt.",
+    ),
+    _p(
+        "Combat Logging",
+        "Das Verlassen des Spiels während einer laufenden Spielsituation ist "
+        "verboten und wird wie eine Flucht vor den Konsequenzen behandelt.",
+    ),
+    _p(
+        "New Life Rule",
+        "Nach dem Tod deines Charakters erinnerst du dich nicht mehr an die "
+        "Ereignisse davor. Rache für den eigenen Tod ist ausgeschlossen.",
+    ),
+    _p(
+        "Powergaming",
+        "Erzwinge keine Handlungen und verschaffe dir keine unrealistischen "
+        "Vorteile. Gib deinem Gegenüber immer die Möglichkeit zu reagieren.",
+    ),
+    _p(
+        "Metagaming",
+        "Informationen aus Discord, Streams oder anderen Quellen außerhalb des "
+        "Spiels dürfen im Rollenspiel nicht verwendet werden.",
+    ),
+    _p(
+        "Charakter",
+        "Dein Charakter braucht eine glaubwürdige Geschichte. Niemand ist "
+        "unbesiegbar, allwissend oder unbegrenzt vermögend.",
+    ),
+    _p(
+        "Fahrzeug-Roleplay",
+        "Fahre realistisch. Sprünge, absichtliche Unfälle und unrealistische "
+        "Fahrmanöver gehören nicht in die Spielwelt.",
+    ),
+    _p(
+        "Safezones",
+        "In gekennzeichneten Schutzzonen sind Verbrechen jeder Art untersagt.",
+    ),
+    _p(
+        "Cop-Baiting",
+        "Das gezielte Provozieren von Einsatzkräften ohne Rollenspielgrund ist "
+        "verboten.",
+    ),
+    _p(
+        "Support im Spiel",
+        "Laufende Spielsituationen werden nicht durch Support unterbrochen. "
+        "Kläre Probleme nach der Situation in einem Ticket.",
+    ),
+    _p(
+        "Bugs und Exploits",
+        "Fehler im Spiel dürfen nicht ausgenutzt werden. Melde sie stattdessen "
+        "dem Team.",
+    ),
+    _p(
+        "Modifikationen",
+        "Cheats, Trainer und unerlaubte Modifikationen führen zum sofortigen "
+        "dauerhaften Ausschluss.",
+    ),
+)
+
+_RP_PENALTIES_IC = _p(
+    "Strafen",
+    "Verstöße werden je nach Schwere mit Kick, Verwarnung, zeitweiligem oder "
+    "dauerhaftem Ausschluss geahndet. Bei schweren Verstößen entfällt die "
+    "Abstufung.",
+)
+
+_RP_OOC = RuleSet(
+    key="rp_ooc",
+    name="Roleplay · OOC (Discord)",
+    emoji="💬",
+    tagline="Discord-Regeln für Rollenspiel-Server",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.OOC,
+    title="DISCORD REGELWERK",
+    intro=(
+        "Mit dem Betreten dieses Servers akzeptierst du automatisch alle "
+        "folgenden OOC-Regeln. OOC steht für Out of Character und meint alles, "
+        "was außerhalb des Spiels passiert."
+    ),
+    paragraphs=(*_RP_OOC_PARAGRAPHS, _PENALTIES, _DISCORD_TOS),
+    closing="Vielen Dank, dass du die Regeln einhältst.",
+)
+
+_RP_IC = RuleSet(
+    key="rp_ic",
+    name="Roleplay · IC (Ingame)",
+    emoji="🎭",
+    tagline="Ingame-Regeln: FailRP, RDM, VDM, Metagaming",
+    length=RuleLength.MEDIUM,
+    scope=RuleScope.IC,
+    title="IN GAME REGELWERK",
+    intro=(
+        "Mit dem Betreten des Ingame-Servers akzeptierst du automatisch alle "
+        "folgenden IC-Regeln. IC steht für In Character und meint alles, was "
+        "dein Charakter im Spiel tut."
+    ),
+    paragraphs=(*_RP_IC_PARAGRAPHS, _RP_PENALTIES_IC),
+    closing="Im Zweifel entscheidet die Rollenspielleitung.",
+)
+
+_RP_BEIDES = RuleSet(
+    key="rp_komplett",
+    name="Roleplay · komplett",
+    emoji="🎬",
+    tagline="OOC und IC zusammen in einem Regelwerk",
+    length=RuleLength.LONG,
+    scope=RuleScope.BOTH,
+    title="REGELWERK",
+    intro=(
+        "Dieses Regelwerk gilt für den Discord-Server und für das Spiel. "
+        "OOC bezeichnet alles außerhalb des Spiels, IC alles, was dein "
+        "Charakter in der Spielwelt tut. Beide Bereiche werden strikt getrennt."
+    ),
+    paragraphs=(
+        *_RP_OOC_PARAGRAPHS,
+        *_RP_IC_PARAGRAPHS,
+        _PENALTIES,
+        _DISCORD_TOS,
+    ),
+    closing="Im Zweifel entscheidet die Rollenspielleitung.",
+)
+
+
+# --------------------------------------------------------------------------- #
+# Register
 # --------------------------------------------------------------------------- #
 
 RULESETS: tuple[RuleSet, ...] = (
-    # ---------------------------------------------------------------- kurz --
-    RuleSet(
-        key="minimal",
-        name="Minimal",
-        emoji="🌱",
-        tagline="Vier Sätze, mehr braucht ein kleiner Server nicht",
-        length=RuleLength.SHORT,
-        sections=(
-            _s(
-                "Regeln",
-                "Sei freundlich.",
-                "Kein Spam, keine Werbung.",
-                "Halte dich an die Discord-Richtlinien.",
-                "Was das Team sagt, gilt.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="freundeskreis",
-        name="Freundeskreis",
-        emoji="🫶",
-        tagline="Locker formuliert für private Server",
-        length=RuleLength.SHORT,
-        intro="Wir sind hier unter Freunden — trotzdem ein paar Grundsätze.",
-        sections=(
-            _s(
-                "Miteinander",
-                "Behandelt euch so, wie ihr behandelt werden wollt.",
-                "Streit wird geklärt, nicht ausgetragen.",
-                "Was hier gesagt wird, bleibt hier.",
-            ),
-            _s(
-                "Praktisches",
-                "Nutzt die Kanäle, für die sie gedacht sind.",
-                "Keine fremden Leute ohne Absprache einladen.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="kurz_streng",
-        name="Kurz & Streng",
-        emoji="⚖️",
-        tagline="Wenige Regeln, klare Konsequenzen",
-        length=RuleLength.SHORT,
-        sections=(
-            _s(
-                "Verboten",
-                "Beleidigungen, Rassismus, Sexismus, Hetze.",
-                "NSFW-Inhalte außerhalb dafür vorgesehener Kanäle.",
-                "Werbung ohne Erlaubnis.",
-                "Spam, Massenpings, Raid-Versuche.",
-            ),
-            _s(
-                "Konsequenz",
-                "Erster Verstoß: Verwarnung.",
-                "Zweiter Verstoß: Timeout.",
-                "Dritter Verstoß: Bann.",
-            ),
-        ),
-        closing="Bei schweren Verstößen entfällt die Abstufung.",
-    ),
-    RuleSet(
-        key="gaming_kurz",
-        name="Gaming kompakt",
-        emoji="🎮",
-        tagline="Das Nötigste für Gaming-Communities",
-        length=RuleLength.SHORT,
-        sections=(
-            _s(
-                "Im Chat",
-                "Kein Flame, kein Toxic-Verhalten.",
-                "Keine Cheats, keine Exploits, keine Accounts zum Verkauf.",
-                "Spoiler markieren.",
-            ),
-            _s(
-                "Im Voice",
-                "Kein Ohrenschmerz: Mikro einstellen, Hintergrundlärm vermeiden.",
-                "Nicht ungefragt Musik einspielen.",
-                "Wer stört, wird verschoben.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="voice_fokus",
-        name="Voice-Knigge",
-        emoji="🎙️",
-        tagline="Für Server, die vor allem gesprochen werden",
-        length=RuleLength.SHORT,
-        intro="Diese Regeln gelten in allen Sprachkanälen.",
-        sections=(
-            _s(
-                "Technik",
-                "Push-to-Talk bei lauter Umgebung.",
-                "Keine Störgeräusche, kein Tastaturlärm ins offene Mikro.",
-                "Musik nur im dafür vorgesehenen Kanal.",
-            ),
-            _s(
-                "Umgang",
-                "Lasst einander ausreden.",
-                "Keine Aufnahmen ohne Zustimmung aller Beteiligten.",
-                "Wer gehen will, geht — ohne Erklärung.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="lernserver",
-        name="Lerngruppe",
-        emoji="📚",
-        tagline="Ruhe, Fairness und Urheberrecht",
-        length=RuleLength.SHORT,
-        intro="Hier wird gearbeitet — darauf beruhen diese Regeln.",
-        sections=(
-            _s(
-                "Arbeitsklima",
-                "In Lernräumen ist Stille die Grundeinstellung.",
-                "Fragen gehören in den passenden Fachkanal.",
-                "Keine Lösungen abschreiben lassen — erklären statt liefern.",
-            ),
-            _s(
-                "Material",
-                "Nur teilen, was geteilt werden darf.",
-                "Quellen angeben.",
-                "Keine kostenpflichtigen Skripte hochladen.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="kreativ",
-        name="Kreativ-Community",
-        emoji="🎨",
-        tagline="Feedback, Urheberrecht und Aufträge",
-        length=RuleLength.SHORT,
-        sections=(
-            _s(
-                "Deine Werke",
-                "Nur eigene Arbeiten posten.",
-                "Bei Vorlagen und Referenzen die Quelle nennen.",
-                "KI-generiertes klar kennzeichnen.",
-            ),
-            _s(
-                "Feedback",
-                "Kritik bezieht sich auf das Werk, nie auf die Person.",
-                "Wer Feedback gibt, sagt auch, was funktioniert.",
-                "Ungefragte Verrisse sind keine Kritik.",
-            ),
-            _s(
-                "Aufträge",
-                "Preise und Bedingungen vorher klären.",
-                "Der Server haftet nicht für Absprachen zwischen Mitgliedern.",
-            ),
-        ),
-    ),
-    # -------------------------------------------------------------- mittel --
-    RuleSet(
-        key="standard",
-        name="Standard",
-        emoji="📋",
-        tagline="Der ausgewogene Allrounder für die meisten Server",
-        length=RuleLength.MEDIUM,
-        intro=(
-            "Mit dem Betreten dieses Servers erklärst du dich mit diesen Regeln "
-            "einverstanden."
-        ),
-        sections=(
-            _s(
-                "Respekt",
-                "Beleidigungen, Diskriminierung und persönliche Angriffe sind verboten.",
-                "Diskutiert Meinungen, nicht Menschen.",
-                "Provokation und bewusstes Stänkern werden wie ein Verstoß behandelt.",
-            ),
-            _s(
-                "Inhalte",
-                "Keine NSFW-, Gewalt- oder Schockinhalte.",
-                "Keine illegalen Inhalte, keine Raubkopien.",
-                "Keine Weitergabe privater Daten — weder eigener noch fremder.",
-            ),
-            _s(
-                "Chat",
-                "Nutze den Kanal, der zum Thema passt.",
-                "Kein Spam, keine Massenpings, keine Kettennachrichten.",
-                "Werbung nur mit ausdrücklicher Erlaubnis des Teams.",
-            ),
-            _s(
-                "Sprachkanäle",
-                "Kein Störgeräusch, kein Soundboard-Missbrauch.",
-                "Aufnahmen nur mit Zustimmung aller Beteiligten.",
-            ),
-            _s(
-                "Team",
-                "Anweisungen des Teams ist Folge zu leisten.",
-                "Beschwerden gehören ins Ticket, nicht in den Chat.",
-            ),
-        ),
-        closing=(
-            "Das Team behält sich vor, bei Verstößen zu verwarnen, stummzuschalten "
-            "oder auszuschließen."
-        ),
-    ),
-    RuleSet(
-        key="community",
-        name="Community",
-        emoji="🌐",
-        tagline="Für wachsende öffentliche Server",
-        length=RuleLength.MEDIUM,
-        intro="Damit sich hier alle wohlfühlen, gelten folgende Regeln.",
-        sections=(
-            _s(
-                "Grundsätze",
-                "Respektvoller Umgang ist Pflicht, keine Höflichkeitsfloskel.",
-                "Keine Diskriminierung wegen Herkunft, Geschlecht, Religion, Orientierung oder Behinderung.",
-                "Kein Mobbing, kein Bloßstellen, kein Nachtreten.",
-            ),
-            _s(
-                "Beiträge",
-                "Halte dich an das Thema des jeweiligen Kanals.",
-                "Keine Werbung, keine Selbstpromo außerhalb des dafür gedachten Kanals.",
-                "Keine Kettenbriefe, Gewinnspiel-Scams oder dubiosen Links.",
-                "Bilder und Videos müssen jugendfrei sein.",
-            ),
-            _s(
-                "Identität",
-                "Ein Account pro Person. Zweitaccounts zur Umgehung von Strafen führen zum Bann.",
-                "Name und Profilbild müssen angemessen sein.",
-                "Kein Ausgeben als Teammitglied oder andere Person.",
-            ),
-            _s(
-                "Datenschutz",
-                "Keine fremden Daten ohne Einwilligung.",
-                "Screenshots privater Gespräche nur mit Zustimmung.",
-                "Der Server ist kein Ort für persönliche Dokumente.",
-            ),
-            _s(
-                "Bei Problemen",
-                "Melde Verstöße über ein Ticket statt sie öffentlich zu diskutieren.",
-                "Bei Streit: erst zurücktreten, dann das Team einschalten.",
-            ),
-        ),
-        closing="Unwissenheit schützt nicht vor Konsequenzen.",
-    ),
-    RuleSet(
-        key="gaming_voll",
-        name="Gaming ausführlich",
-        emoji="🕹️",
-        tagline="Mit Fairplay, Turnieren und Voice-Regeln",
-        length=RuleLength.MEDIUM,
-        intro="Diese Regeln gelten im gesamten Server und in allen Spielrunden.",
-        sections=(
-            _s(
-                "Fairplay",
-                "Keine Cheats, Hacks, Exploits oder Drittanbieter-Software.",
-                "Kein Smurfing in Ranked-Runden der Community.",
-                "Kein absichtliches Verlieren, kein Griefing, kein AFK-Gehen.",
-                "Ergebnisse werden nicht abgesprochen.",
-            ),
-            _s(
-                "Kommunikation",
-                "Kein Flame, kein Blaming nach einer Niederlage.",
-                "Kritik im Spiel bleibt sachlich und kurz.",
-                "Toxisches Verhalten wird auch dann geahndet, wenn es außerhalb des Servers stattfand.",
-            ),
-            _s(
-                "Sprachkanäle",
-                "Wer im Team spielt, hört auf Ansagen.",
-                "Kein Soundboard-Spam während laufender Runden.",
-                "Kein Kanal-Hopping.",
-            ),
-            _s(
-                "Turniere",
-                "Anmeldung ist verbindlich.",
-                "Wer nicht antritt, wird beim nächsten Turnier nachrangig behandelt.",
-                "Entscheidungen der Turnierleitung sind endgültig.",
-            ),
-            _s(
-                "Handel",
-                "Kein Verkauf von Accounts, Keys oder Ingame-Währung.",
-                "Tauschgeschäfte zwischen Mitgliedern sind Privatsache.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="roleplay",
-        name="Roleplay",
-        emoji="🎭",
-        tagline="IC/OOC-Trennung, Metagaming und Charaktertod",
-        length=RuleLength.MEDIUM,
-        intro=(
-            "Rollenspiel lebt von gemeinsamen Regeln. Wer sie bricht, zerstört "
-            "die Szene für alle anderen."
-        ),
-        sections=(
-            _s(
-                "Grundbegriffe",
-                "IC bedeutet In Character — dein Charakter handelt.",
-                "OOC bedeutet Out of Character — du als Spieler sprichst.",
-                "Beides wird strikt getrennt.",
-            ),
-            _s(
-                "Verbotene Spielweisen",
-                "Metagaming: OOC-Wissen im Rollenspiel verwenden.",
-                "Powergaming: Handlungen erzwingen, ohne dem Gegenüber eine Reaktion zu lassen.",
-                "Random Deathmatch: Gewalt ohne nachvollziehbaren Grund.",
-                "Combat Logging: Ausloggen während einer laufenden Szene.",
-            ),
-            _s(
-                "Charaktere",
-                "Ein Charakter braucht eine glaubwürdige Geschichte.",
-                "Kein Charakter ist unbesiegbar oder allwissend.",
-                "Charaktertod ist endgültig, wenn er fair herbeigeführt wurde.",
-            ),
-            _s(
-                "Szenen",
-                "Wer eine Szene beginnt, gibt anderen Raum zu reagieren.",
-                "Bei Unstimmigkeiten wird die Szene pausiert, nicht eskaliert.",
-                "Konflikte werden OOC im Support geklärt.",
-            ),
-            _s(
-                "Fraktionen",
-                "Absprachen zwischen Fraktionen sind IC bindend.",
-                "Kein Fraktionswechsel zur Umgehung von Konsequenzen.",
-            ),
-        ),
-        closing="Im Zweifel entscheidet die Rollenspielleitung.",
-    ),
-    RuleSet(
-        key="creator",
-        name="Creator & Community",
-        emoji="🎬",
-        tagline="Für Kanäle mit Publikum",
-        length=RuleLength.MEDIUM,
-        intro="Dieser Server gehört zur Community rund um den Kanal.",
-        sections=(
-            _s(
-                "Umgang",
-                "Respekt gilt gegenüber allen — auch gegenüber Kritikern.",
-                "Keine Drama-Threads über andere Creator.",
-                "Keine Diskussion über Moderationsentscheidungen im öffentlichen Chat.",
-            ),
-            _s(
-                "Inhalte",
-                "Keine Leaks unveröffentlichter Inhalte.",
-                "Spoiler zu neuen Videos gehören in den Spoiler-Kanal.",
-                "Clips und Ausschnitte dürfen geteilt werden, mit Quellenangabe.",
-            ),
-            _s(
-                "Selbstpromo",
-                "Eigene Projekte nur im Promo-Kanal.",
-                "Kein Abo-Betteln, keine Follow-for-Follow-Angebote.",
-                "Keine Direktnachrichten mit Werbung an Mitglieder.",
-            ),
-            _s(
-                "Kontakt",
-                "Geschäftliches läuft über die angegebene Adresse, nicht per DM.",
-                "Das Team antwortet nicht auf Privatanfragen zu Videos.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="support",
-        name="Support-Server",
-        emoji="🛟",
-        tagline="Tickets, Reaktionszeiten und Umgangston",
-        length=RuleLength.MEDIUM,
-        intro="Damit dir schnell geholfen werden kann, beachte bitte Folgendes.",
-        sections=(
-            _s(
-                "Bevor du fragst",
-                "Sieh in die häufigen Fragen und die Anleitungen.",
-                "Prüfe, ob dein Problem bereits bekannt ist.",
-            ),
-            _s(
-                "Ein gutes Ticket",
-                "Beschreibe das Problem in ganzen Sätzen.",
-                "Nenne, was du bereits versucht hast.",
-                "Füge Screenshots oder Fehlermeldungen bei.",
-                "Ein Ticket pro Anliegen.",
-            ),
-            _s(
-                "Umgangston",
-                "Das Team hilft freiwillig — Druck beschleunigt nichts.",
-                "Kein Anschreiben einzelner Teammitglieder per DM.",
-                "Kein Nachfassen im Minutentakt.",
-            ),
-            _s(
-                "Nach der Lösung",
-                "Bestätige kurz, wenn dein Problem gelöst ist.",
-                "Geschlossene Tickets werden archiviert, nicht gelöscht.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="business",
-        name="Business",
-        emoji="🏢",
-        tagline="Für Firmen- und Projektserver",
-        length=RuleLength.MEDIUM,
-        intro="Dieser Server ist ein Arbeitsmittel. Es gelten die Regeln des Hauses.",
-        sections=(
-            _s(
-                "Vertraulichkeit",
-                "Interne Informationen verlassen den Server nicht.",
-                "Kundendaten werden ausschließlich in den dafür vorgesehenen Kanälen behandelt.",
-                "Screenshots interner Kanäle sind untersagt.",
-            ),
-            _s(
-                "Kommunikation",
-                "Sachlich, knapp und nachvollziehbar.",
-                "Entscheidungen gehören dokumentiert in den Projektkanal.",
-                "Dringendes per Ping, alles andere ohne.",
-            ),
-            _s(
-                "Erreichbarkeit",
-                "Antworten werden innerhalb der Arbeitszeiten erwartet.",
-                "Außerhalb der Arbeitszeit besteht keine Antwortpflicht.",
-                "Abwesenheiten gehören in den Kalender.",
-            ),
-            _s(
-                "Zugänge",
-                "Zugangsdaten werden niemals im Chat geteilt.",
-                "Externe erhalten nur Zugriff auf den Kundenbereich.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="anime",
-        name="Anime & Manga",
-        emoji="🌸",
-        tagline="Spoiler, Fanart und Quellen",
-        length=RuleLength.MEDIUM,
-        sections=(
-            _s(
-                "Spoiler",
-                "Alles, was nicht offiziell erschienen ist, gilt als Spoiler.",
-                "Spoiler gehören in den Spoiler-Kanal oder hinter Spoilertags.",
-                "Auch Titel und Thumbnails können spoilern.",
-            ),
-            _s(
-                "Fanart",
-                "Nur eigene Werke oder solche mit Quellenangabe.",
-                "Reposts ohne Erlaubnis der Urheber sind untersagt.",
-                "KI-Bilder klar kennzeichnen.",
-            ),
-            _s(
-                "Inhalte",
-                "Keine NSFW-Inhalte, auch nicht als Zeichnung.",
-                "Keine Links zu illegalen Streaming- oder Scanseiten.",
-            ),
-            _s(
-                "Diskussion",
-                "Geschmack ist keine Verhandlungssache.",
-                "Keine Fandom-Kriege, kein Herabsetzen anderer Serien.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="social",
-        name="Social & Lounge",
-        emoji="☕",
-        tagline="Für Server, auf denen vor allem geredet wird",
-        length=RuleLength.MEDIUM,
-        intro="Hier geht es ums Reden. Damit das angenehm bleibt:",
-        sections=(
-            _s(
-                "Gespräche",
-                "Lasst einander ausreden, auch im Text.",
-                "Kein Ausfragen, wenn jemand nicht antworten möchte.",
-                "Themen, die belasten, gehören in den dafür vorgesehenen Kanal.",
-            ),
-            _s(
-                "Grenzen",
-                "Ein Nein ist ein Nein — beim Thema wie beim Kontakt.",
-                "Keine ungefragten Privatnachrichten mit Anmachen.",
-                "Kein Weitergeben privater Gespräche.",
-            ),
-            _s(
-                "Ernste Themen",
-                "Der Server ersetzt keine Therapie und keinen Notruf.",
-                "Bei akuter Not: wende dich an professionelle Hilfe.",
-                "Das Team vermittelt Anlaufstellen, wenn du fragst.",
-            ),
-            _s(
-                "Alltag",
-                "Kein Dauerspam, keine Massenpings.",
-                "Musik nur im Musikkanal.",
-            ),
-        ),
-    ),
-    RuleSet(
-        key="esports",
-        name="Esports-Organisation",
-        emoji="🏆",
-        tagline="Kader, Auftreten und Vertraulichkeit",
-        length=RuleLength.MEDIUM,
-        intro="Wer diese Organisation vertritt, vertritt sie auch außerhalb des Servers.",
-        sections=(
-            _s(
-                "Auftreten",
-                "Kein toxisches Verhalten in Spielen, Streams oder sozialen Medien.",
-                "Keine öffentliche Kritik an Mitspielern oder Gegnern.",
-                "Sponsoren werden nicht negativ erwähnt.",
-            ),
-            _s(
-                "Verpflichtungen",
-                "Trainingszeiten sind verbindlich.",
-                "Absagen rechtzeitig und mit Grund.",
-                "Matchtermine haben Vorrang vor privaten Spielrunden.",
-            ),
-            _s(
-                "Vertraulichkeit",
-                "Strategien, Aufstellungen und interne Absprachen bleiben intern.",
-                "Keine Weitergabe von Analysen an Dritte.",
-                "Presseanfragen laufen über die Organisation.",
-            ),
-            _s(
-                "Kader",
-                "Wechsel werden mit der Leitung besprochen.",
-                "Doppelmitgliedschaften in konkurrierenden Teams sind ausgeschlossen.",
-            ),
-        ),
-    ),
-    # ----------------------------------------------------------------- lang --
-    RuleSet(
-        key="ausfuehrlich",
-        name="Ausführlich",
-        emoji="📖",
-        tagline="Vollständiges Regelwerk mit Paragraphen",
-        length=RuleLength.LONG,
-        intro=(
-            "Dieses Regelwerk gilt für alle Mitglieder. Mit dem Verbleib auf dem "
-            "Server erkennst du es an. Ergänzend gelten die Discord-Nutzungs"
-            "bedingungen und die Community-Richtlinien."
-        ),
-        sections=(
-            _s(
-                "§1 Umgangston",
-                "Begegne allen Mitgliedern mit Respekt.",
-                "Beleidigungen, Bedrohungen und Herabwürdigungen sind untersagt.",
-                "Diskriminierung wegen Herkunft, Hautfarbe, Geschlecht, Orientierung, Religion, Alter oder Behinderung führt zum sofortigen Ausschluss.",
-                "Ironie und Sarkasmus entschuldigen keinen verletzenden Inhalt.",
-            ),
-            _s(
-                "§2 Inhalte",
-                "Keine pornografischen, gewaltverherrlichenden oder verstörenden Inhalte.",
-                "Keine extremistischen Symbole, Parolen oder Verharmlosungen.",
-                "Keine urheberrechtlich geschützten Werke ohne Berechtigung.",
-                "Keine Links zu Schadsoftware, Phishing oder illegalen Angeboten.",
-            ),
-            _s(
-                "§3 Chatverhalten",
-                "Schreibe im thematisch passenden Kanal.",
-                "Kein Spam, keine Buchstabenketten, keine Wiederholungen.",
-                "Massenpings und @everyone sind dem Team vorbehalten.",
-                "Kein Missbrauch von Threads, Reaktionen oder Umfragen.",
-            ),
-            _s(
-                "§4 Sprachkanäle",
-                "Störgeräusche, Rückkopplungen und Soundboard-Spam sind zu unterlassen.",
-                "Kein wiederholtes Betreten und Verlassen von Kanälen.",
-                "Aufnahmen und Streams nur mit Zustimmung aller Beteiligten.",
-                "Anweisungen zur Kanalnutzung sind zu befolgen.",
-            ),
-            _s(
-                "§5 Werbung",
-                "Werbung für andere Server, Kanäle oder Produkte ist genehmigungspflichtig.",
-                "Auch Werbung per Direktnachricht an Mitglieder ist untersagt.",
-                "Partnerschaften werden ausschließlich über das Team vereinbart.",
-            ),
-            _s(
-                "§6 Accounts und Identität",
-                "Pro Person ist ein Account zulässig.",
-                "Zweitaccounts zur Umgehung von Sanktionen führen zum dauerhaften Ausschluss.",
-                "Benutzernamen und Profilbilder müssen den Regeln entsprechen.",
-                "Das Vortäuschen einer fremden Identität ist verboten.",
-            ),
-            _s(
-                "§7 Datenschutz",
-                "Persönliche Daten Dritter dürfen nicht veröffentlicht werden.",
-                "Screenshots privater Konversationen bedürfen der Zustimmung.",
-                "Das Team gibt keine Mitgliederdaten an Dritte weiter.",
-            ),
-            _s(
-                "§8 Team und Sanktionen",
-                "Anweisungen des Teams ist Folge zu leisten.",
-                "Mögliche Maßnahmen sind Verwarnung, Timeout, Kick und Bann.",
-                "Die Wahl der Maßnahme richtet sich nach Schwere und Wiederholung.",
-                "Beschwerden über Maßnahmen gehören ins Ticket.",
-            ),
-            _s(
-                "§9 Schlussbestimmungen",
-                "Das Team kann diese Regeln jederzeit anpassen.",
-                "Änderungen werden im Ankündigungskanal bekanntgegeben.",
-                "Regelungslücken werden im Sinne dieser Regeln ausgelegt.",
-            ),
-        ),
-        closing="Stand: bei Anwendung dieser Vorlage. Fragen beantwortet das Team.",
-    ),
-    RuleSet(
-        key="rechtssicher",
-        name="Rechtlich abgesichert",
-        emoji="⚖️",
-        tagline="Mit Jugendschutz, Haftung und Datenverarbeitung",
-        length=RuleLength.LONG,
-        intro=(
-            "Dieses Regelwerk richtet sich an öffentliche Server mit vielen "
-            "Mitgliedern und ergänzt die geltenden gesetzlichen Bestimmungen."
-        ),
-        sections=(
-            _s(
-                "1 · Geltungsbereich",
-                "Diese Regeln gelten für alle Kanäle, Threads und Sprachkanäle.",
-                "Sie gelten ebenso für Direktnachrichten zwischen Mitgliedern, soweit sie den Server betreffen.",
-                "Mit dem Beitritt werden sie anerkannt.",
-            ),
-            _s(
-                "2 · Mindestalter",
-                "Die Nutzung von Discord setzt ein Mindestalter von 13 Jahren voraus.",
-                "In einzelnen Ländern gelten höhere Altersgrenzen.",
-                "Das Team ist berechtigt, bei Zweifeln den Zugang zu sperren.",
-            ),
-            _s(
-                "3 · Verbotene Inhalte",
-                "Inhalte, die gegen geltendes Recht verstoßen, sind untersagt.",
-                "Dazu zählen insbesondere Volksverhetzung, Gewaltdarstellung und jugendgefährdende Inhalte.",
-                "Verstöße können zur Anzeige gebracht werden.",
-            ),
-            _s(
-                "4 · Urheberrecht",
-                "Es dürfen nur Inhalte geteilt werden, an denen die erforderlichen Rechte bestehen.",
-                "Bei fremden Werken ist die Quelle zu nennen.",
-                "Rechteinhaber können die Entfernung über ein Ticket verlangen.",
-            ),
-            _s(
-                "5 · Datenverarbeitung",
-                "Der Server speichert keine personenbezogenen Daten über das hinaus, was Discord bereitstellt.",
-                "Moderationsprotokolle dienen ausschließlich der Durchsetzung dieser Regeln.",
-                "Auf Anfrage wird Auskunft über gespeicherte Moderationsvermerke erteilt.",
-            ),
-            _s(
-                "6 · Haftung",
-                "Für Inhalte, die Mitglieder veröffentlichen, haften diese selbst.",
-                "Der Betreiber übernimmt keine Haftung für Absprachen zwischen Mitgliedern.",
-                "Verlinkte externe Angebote liegen außerhalb der Verantwortung des Servers.",
-            ),
-            _s(
-                "7 · Sanktionen",
-                "Bei Verstößen kommen Verwarnung, Stummschaltung, Ausschluss oder Sperre in Betracht.",
-                "Die Maßnahme wird nach Schwere, Vorsatz und Wiederholung gewählt.",
-                "Ein Anspruch auf Mitgliedschaft besteht nicht.",
-            ),
-            _s(
-                "8 · Widerspruch",
-                "Gegen Maßnahmen kann über ein Ticket Widerspruch eingelegt werden.",
-                "Der Widerspruch wird von einer nicht beteiligten Person geprüft.",
-                "Die Entscheidung wird begründet mitgeteilt.",
-            ),
-            _s(
-                "9 · Änderungen",
-                "Änderungen werden mit einer Frist von sieben Tagen angekündigt.",
-                "Wer widerspricht, kann den Server verlassen.",
-                "Die fortgesetzte Nutzung gilt als Zustimmung.",
-            ),
-        ),
-        closing=(
-            "Dieses Regelwerk ist eine Vorlage und ersetzt keine Rechtsberatung. "
-            "Prüfe es vor dem Einsatz auf deinen Anwendungsfall."
-        ),
-    ),
-    RuleSet(
-        key="grossserver",
-        name="Großer Server",
-        emoji="🏙️",
-        tagline="Für Server ab mehreren tausend Mitgliedern",
-        length=RuleLength.LONG,
-        intro=(
-            "Je größer eine Community, desto klarer müssen die Regeln sein. "
-            "Dieses Regelwerk ist bewusst detailliert."
-        ),
-        sections=(
-            _s(
-                "Grundregeln",
-                "Respektvoller Umgang ohne Ausnahme.",
-                "Keine Diskriminierung in jeglicher Form.",
-                "Keine Belästigung, kein Stalking, kein Nachstellen.",
-                "Kein Aufruf zu Gewalt oder Selbstschädigung.",
-            ),
-            _s(
-                "Kanalordnung",
-                "Jeder Kanal hat ein Thema — es steht in der angehefteten Nachricht.",
-                "Bild- und Medienkanäle sind für Medien, nicht für Diskussionen.",
-                "Bot-Befehle gehören in den Bot-Kanal.",
-                "Off-Topic hat einen eigenen Bereich.",
-            ),
-            _s(
-                "Sprachkanäle",
-                "Kein Missbrauch von Stummschaltung oder Verschiebefunktion.",
-                "Kein Dauerbelegen leerer Kanäle.",
-                "Bei Events gelten die Anweisungen der Moderation.",
-            ),
-            _s(
-                "Werbung und Handel",
-                "Werbung ausschließlich im Promo-Kanal und nur einmal pro Woche.",
-                "Kein Handel mit Accounts, Währungen oder Dienstleistungen.",
-                "Keine Spendenaufrufe ohne Absprache.",
-            ),
-            _s(
-                "Bots und Automatisierung",
-                "Selfbots und Automatisierung des eigenen Accounts sind verboten.",
-                "Keine Scraper, keine Massen-DMs.",
-                "Bot-Missbrauch führt zum Ausschluss.",
-            ),
-            _s(
-                "Moderation",
-                "Moderationsentscheidungen werden nicht öffentlich diskutiert.",
-                "Wer eine Entscheidung für falsch hält, nutzt den Widerspruchsweg.",
-                "Das Ansprechen einzelner Moderatoren per DM ist unerwünscht.",
-            ),
-            _s(
-                "Sanktionsstufen",
-                "Stufe 1: Hinweis ohne Vermerk.",
-                "Stufe 2: Verwarnung mit Eintrag.",
-                "Stufe 3: Timeout zwischen einer Stunde und sieben Tagen.",
-                "Stufe 4: Ausschluss mit Rückkehrmöglichkeit.",
-                "Stufe 5: dauerhafte Sperre.",
-            ),
-            _s(
-                "Schwerwiegende Verstöße",
-                "Bei Doxxing, Raids, Schadsoftware oder Straftaten entfällt die Abstufung.",
-                "In diesen Fällen erfolgt die sofortige Sperre.",
-            ),
-        ),
-        closing="Diese Regeln werden regelmäßig überprüft und angepasst.",
-    ),
+    # kurz
+    _MINIMAL,
+    _FREUNDESKREIS,
+    _KURZ_STRENG,
+    _GAMING_KURZ,
+    _VOICE,
+    _LERNSERVER,
+    _KREATIV,
+    # mittel
+    _STANDARD,
+    _COMMUNITY,
+    _GAMING_VOLL,
+    _RP_OOC,
+    _RP_IC,
+    _CREATOR,
+    _SUPPORT,
+    _BUSINESS,
+    _ANIME,
+    _SOCIAL,
+    _ESPORTS,
+    # lang
+    _AUSFUEHRLICH,
+    _RECHTSSICHER,
+    _GROSSSERVER,
+    _RP_BEIDES,
 )
 
 
@@ -812,3 +1582,7 @@ def get_ruleset(key: str) -> RuleSet | None:
 
 def by_length(length: RuleLength) -> list[RuleSet]:
     return [ruleset for ruleset in RULESETS if ruleset.length is length]
+
+
+def by_scope(scope: RuleScope) -> list[RuleSet]:
+    return [ruleset for ruleset in RULESETS if ruleset.scope is scope]

@@ -170,16 +170,42 @@ Datenbank.
 ### 5 · Regelwerk-Assistent
 
 Nach dem Bau bietet der Bot an, den Regelkanal zu füllen — oder später
-jederzeit mit `!regeln`. Zur Auswahl stehen **20 fertige Regelwerke**:
+jederzeit mit `!regeln`. Zur Auswahl stehen **22 fertige Regelwerke** im
+Paragraphen-Stil:
+
+```
+## 📋  DISCORD REGELWERK
+-# Mein Server
+─────────────────────────────────────────────
+> Mit dem Betreten dieses Servers akzeptierst
+> du automatisch alle folgenden Regeln.
+─────────────────────────────────────────────
+> **§1 • Respekt**
+> Behandle alle Mitglieder respektvoll.
+> Beleidigungen, Mobbing, Diskriminierung,
+> Hass und Provokationen sind verboten.
+
+> **§2 • Chat**
+> Spam, Flood, Capslock und sinnlose
+> Nachrichten sind nicht erlaubt.
+```
 
 | Länge | Vorlagen |
 |---|---|
-| **Kurz** (4–8 Regeln) | Minimal, Freundeskreis, Kurz & Streng, Gaming kompakt, Voice-Knigge, Lerngruppe, Kreativ-Community |
-| **Mittel** (10–15) | Standard, Community, Gaming ausführlich, Roleplay, Creator, Support, Business, Anime & Manga, Social, Esports |
-| **Ausführlich** (25–33) | Ausführlich (§1–§9), Rechtlich abgesichert, Großer Server |
+| **Kurz** (5–6 §) | Minimal, Freundeskreis, Kurz & Streng, Gaming kompakt, Voice-Knigge, Lerngruppe, Kreativ |
+| **Mittel** (9–16 §) | Standard, Community, Gaming ausführlich, **RP · OOC**, **RP · IC**, Creator, Support, Business, Anime, Social, Esports |
+| **Ausführlich** (16–29 §) | Serverordnung, Rechtlich abgesichert, Großer Server, **RP · komplett** |
 
-Die Auswahl zeigt vor dem Anwenden eine Vorschau. Danach dieselben Optionen
-wie bei den Templates, plus eine vierte:
+**Rollenspiel getrennt nach IC und OOC.** Ein RP-Projekt braucht zwei
+Regelwerke, weil Discord und Spiel unterschiedlichen Regeln folgen:
+
+- **OOC · Discord** (14 §) — Respekt, Werbung, Datenschutz, Tickets, und der
+  Grundsatz, dass Spielkonflikte nicht auf Discord weitergeführt werden
+- **IC · Ingame** (16 §) — FailRP, FearRP, RDM, VDM, Combat Logging,
+  New Life Rule, Powergaming, Metagaming, Safezones, Cop-Baiting
+- **komplett** (29 §) — beides in einem Dokument
+
+Danach dieselben Optionen wie bei den Templates, plus eine vierte:
 
 - **Ergänzen** — Regelwerk anhängen, nichts wird gelöscht
 - **Neu aufsetzen** — leert **nur diesen Kanal**, und darin ausschließlich
@@ -195,13 +221,13 @@ neben der Überschrift, das zweite als Banner **unter dem Text**:
 ──────────────────────────────────────   │  Logo  │
 > 1. Sei freundlich                      └────────┘
 > 2. Kein Spam
-> 3. Kein NSFW
 ──────────────────────────────────────
 [         Banner unten, volle Breite         ]
 ```
 
-Bildlinks werden geprüft — nur direkte Links auf `png`, `jpg`, `gif` oder
-`webp` werden angenommen.
+Lange Regelwerke werden automatisch auf zwei Nachrichten verteilt — immer am
+Paragraphenrand, nie mitten in einer Regel. Die Nummerierung läuft dabei
+durch: §17 bleibt §17, auch auf der zweiten Nachricht.
 
 ### 6 · Berechtigungen, die halten
 
@@ -324,7 +350,7 @@ health.py               HTTP-Health-Endpunkt für Railway
 
 core/
   small_caps.py         Typografie + Namensvergleich
-  rulesets.py           Die 20 Regelwerke
+  rulesets.py           Die 22 Regelwerke (inkl. RP · IC/OOC)
   content.py            Texte der Startnachrichten
   enforcement.py        Durchsetzung der Kanal-Modi
   schema.py             Typisiertes Template-Modell mit Validierung
@@ -345,7 +371,7 @@ tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  218 Tests
+tests/                  241 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -361,7 +387,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 218 Tests
+python -m pytest tests/ -v          # 241 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -387,9 +413,10 @@ Die Testsuite prüft unter anderem:
 - **Kanalinhalte** — dass ein zweiter Durchlauf keine doppelten Nachrichten
   erzeugt, Sprachkanäle leer bleiben, das Team nie von der Löschregel
   getroffen wird und die Widget-Buttons einen Neustart überstehen
-- **Regelwerke** — dass alle 20 vollständig gerendert werden ohne eine Regel
-  zu verlieren, kurze wirklich kürzer sind als lange, und dass „Neu aufsetzen"
-  nur Bot-Nachrichten entfernt und keine Beiträge von Mitgliedern
+- **Regelwerke** — dass alle 22 vollständig gerendert werden ohne einen
+  Paragraphen zu verlieren, die Nummerierung lückenlos durchläuft, kein
+  Paragraph beim Aufteilen zerrissen wird, das IC-Regelwerk die klassischen
+  RP-Begriffe abdeckt und „Neu aufsetzen" nur Bot-Nachrichten entfernt
 
 ---
 

@@ -41,6 +41,11 @@ RULES_CHANNEL_HINTS = ("serverregeln", "regeln", "regelwerk", "rules")
 # Discord erlaubt 4000 Zeichen ueber alle TextDisplay-Komponenten hinweg.
 _CHAR_BUDGET = 3600
 
+# ... und hoechstens 40 Komponenten pro Nachricht. Jeder Paragraph kostet
+# zwei davon (Abstand + Text), der Rahmen etwa sechs. Lange Regelwerke
+# reissen dieses Limit, bevor sie das Zeichenlimit erreichen.
+_COMPONENT_BUDGET = 34
+
 
 def _can_manage(user: discord.abc.User | discord.Member) -> bool:
     return isinstance(user, discord.Member) and user.guild_permissions.manage_guild
@@ -68,8 +73,12 @@ def find_rules_channel(guild: discord.Guild) -> discord.TextChannel | None:
 def ruleset_views(ruleset: RuleSet, *, guild_name: str = "") -> list[ui.LayoutView]:
     """Ein Regelwerk als eine oder mehrere Nachrichten.
 
-    Lange Regelwerke werden am Abschnittsrand geteilt, damit keine Nachricht
-    ueber das Zeichenlimit laeuft.
+    Jeder Paragraph wird als ``§n • Titel`` mit Fliesstext gerendert. Reicht
+    der Platz nicht, wird am Paragraphenrand geteilt — nie mitten in einem
+    Paragraphen, damit keine Regel zerrissen wird.
+
+    Die Nummerierung laeuft ueber alle Nachrichten durch: §12 bleibt §12,
+    auch wenn es auf der zweiten Nachricht steht.
     """
 
     views: list[ui.LayoutView] = []
@@ -77,36 +86,49 @@ def ruleset_views(ruleset: RuleSet, *, guild_name: str = "") -> list[ui.LayoutVi
     def new_container(first: bool) -> ui.Container:
         box = ui.Container(accent_colour=discord.Colour(COLOR_BRAND))
         if first:
-            title = f"{ruleset.emoji}  Serverregeln"
+            heading = f"## {ruleset.emoji}  {ruleset.display_title}"
             subtitle = guild_name or ruleset.name
-            box.add_item(ui.TextDisplay(f"## {title}\n-# {subtitle}"))
+            box.add_item(ui.TextDisplay(f"{heading}\n-# {subtitle}"))
             if ruleset.intro:
                 box.add_item(RULE())
                 box.add_item(ui.TextDisplay(quote(ruleset.intro)))
         else:
-            box.add_item(ui.TextDisplay(f"-# {ruleset.emoji}  Serverregeln · Fortsetzung"))
+            box.add_item(
+                ui.TextDisplay(
+                    f"-# {ruleset.emoji}  {ruleset.display_title} · Fortsetzung"
+                )
+            )
+        box.add_item(RULE())
         return box
 
     container = new_container(True)
-    used = len(ruleset.intro) + 80
+    used = len(ruleset.intro) + len(ruleset.display_title) + 100
+    items = 4  # Ueberschrift, Trennlinien, spaeter Fusszeile
 
-    for index, section in enumerate(ruleset.sections, start=1):
-        block = quote(section.heading and f"**{section.heading}**", *section.items)
-        # Nummerierte Punkte lesen sich in langen Regelwerken besser.
-        lines = [f"**{section.heading}**"] if section.heading else []
-        lines.extend(f"{n}. {item}" for n, item in enumerate(section.items, start=1))
+    for number, paragraph in enumerate(ruleset.paragraphs, start=1):
+        lines = [f"**§{number} • {paragraph.title}**", paragraph.text]
+        if paragraph.bullets:
+            lines.append("")
+            lines.extend(f"• {bullet}" for bullet in paragraph.bullets)
         block = quote(*lines)
 
-        if used + len(block) > _CHAR_BUDGET:
+        # Rechtzeitig eine neue Nachricht beginnen — der Paragraph bleibt
+        # dabei immer zusammen. Beide Limits werden geprueft: lange Texte
+        # reissen das Zeichenlimit, viele kurze das Komponentenlimit.
+        if used + len(block) > _CHAR_BUDGET or items + 2 > _COMPONENT_BUDGET:
             container.add_item(footer(mark=True))
             view = ui.LayoutView(timeout=None)
             view.add_item(container)
             views.append(view)
             container = new_container(False)
-            used = 80
+            used = 120
+            items = 4
 
-        container.add_item(SPACE() if index > 1 else RULE())
+        if number > 1:
+            container.add_item(SPACE())
+            items += 1
         container.add_item(ui.TextDisplay(block))
+        items += 1
         used += len(block)
 
     if ruleset.closing:
@@ -381,7 +403,7 @@ class _RulesetSelect(ui.Select["RulesetPicker"]):
                 label=rs.name,
                 value=rs.key,
                 emoji=rs.emoji,
-                description=f"{rs.length.label} · {rs.rule_count} Regeln · {rs.tagline}"[:100],
+                description=f"{rs.scope.label} · {rs.rule_count} § · {rs.tagline}"[:100],
                 default=rs.key == screen.selected,
             )
             for rs in RULESETS
@@ -444,20 +466,23 @@ class RulesetPicker(ui.LayoutView):
             container.add_item(
                 ui.TextDisplay(
                     f"### {ruleset.emoji}  {ruleset.name}\n"
-                    f"-# {ruleset.length.label}  ·  {ruleset.rule_count} Regeln  ·  "
-                    f"{len(ruleset.sections)} Abschnitte"
+                    f"-# {ruleset.scope.label}  ·  {ruleset.rule_count} Paragraphen  ·  "
+                    f"{ruleset.length.label}"
                 )
             )
             preview: list[str] = []
             if ruleset.intro:
                 preview.append(f"*{ruleset.intro}*")
-            for section in ruleset.sections[:3]:
-                preview.append(f"**{section.heading}**")
-                preview.extend(f"{n}. {item}" for n, item in enumerate(section.items[:3], 1))
-                if len(section.items) > 3:
-                    preview.append(f"-# … {len(section.items) - 3} weitere")
-            if len(ruleset.sections) > 3:
-                preview.append(f"-# … {len(ruleset.sections) - 3} weitere Abschnitte")
+            # Erste drei Paragraphen anreissen, Text gekuerzt.
+            for number, paragraph in enumerate(ruleset.paragraphs[:3], start=1):
+                text = paragraph.text
+                if len(text) > 110:
+                    text = text[:107].rsplit(" ", 1)[0] + " …"
+                preview.append(f"**§{number} • {paragraph.title}**")
+                preview.append(text)
+            remaining = len(ruleset.paragraphs) - 3
+            if remaining > 0:
+                preview.append(f"-# … und {remaining} weitere Paragraphen")
             container.add_item(ui.TextDisplay(quote(*preview)))
 
         container.add_item(RULE())
