@@ -1,0 +1,602 @@
+"""Test suite.
+
+Covers the parts that would silently break a live server: the typography
+layer, template validity against Discord's real limits, the permission model,
+the premium store, and — most importantly — that every Components V2 view
+serialises into a payload Discord will actually accept.
+
+Run:  python -m pytest tests/ -v
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
+
+import config  # noqa: E402
+from core.premium import PremiumStore  # noqa: E402
+from core.permissions import BASE_ROLES, permissions_for_tier  # noqa: E402
+from core.registry import TemplateRegistry  # noqa: E402
+from core.schema import (  # noqa: E402
+    ChannelKind,
+    RoleTier,
+    Template,
+    TemplateError,
+    Visibility,
+)
+from core.small_caps import (  # noqa: E402
+    channel_name,
+    slugify,
+    strip_decoration,
+    to_small_caps,
+)
+
+
+@pytest.fixture(scope="session")
+def registry() -> TemplateRegistry:
+    return TemplateRegistry(config.TEMPLATE_DIR).load()
+
+
+# --------------------------------------------------------------------------- #
+# Typography
+# --------------------------------------------------------------------------- #
+
+class TestSmallCaps:
+    def test_every_ascii_letter_maps(self):
+        result = to_small_caps("abcdefghijklmnopqrstuvwxyz")
+        assert result != "abcdefghijklmnopqrstuvwxyz"
+        assert len(result) == 26
+
+    def test_survives_discord_lowercasing(self):
+        """The whole point: Discord lowercases names, small caps must survive."""
+
+        styled = to_small_caps("Announcements")
+        assert styled.lower() == styled
+
+    def test_german_umlauts_are_folded(self):
+        assert to_small_caps("Größe") == to_small_caps("groesse")
+        assert to_small_caps("Ärger") == to_small_caps("aerger")
+
+    def test_non_latin_is_untouched(self):
+        for text in ("русский", "日本語", "العربية", "한국어"):
+            assert to_small_caps(text) == text
+
+    def test_emoji_and_digits_survive(self):
+        assert "🇩🇪" in channel_name("deutsch", "🇩🇪")
+        assert "1" in to_small_caps("talk 1")
+
+    def test_channel_name_has_no_spaces(self):
+        assert " " not in channel_name("general chat", "💬")
+
+    def test_strip_decoration_round_trip(self):
+        assert strip_decoration(channel_name("general chat", "💬")) == "general chat"
+        assert strip_decoration("💬・ɢᴇɴᴇʀᴀʟ") == "general"
+
+    def test_strip_decoration_matches_plain_name(self):
+        """An already-existing plain channel must be recognised as the same one."""
+
+        assert strip_decoration("general") == strip_decoration("💬・ɢᴇɴᴇʀᴀʟ")
+
+    def test_slugify(self):
+        assert slugify("💬・ɢᴇɴᴇʀᴀʟ-ᴄʜᴀᴛ") == "general-chat"
+
+
+# --------------------------------------------------------------------------- #
+# Schema
+# --------------------------------------------------------------------------- #
+
+class TestSchema:
+    def test_rejects_missing_key(self):
+        with pytest.raises(TemplateError, match="key"):
+            Template.parse({"name": "X", "categories": [{"label": "a"}]})
+
+    def test_rejects_unknown_channel_kind(self):
+        with pytest.raises(TemplateError, match="Kanaltyp"):
+            Template.parse(
+                {
+                    "key": "x", "name": "X",
+                    "categories": [{"label": "c", "channels": [{"label": "a", "kind": "hologram"}]}],
+                }
+            )
+
+    def test_rejects_duplicate_channel(self):
+        with pytest.raises(TemplateError, match="doppelt"):
+            Template.parse(
+                {
+                    "key": "x", "name": "X",
+                    "categories": [
+                        {"label": "c", "channels": [{"label": "same"}, {"label": "same"}]}
+                    ],
+                }
+            )
+
+    def test_rejects_out_of_range_slowmode(self):
+        with pytest.raises(TemplateError, match="slowmode"):
+            Template.parse(
+                {
+                    "key": "x", "name": "X",
+                    "categories": [{"label": "c", "channels": [{"label": "a", "slowmode": 99999}]}],
+                }
+            )
+
+    def test_rejects_too_many_categories(self):
+        with pytest.raises(TemplateError, match="50"):
+            Template.parse(
+                {
+                    "key": "x", "name": "X",
+                    "categories": [
+                        {"label": f"cat{i}", "channels": []} for i in range(51)
+                    ],
+                }
+            )
+
+    def test_channel_inherits_category_visibility(self):
+        template = Template.parse(
+            {
+                "key": "x", "name": "X",
+                "categories": [
+                    {
+                        "label": "c", "visibility": "staff",
+                        "channels": [{"label": "a"}, {"label": "b", "visibility": "public"}],
+                    }
+                ],
+            }
+        )
+        category = template.categories[0]
+        assert category.visibility_for(category.channels[0]) is Visibility.STAFF
+        assert category.visibility_for(category.channels[1]) is Visibility.PUBLIC
+
+
+# --------------------------------------------------------------------------- #
+# Shipped templates
+# --------------------------------------------------------------------------- #
+
+class TestTemplates:
+    def test_expected_templates_exist(self, registry):
+        assert len(registry) == 10
+        assert {t.key for t in registry.free} == {"community", "rp", "social"}
+        assert len(registry.premium) == 7
+
+    def test_three_free_templates_are_the_promised_ones(self, registry):
+        names = {t.name for t in registry.free}
+        assert names == {"Community Discord", "RP Server", "Social Lounge"}
+
+    def test_within_discord_limits(self, registry):
+        for template in registry:
+            assert template.category_count <= 50, template.key
+            assert template.channel_count <= 500, template.key
+
+    def test_every_template_is_substantial(self, registry):
+        for template in registry:
+            assert template.channel_count >= 80, f"{template.key} zu klein"
+            assert template.voice_count >= 12, f"{template.key} zu wenig Voice"
+
+    def test_every_template_has_language_channels(self, registry):
+        """The 'Social Logs' request: many language channels everywhere."""
+
+        for template in registry:
+            language_categories = [
+                c for c in template.categories if "language" in c.label.lower()
+            ]
+            assert language_categories, f"{template.key} hat keine Sprachkanäle"
+            count = sum(len(c.channels) for c in language_categories)
+            assert count >= 12, f"{template.key} hat nur {count} Sprachkanäle"
+
+    def test_every_template_has_full_log_suite(self, registry):
+        for template in registry:
+            logs = [c for c in template.categories if c.label == "logs"]
+            assert logs, f"{template.key} hat keine Logs"
+            names = {ch.label for ch in logs[0].channels}
+            assert "social-logs" in names, template.key
+            assert "mod-logs" in names, template.key
+            assert len(names) >= 10, f"{template.key}: nur {len(names)} Log-Kanäle"
+
+    def test_log_categories_are_private(self, registry):
+        for template in registry:
+            for category in template.categories:
+                if category.label == "logs":
+                    assert category.visibility in {Visibility.STAFF, Visibility.LEADERSHIP}
+
+    def test_every_template_has_a_gate(self, registry):
+        for template in registry:
+            gates = [c for c in template.categories if c.visibility is Visibility.GATE]
+            assert gates, f"{template.key} hat keine Verify-Schleuse"
+
+    def test_channel_names_are_unique_and_valid(self, registry):
+        for template in registry:
+            for category in template.categories:
+                for channel in category.channels:
+                    name = channel.display_name
+                    assert 1 <= len(name) <= 100, f"{template.key}: '{name}'"
+                    assert name == name.lower(), f"{template.key}: '{name}' nicht lowercase"
+                    assert " " not in name, f"{template.key}: '{name}' enthält Leerzeichen"
+
+    def test_category_names_valid(self, registry):
+        for template in registry:
+            for category in template.categories:
+                assert 1 <= len(category.display_name) <= 100
+
+    def test_voice_channels_have_sane_limits(self, registry):
+        for template in registry:
+            for _, channel in template.iter_channels():
+                if channel.kind is ChannelKind.VOICE:
+                    assert 0 <= channel.user_limit <= 99
+
+    def test_slowmode_only_on_text(self, registry):
+        for template in registry:
+            for _, channel in template.iter_channels():
+                if channel.kind.is_voice_like:
+                    assert channel.slowmode == 0
+
+    def test_premium_flag_matches_registry(self, registry):
+        for template in registry.premium:
+            assert template.premium
+        for template in registry.free:
+            assert not template.premium
+
+    def test_templates_have_descriptions_and_highlights(self, registry):
+        for template in registry:
+            assert len(template.description) > 60, template.key
+            assert template.tagline, template.key
+            assert len(template.highlights) >= 3, template.key
+
+    def test_json_files_are_utf8_and_stable(self):
+        for path in config.TEMPLATE_DIR.glob("*.json"):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            assert data["key"] == path.stem
+
+
+# --------------------------------------------------------------------------- #
+# Permissions
+# --------------------------------------------------------------------------- #
+
+class TestPermissions:
+    def test_only_owner_is_administrator(self):
+        for tier in RoleTier:
+            perms = permissions_for_tier(tier)
+            if tier is RoleTier.OWNER:
+                assert perms.administrator
+            else:
+                assert not perms.administrator, f"{tier} hat Administrator"
+
+    def test_tiers_are_monotonically_increasing(self):
+        """Each staff tier must be a superset of the one below it."""
+
+        ladder = [
+            RoleTier.MEMBER,
+            RoleTier.TRUSTED,
+            RoleTier.HELPER,
+            RoleTier.MODERATOR,
+            RoleTier.SENIOR,
+            RoleTier.ADMIN,
+            RoleTier.LEADERSHIP,
+        ]
+        for lower, higher in zip(ladder, ladder[1:]):
+            low = permissions_for_tier(lower)
+            high = permissions_for_tier(higher)
+            assert low.value & high.value == low.value, f"{higher} ⊉ {lower}"
+
+    def test_guest_cannot_send_messages(self):
+        assert not permissions_for_tier(RoleTier.GUEST).send_messages
+
+    def test_member_cannot_moderate(self):
+        perms = permissions_for_tier(RoleTier.MEMBER)
+        assert not perms.manage_messages
+        assert not perms.kick_members
+        assert not perms.ban_members
+
+    def test_dangerous_permissions_are_gated(self):
+        assert not permissions_for_tier(RoleTier.HELPER).ban_members
+        assert not permissions_for_tier(RoleTier.MODERATOR).ban_members
+        assert permissions_for_tier(RoleTier.SENIOR).ban_members
+        assert not permissions_for_tier(RoleTier.MODERATOR).manage_guild
+        assert permissions_for_tier(RoleTier.LEADERSHIP).manage_guild
+
+    def test_base_ladder_is_ordered(self):
+        order = list(RoleTier)
+        positions = [order.index(entry[4]) for entry in BASE_ROLES]
+        assert positions == sorted(positions), "Basis-Rollen sind nicht aufsteigend"
+
+    def test_base_roles_have_unique_keys(self):
+        keys = [entry[0] for entry in BASE_ROLES]
+        assert len(keys) == len(set(keys))
+
+
+# --------------------------------------------------------------------------- #
+# Premium store
+# --------------------------------------------------------------------------- #
+
+class TestPremium:
+    def _store(self, tmp_path, **kwargs) -> PremiumStore:
+        return PremiumStore(tmp_path / "premium.json", keys=["Vexo x Fufi KEY 2354"], **kwargs)
+
+    def test_correct_key_accepted(self, tmp_path):
+        assert self._store(tmp_path).verify("Vexo x Fufi KEY 2354")
+
+    def test_key_is_case_and_space_insensitive(self, tmp_path):
+        store = self._store(tmp_path)
+        assert store.verify("  vexo x fufi key 2354  ")
+        assert store.verify("VEXO X FUFI KEY 2354")
+
+    def test_wrong_key_rejected(self, tmp_path):
+        store = self._store(tmp_path)
+        assert not store.verify("wrong")
+        assert not store.verify("")
+        assert not store.verify("Vexo x Fufi KEY 2355")
+        assert not store.verify("Vexo x Fufi KEY 235")
+
+    def test_grant_and_check(self, tmp_path):
+        store = self._store(tmp_path)
+        assert not store.has_access(1, 42)
+        store.grant(1, 42)
+        assert store.has_access(1, 42)
+        assert not store.has_access(1, 43), "Freischaltung darf nicht auf andere User wirken"
+        assert not store.has_access(2, 42), "Freischaltung darf nicht auf andere Server wirken"
+
+    def test_unlock_survives_restart(self, tmp_path):
+        self._store(tmp_path).grant(7, 99)
+        assert self._store(tmp_path).has_access(7, 99)
+
+    def test_guild_wide_mode(self, tmp_path):
+        store = self._store(tmp_path, guild_wide=True)
+        store.grant(5, 1)
+        assert store.has_access(5, 2), "Guild-Modus muss für alle gelten"
+
+    def test_key_never_written_to_disk(self, tmp_path):
+        store = self._store(tmp_path)
+        store.grant(1, 2)
+        content = (tmp_path / "premium.json").read_text(encoding="utf-8")
+        assert "Vexo" not in content
+        assert "2354" not in content
+
+    def test_corrupt_file_does_not_crash(self, tmp_path):
+        path = tmp_path / "premium.json"
+        path.write_text("{ this is not json", encoding="utf-8")
+        store = PremiumStore(path, keys=["k"])
+        assert not store.has_access(1, 1)
+
+    def test_revoke(self, tmp_path):
+        store = self._store(tmp_path)
+        store.grant(1, 2)
+        store.revoke(1, 2)
+        assert not store.has_access(1, 2)
+
+
+# --------------------------------------------------------------------------- #
+# Components V2 rendering
+# --------------------------------------------------------------------------- #
+
+class TestComponentsV2:
+    """Serialise every view and assert Discord would accept the payload."""
+
+    MAX_COMPONENTS = 40
+    MAX_CHARS = 4000
+
+    @staticmethod
+    def _walk(payload):
+        """Yield every component dict in a rendered view."""
+
+        for item in payload:
+            yield item
+            for child in item.get("components", []):
+                yield from TestComponentsV2._walk([child])
+            accessory = item.get("accessory")
+            if accessory:
+                yield accessory
+
+    def _check(self, view, label: str):
+        payload = view.to_components()
+        assert payload, f"{label}: leeres Payload"
+
+        components = list(self._walk(payload))
+        assert len(components) <= self.MAX_COMPONENTS, (
+            f"{label}: {len(components)} Komponenten > {self.MAX_COMPONENTS}"
+        )
+
+        text = sum(
+            len(c.get("content", "")) for c in components if c.get("type") == 10
+        )
+        assert text <= self.MAX_CHARS, f"{label}: {text} Zeichen > {self.MAX_CHARS}"
+
+        # Every top level item must be a valid V2 top-level component type.
+        # 1=ActionRow 9=Section 10=TextDisplay 12=MediaGallery 13=File
+        # 14=Separator 17=Container
+        for item in payload:
+            assert item["type"] in {1, 9, 10, 12, 13, 14, 17}, f"{label}: {item['type']}"
+        return components
+
+    def test_notice_renders(self):
+        from ui.components import notice
+
+        for tone in ("info", "success", "error", "premium", "neutral"):
+            self._check(notice("Titel", "Text", tone=tone), f"notice/{tone}")
+
+    def test_start_view_free_and_premium(self, registry):
+        from ui.views import StartView
+
+        bot = _FakeBot(registry)
+        for premium in (False, True):
+            components = self._check(
+                StartView(bot, premium=premium), f"start/premium={premium}"
+            )
+            # A select menu (type 3) must always be present.
+            assert any(c.get("type") == 3 for c in components)
+
+    def test_start_view_free_has_premium_button(self, registry):
+        from ui.views import StartView
+
+        components = list(self._walk(StartView(_FakeBot(registry), premium=False).to_components()))
+        buttons = [c for c in components if c.get("type") == 2]
+        assert any("Premium" in (b.get("label") or "") for b in buttons)
+
+    def test_start_view_premium_hides_button(self, registry):
+        from ui.views import StartView
+
+        components = list(self._walk(StartView(_FakeBot(registry), premium=True).to_components()))
+        buttons = [c for c in components if c.get("type") == 2]
+        assert not any("Sichere dir" in (b.get("label") or "") for b in buttons)
+
+    def test_free_select_only_lists_free_templates(self, registry):
+        from ui.views import StartView
+
+        components = list(self._walk(StartView(_FakeBot(registry), premium=False).to_components()))
+        select = next(c for c in components if c.get("type") == 3)
+        assert len(select["options"]) == 3
+        assert {o["value"] for o in select["options"]} == {"community", "rp", "social"}
+
+    def test_premium_select_lists_everything(self, registry):
+        from ui.views import StartView
+
+        components = list(self._walk(StartView(_FakeBot(registry), premium=True).to_components()))
+        select = next(c for c in components if c.get("type") == 3)
+        assert len(select["options"]) == 10
+
+    def test_select_options_within_limits(self, registry):
+        from ui.views import StartView
+
+        components = list(self._walk(StartView(_FakeBot(registry), premium=True).to_components()))
+        select = next(c for c in components if c.get("type") == 3)
+        assert len(select["options"]) <= 25
+        for option in select["options"]:
+            assert len(option["label"]) <= 100
+            assert len(option.get("description", "")) <= 100
+
+    def test_detail_view_for_every_template(self, registry):
+        from ui.views import DetailView
+
+        bot = _FakeBot(registry)
+        for template in registry:
+            self._check(DetailView(bot, template), f"detail/{template.key}")
+
+    def test_confirm_view_for_every_template(self, registry):
+        from ui.views import ConfirmView
+
+        bot = _FakeBot(registry)
+        for template in registry:
+            self._check(ConfirmView(bot, template), f"confirm/{template.key}")
+
+    def test_preview_splits_to_respect_char_limit(self, registry):
+        """The big templates must be split across messages, not truncated."""
+
+        from ui.views import _preview_views
+
+        for template in registry:
+            views = _preview_views(template)
+            for index, view in enumerate(views):
+                self._check(view, f"preview/{template.key}#{index}")
+
+    def test_preview_lists_every_channel(self, registry):
+        from ui.views import _preview_views
+
+        for template in registry:
+            blob = ""
+            for view in _preview_views(template):
+                for component in self._walk(view.to_components()):
+                    blob += component.get("content", "")
+            for _, channel in template.iter_channels():
+                assert channel.display_name in blob, (
+                    f"{template.key}: '{channel.display_name}' fehlt in der Vorschau"
+                )
+
+    def test_progress_and_report_views(self, registry):
+        from core.builder import BuildMode, BuildReport
+        from ui.views import _progress_view, _report_view
+
+        template = registry.get("community")
+        self._check(_progress_view(template, "Rollen", 3, 14), "progress")
+
+        report = BuildReport(mode=BuildMode.REBUILD, template_key="community")
+        report.roles_created = 13
+        report.categories_created = 14
+        report.channels_created = 123
+        report.deleted_channels = 40
+        report.deleted_roles = 8
+        report.warn("Ein Hinweis")
+        self._check(_report_view(template, report), "report")
+
+    def test_no_embeds_anywhere(self):
+        """The whole UI must be Components V2 — no discord.Embed left."""
+
+        for path in (BASE_DIR / "ui").glob("*.py"):
+            source = path.read_text(encoding="utf-8")
+            assert "discord.Embed" not in source, f"{path.name} nutzt noch Embeds"
+        assert "discord.Embed" not in (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+
+    def test_progress_bar_bounds(self):
+        from ui.components import progress_bar
+
+        assert "0%" in progress_bar(0, 10)
+        assert "100%" in progress_bar(10, 10)
+        assert "100%" in progress_bar(99, 10)
+        assert progress_bar(5, 0)
+
+
+class _FakeBot:
+    """Minimal stand-in so views can be rendered without a gateway connection."""
+
+    def __init__(self, registry: TemplateRegistry) -> None:
+        self.registry = registry
+        self.active_builds: set[int] = set()
+        self.premium = _FakePremium()
+
+
+class _FakePremium:
+    def has_access(self, guild_id, user_id) -> bool:  # noqa: ARG002
+        return False
+
+    def verify(self, key: str) -> bool:  # noqa: ARG002
+        return False
+
+    def grant(self, guild_id, user_id) -> None:  # noqa: ARG002
+        pass
+
+
+# --------------------------------------------------------------------------- #
+# Builder logic (no network)
+# --------------------------------------------------------------------------- #
+
+class TestBuilder:
+    def test_role_specs_merge_base_and_template(self, registry):
+        from core.builder import ServerBuilder
+
+        template = registry.get("rp")
+        builder = ServerBuilder.__new__(ServerBuilder)
+        builder.template = template
+        specs = builder._resolve_role_specs()
+
+        keys = [spec.key for spec in specs]
+        assert len(keys) == len(set(keys)), "doppelte Rollen-Keys"
+        assert "owner" in keys and "unverified" in keys
+        assert "roleplayer" in keys
+        assert len(specs) == len(BASE_ROLES) + len(template.roles)
+
+    def test_staff_keys_exclude_members(self, registry):
+        from core.builder import ServerBuilder
+
+        builder = ServerBuilder.__new__(ServerBuilder)
+        builder.template = registry.get("community")
+        specs = builder._resolve_role_specs()
+        staff = {s.key for s in specs if s.tier.is_staff}
+
+        assert "moderator" in staff
+        assert "owner" in staff
+        assert "member" not in staff
+        assert "unverified" not in staff
+        assert "vip" not in staff
+
+    def test_identical_visibility_yields_no_overwrites(self):
+        """Channels matching their category should simply inherit."""
+
+        from core.permissions import channel_overwrites
+
+        result = channel_overwrites(
+            None, Visibility.PUBLIC, Visibility.PUBLIC, {},
+            staff_keys=frozenset(), leadership_keys=frozenset(),
+        )
+        assert result == {}

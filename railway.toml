@@ -1,0 +1,13 @@
+# Railway picks this up automatically once the repo is connected to a service.
+# Every push to the configured branch triggers a rebuild.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python bot.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

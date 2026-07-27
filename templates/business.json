@@ -1,0 +1,640 @@
+{
+  "key": "business",
+  "name": "Business & Company",
+  "emoji": "🏢",
+  "tagline": "Abteilungen, Projekte und Kunden sauber getrennt",
+  "premium": true,
+  "accent": "#0F766E",
+  "description": "Ein Discord als Arbeitsplatz: getrennte Abteilungen, Projekträume, ein abgeschirmter Kundenbereich und Meeting-Räume. Berechtigungen sind so gesetzt, dass interne Themen intern bleiben.",
+  "highlights": [
+    "Abteilungen für Entwicklung, Design, Marketing, Sales und HR",
+    "Kundenbereich getrennt vom internen Bereich",
+    "Meeting-Räume, Stand-up-Voice und Fokus-Räume",
+    "Vollständige Audit-Logs für Nachvollziehbarkeit"
+  ],
+  "roles": [
+    {
+      "key": "employee",
+      "label": "Mitarbeiter",
+      "emoji": "💼",
+      "colour": "#0F766E",
+      "tier": "member",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "client",
+      "label": "Kunde",
+      "emoji": "🤝",
+      "colour": "#059669",
+      "tier": "guest",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "freelancer",
+      "label": "Freelancer",
+      "emoji": "🧑‍💻",
+      "colour": "#14B8A6",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "project_lead",
+      "label": "Projektleitung",
+      "emoji": "📊",
+      "colour": "#0369A1",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "dept_lead",
+      "label": "Abteilungsleitung",
+      "emoji": "👔",
+      "colour": "#1D4ED8",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "hr",
+      "label": "HR",
+      "emoji": "🧑‍💼",
+      "colour": "#7C3AED",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "management",
+      "label": "Management",
+      "emoji": "🏛️",
+      "colour": "#DC2626",
+      "tier": "admin",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "welcome",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly"
+        },
+        {
+          "label": "verify",
+          "emoji": "✅",
+          "topic": "Hier verifizieren"
+        },
+        {
+          "label": "rules",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly"
+        },
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "announcements",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen"
+        },
+        {
+          "label": "updates",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates"
+        },
+        {
+          "label": "roles",
+          "emoji": "🏷️",
+          "topic": "Selbstvergabe von Rollen"
+        },
+        {
+          "label": "partners",
+          "emoji": "🤝",
+          "topic": "Unsere Partner"
+        },
+        {
+          "label": "giveaways",
+          "emoji": "🎁",
+          "topic": "Aktuelle Gewinnspiele"
+        },
+        {
+          "label": "company-news",
+          "emoji": "🏢",
+          "topic": "Unternehmensnews"
+        }
+      ]
+    },
+    {
+      "label": "allgemein",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "general",
+          "emoji": "💭",
+          "topic": "Allgemeiner Austausch"
+        },
+        {
+          "label": "random",
+          "emoji": "🎲",
+          "topic": "Kaffeeküche"
+        },
+        {
+          "label": "wins",
+          "emoji": "🎉",
+          "topic": "Erfolge feiern"
+        },
+        {
+          "label": "questions",
+          "emoji": "❓",
+          "topic": "Kurze Fragen"
+        },
+        {
+          "label": "bot-commands",
+          "emoji": "🤖",
+          "topic": "Bot-Befehle"
+        }
+      ]
+    },
+    {
+      "label": "abteilungen",
+      "emoji": "🏗️",
+      "visibility": "member",
+      "channels": [
+        {
+          "label": "development",
+          "emoji": "💻",
+          "topic": "Entwicklung"
+        },
+        {
+          "label": "design",
+          "emoji": "🎨",
+          "topic": "Design und UX"
+        },
+        {
+          "label": "marketing",
+          "emoji": "📣",
+          "topic": "Marketing"
+        },
+        {
+          "label": "sales",
+          "emoji": "💰",
+          "topic": "Vertrieb"
+        },
+        {
+          "label": "support-team",
+          "emoji": "🛟",
+          "topic": "Kundensupport intern"
+        },
+        {
+          "label": "finance",
+          "emoji": "📈",
+          "topic": "Finanzen"
+        },
+        {
+          "label": "hr",
+          "emoji": "🧑‍💼",
+          "topic": "Personal"
+        },
+        {
+          "label": "legal",
+          "emoji": "⚖️",
+          "topic": "Recht und Compliance"
+        }
+      ]
+    },
+    {
+      "label": "projekte",
+      "emoji": "📊",
+      "visibility": "member",
+      "channels": [
+        {
+          "label": "project-board",
+          "emoji": "🗂️",
+          "topic": "Übersicht aller Projekte",
+          "visibility": "readonly"
+        },
+        {
+          "label": "project-alpha",
+          "emoji": "🅰️",
+          "topic": "Projekt Alpha"
+        },
+        {
+          "label": "project-beta",
+          "emoji": "🅱️",
+          "topic": "Projekt Beta"
+        },
+        {
+          "label": "project-gamma",
+          "emoji": "🇬",
+          "topic": "Projekt Gamma"
+        },
+        {
+          "label": "backlog",
+          "emoji": "📋",
+          "kind": "forum",
+          "topic": "Aufgaben und Ideen"
+        },
+        {
+          "label": "releases",
+          "emoji": "🚀",
+          "topic": "Release-Ankündigungen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "kunden",
+      "emoji": "🤝",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "client-welcome",
+          "emoji": "👋",
+          "topic": "Willkommen, Kunden",
+          "visibility": "readonly"
+        },
+        {
+          "label": "client-requests",
+          "emoji": "📥",
+          "kind": "forum",
+          "topic": "Anfragen einreichen"
+        },
+        {
+          "label": "client-updates",
+          "emoji": "📢",
+          "topic": "Statusmeldungen",
+          "visibility": "readonly"
+        },
+        {
+          "label": "client-feedback",
+          "emoji": "💬",
+          "topic": "Feedback"
+        },
+        {
+          "label": "client-call",
+          "emoji": "📞",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "meetings",
+      "emoji": "🗓️",
+      "visibility": "member",
+      "channels": [
+        {
+          "label": "meeting-notes",
+          "emoji": "📝",
+          "topic": "Protokolle"
+        },
+        {
+          "label": "agenda",
+          "emoji": "📌",
+          "topic": "Tagesordnung"
+        },
+        {
+          "label": "standup",
+          "emoji": "☀️",
+          "kind": "voice",
+          "user_limit": 20
+        },
+        {
+          "label": "meeting-room-1",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room-2",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "focus-1",
+          "emoji": "🎧",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "focus-2",
+          "emoji": "🎧",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "all-hands",
+          "emoji": "🏛️",
+          "kind": "stage"
+        },
+        {
+          "label": "break-room",
+          "emoji": "☕",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "wissen",
+      "emoji": "📚",
+      "visibility": "member",
+      "channels": [
+        {
+          "label": "handbook",
+          "emoji": "📖",
+          "topic": "Das Unternehmenshandbuch",
+          "visibility": "readonly"
+        },
+        {
+          "label": "onboarding",
+          "emoji": "🚀",
+          "topic": "Einstieg für Neue"
+        },
+        {
+          "label": "templates",
+          "emoji": "🗂️",
+          "topic": "Vorlagen und Assets"
+        },
+        {
+          "label": "tools",
+          "emoji": "🛠️",
+          "topic": "Werkzeuge und Zugänge"
+        },
+        {
+          "label": "archive",
+          "emoji": "🗄️",
+          "topic": "Abgeschlossenes",
+          "visibility": "archive"
+        }
+      ]
+    },
+    {
+      "label": "multi language",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        },
+        {
+          "label": "francais",
+          "emoji": "🇫🇷",
+          "topic": "Discussion en français",
+          "slowmode": 3
+        },
+        {
+          "label": "espanol",
+          "emoji": "🇪🇸",
+          "topic": "Chat en español",
+          "slowmode": 3
+        },
+        {
+          "label": "italiano",
+          "emoji": "🇮🇹",
+          "topic": "Chat in italiano",
+          "slowmode": 3
+        },
+        {
+          "label": "portugues",
+          "emoji": "🇵🇹",
+          "topic": "Conversa em português",
+          "slowmode": 3
+        },
+        {
+          "label": "brasil",
+          "emoji": "🇧🇷",
+          "topic": "Bate-papo brasileiro",
+          "slowmode": 3
+        },
+        {
+          "label": "nederlands",
+          "emoji": "🇳🇱",
+          "topic": "Nederlandse chat",
+          "slowmode": 3
+        },
+        {
+          "label": "polski",
+          "emoji": "🇵🇱",
+          "topic": "Czat po polsku",
+          "slowmode": 3
+        },
+        {
+          "label": "русский",
+          "emoji": "🇷🇺",
+          "topic": "Русскоязычный чат",
+          "slowmode": 3
+        },
+        {
+          "label": "українська",
+          "emoji": "🇺🇦",
+          "topic": "Українськомовний чат",
+          "slowmode": 3
+        },
+        {
+          "label": "turkce",
+          "emoji": "🇹🇷",
+          "topic": "Türkçe sohbet",
+          "slowmode": 3
+        },
+        {
+          "label": "other-languages",
+          "emoji": "🌐",
+          "topic": "Every other language is welcome here"
+        }
+      ]
+    },
+    {
+      "label": "language voice",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-voice",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "english-voice",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "francais-voice",
+          "emoji": "🇫🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "espanol-voice",
+          "emoji": "🇪🇸",
+          "kind": "voice",
+          "user_limit": 12
+        }
+      ]
+    },
+    {
+      "label": "leitung intern",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-announcements",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team"
+        },
+        {
+          "label": "tasks",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten"
+        },
+        {
+          "label": "applications",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen"
+        },
+        {
+          "label": "reports",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-voice",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leadership-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "strategy",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personnel",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leadership-voice",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen"
+        },
+        {
+          "label": "member-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte"
+        },
+        {
+          "label": "message-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten"
+        },
+        {
+          "label": "voice-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität"
+        },
+        {
+          "label": "role-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen"
+        },
+        {
+          "label": "channel-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse"
+        },
+        {
+          "label": "invite-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,786 @@
+{
+  "key": "anime",
+  "name": "Anime & Manga Hub",
+  "emoji": "🌸",
+  "tagline": "Seasonals, Manga, Fanart und Watch-Partys",
+  "premium": true,
+  "accent": "#F472B6",
+  "description": "Ein Zuhause für Anime-Communities: getrennte Bereiche für laufende Seasonals, Manga, Fanart und Cosplay, klar markierte Spoiler-Kanäle und Watch-Party-Räume mit Stage-Support.",
+  "highlights": [
+    "Getrennte Spoiler-Kanäle pro Bereich",
+    "Seasonal-, Manga-, Fanart- und Cosplay-Zonen",
+    "Watch-Party-Voice mit Stage für Events",
+    "Japanisch-, Koreanisch- und Chinesisch-Lernkanäle"
+  ],
+  "roles": [
+    {
+      "key": "otaku",
+      "label": "Otaku",
+      "emoji": "🌸",
+      "colour": "#F472B6",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "manga_reader",
+      "label": "Manga Reader",
+      "emoji": "📚",
+      "colour": "#A78BFA",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "fanartist",
+      "label": "Fan Artist",
+      "emoji": "🖌️",
+      "colour": "#FB7185",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "cosplayer",
+      "label": "Cosplayer",
+      "emoji": "🎀",
+      "colour": "#F0ABFC",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "watch_host",
+      "label": "Watch Party Host",
+      "emoji": "🍿",
+      "colour": "#F59E0B",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "welcome",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly"
+        },
+        {
+          "label": "verify",
+          "emoji": "✅",
+          "topic": "Hier verifizieren"
+        },
+        {
+          "label": "rules",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly"
+        },
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "announcements",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen"
+        },
+        {
+          "label": "updates",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates"
+        },
+        {
+          "label": "roles",
+          "emoji": "🏷️",
+          "topic": "Selbstvergabe von Rollen"
+        },
+        {
+          "label": "partners",
+          "emoji": "🤝",
+          "topic": "Unsere Partner"
+        },
+        {
+          "label": "giveaways",
+          "emoji": "🎁",
+          "topic": "Aktuelle Gewinnspiele"
+        },
+        {
+          "label": "seasonal-chart",
+          "emoji": "📅",
+          "topic": "Die aktuelle Season"
+        }
+      ]
+    },
+    {
+      "label": "anime",
+      "emoji": "📺",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "anime-general",
+          "emoji": "💬",
+          "topic": "Allgemeiner Anime-Chat"
+        },
+        {
+          "label": "currently-watching",
+          "emoji": "👀",
+          "topic": "Was schaust du gerade?"
+        },
+        {
+          "label": "seasonals",
+          "emoji": "🌱",
+          "topic": "Die laufende Season"
+        },
+        {
+          "label": "recommendations",
+          "emoji": "⭐",
+          "topic": "Empfehlungen"
+        },
+        {
+          "label": "spoilers",
+          "emoji": "🚨",
+          "topic": "Achtung: Spoiler erlaubt"
+        },
+        {
+          "label": "reviews",
+          "emoji": "📝",
+          "topic": "Deine Bewertungen"
+        },
+        {
+          "label": "news",
+          "emoji": "📰",
+          "kind": "news",
+          "topic": "Anime-News",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "manga",
+      "emoji": "📚",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "manga-general",
+          "emoji": "💬",
+          "topic": "Manga-Chat"
+        },
+        {
+          "label": "new-chapters",
+          "emoji": "🆕",
+          "topic": "Neue Kapitel"
+        },
+        {
+          "label": "manga-spoilers",
+          "emoji": "🚨",
+          "topic": "Spoiler erlaubt"
+        },
+        {
+          "label": "light-novels",
+          "emoji": "📖",
+          "topic": "Light Novels"
+        },
+        {
+          "label": "webtoons",
+          "emoji": "📱",
+          "topic": "Webtoons und Manhwa"
+        }
+      ]
+    },
+    {
+      "label": "kreativ",
+      "emoji": "🎨",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "fanart",
+          "emoji": "🖌️",
+          "topic": "Eigene Fanart",
+          "slowmode": 120
+        },
+        {
+          "label": "art-help",
+          "emoji": "💡",
+          "topic": "Feedback und Tipps"
+        },
+        {
+          "label": "cosplay",
+          "emoji": "🎀",
+          "topic": "Cosplay zeigen"
+        },
+        {
+          "label": "edits",
+          "emoji": "✂️",
+          "topic": "Edits und AMVs"
+        },
+        {
+          "label": "writing",
+          "emoji": "✍️",
+          "topic": "Fanfiction"
+        },
+        {
+          "label": "commissions",
+          "emoji": "💰",
+          "topic": "Auftragsarbeiten",
+          "slowmode": 600
+        }
+      ]
+    },
+    {
+      "label": "watch party",
+      "emoji": "🍿",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "watch-planning",
+          "emoji": "📅",
+          "topic": "Nächste Watch-Party planen"
+        },
+        {
+          "label": "watch-chat",
+          "emoji": "💬",
+          "topic": "Live-Chat zur Party"
+        },
+        {
+          "label": "watch-room-1",
+          "emoji": "🎬",
+          "kind": "voice",
+          "user_limit": 25
+        },
+        {
+          "label": "watch-room-2",
+          "emoji": "🎬",
+          "kind": "voice",
+          "user_limit": 25
+        },
+        {
+          "label": "watch-stage",
+          "emoji": "🎤",
+          "kind": "stage"
+        }
+      ]
+    },
+    {
+      "label": "japan",
+      "emoji": "🗾",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "nihongo",
+          "emoji": "🇯🇵",
+          "topic": "Japanisch lernen"
+        },
+        {
+          "label": "korean",
+          "emoji": "🇰🇷",
+          "topic": "Koreanisch lernen"
+        },
+        {
+          "label": "chinese",
+          "emoji": "🇨🇳",
+          "topic": "Chinesisch lernen"
+        },
+        {
+          "label": "culture",
+          "emoji": "⛩️",
+          "topic": "Kultur und Reisen"
+        },
+        {
+          "label": "food",
+          "emoji": "🍜",
+          "topic": "Japanische Küche"
+        }
+      ]
+    },
+    {
+      "label": "games",
+      "emoji": "🎮",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gacha",
+          "emoji": "🎰",
+          "topic": "Gacha-Spiele"
+        },
+        {
+          "label": "jrpg",
+          "emoji": "🗡️",
+          "topic": "JRPGs"
+        },
+        {
+          "label": "rhythm-games",
+          "emoji": "🎵",
+          "topic": "Rhythmusspiele"
+        },
+        {
+          "label": "visual-novels",
+          "emoji": "📗",
+          "topic": "Visual Novels"
+        },
+        {
+          "label": "gaming-voice",
+          "emoji": "🕹️",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "voice lounge",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "general-voice",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "chill",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "music",
+          "emoji": "🎶",
+          "kind": "voice"
+        },
+        {
+          "label": "duo",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 2
+        },
+        {
+          "label": "trio",
+          "emoji": "👨‍👩‍👦",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "squad",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "study",
+          "emoji": "📚",
+          "kind": "voice"
+        },
+        {
+          "label": "stream-room",
+          "emoji": "📺",
+          "kind": "voice",
+          "user_limit": 20
+        },
+        {
+          "label": "afk",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "multi language",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        },
+        {
+          "label": "francais",
+          "emoji": "🇫🇷",
+          "topic": "Discussion en français",
+          "slowmode": 3
+        },
+        {
+          "label": "espanol",
+          "emoji": "🇪🇸",
+          "topic": "Chat en español",
+          "slowmode": 3
+        },
+        {
+          "label": "italiano",
+          "emoji": "🇮🇹",
+          "topic": "Chat in italiano",
+          "slowmode": 3
+        },
+        {
+          "label": "portugues",
+          "emoji": "🇵🇹",
+          "topic": "Conversa em português",
+          "slowmode": 3
+        },
+        {
+          "label": "brasil",
+          "emoji": "🇧🇷",
+          "topic": "Bate-papo brasileiro",
+          "slowmode": 3
+        },
+        {
+          "label": "nederlands",
+          "emoji": "🇳🇱",
+          "topic": "Nederlandse chat",
+          "slowmode": 3
+        },
+        {
+          "label": "polski",
+          "emoji": "🇵🇱",
+          "topic": "Czat po polsku",
+          "slowmode": 3
+        },
+        {
+          "label": "русский",
+          "emoji": "🇷🇺",
+          "topic": "Русскоязычный чат",
+          "slowmode": 3
+        },
+        {
+          "label": "українська",
+          "emoji": "🇺🇦",
+          "topic": "Українськомовний чат",
+          "slowmode": 3
+        },
+        {
+          "label": "turkce",
+          "emoji": "🇹🇷",
+          "topic": "Türkçe sohbet",
+          "slowmode": 3
+        },
+        {
+          "label": "svenska",
+          "emoji": "🇸🇪",
+          "topic": "Svensk chatt",
+          "slowmode": 3
+        },
+        {
+          "label": "norsk",
+          "emoji": "🇳🇴",
+          "topic": "Norsk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "dansk",
+          "emoji": "🇩🇰",
+          "topic": "Dansk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "suomi",
+          "emoji": "🇫🇮",
+          "topic": "Suomenkielinen chat",
+          "slowmode": 3
+        },
+        {
+          "label": "cestina",
+          "emoji": "🇨🇿",
+          "topic": "Český chat",
+          "slowmode": 3
+        },
+        {
+          "label": "slovencina",
+          "emoji": "🇸🇰",
+          "topic": "Slovenský chat",
+          "slowmode": 3
+        },
+        {
+          "label": "magyar",
+          "emoji": "🇭🇺",
+          "topic": "Magyar csevegés",
+          "slowmode": 3
+        },
+        {
+          "label": "romana",
+          "emoji": "🇷🇴",
+          "topic": "Chat în română",
+          "slowmode": 3
+        },
+        {
+          "label": "other-languages",
+          "emoji": "🌐",
+          "topic": "Every other language is welcome here"
+        }
+      ]
+    },
+    {
+      "label": "language voice",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-voice",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "english-voice",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "francais-voice",
+          "emoji": "🇫🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "espanol-voice",
+          "emoji": "🇪🇸",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "italiano-voice",
+          "emoji": "🇮🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "portugues-voice",
+          "emoji": "🇵🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "brasil-voice",
+          "emoji": "🇧🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "nederlands-voice",
+          "emoji": "🇳🇱",
+          "kind": "voice",
+          "user_limit": 12
+        }
+      ]
+    },
+    {
+      "label": "social",
+      "emoji": "📱",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "instagram",
+          "emoji": "📸",
+          "topic": "Instagram-Posts"
+        },
+        {
+          "label": "tiktok",
+          "emoji": "🎵",
+          "topic": "TikTok-Clips"
+        },
+        {
+          "label": "youtube",
+          "emoji": "▶️",
+          "topic": "YouTube-Uploads"
+        },
+        {
+          "label": "twitch",
+          "emoji": "🟣",
+          "topic": "Twitch-Streams"
+        },
+        {
+          "label": "x-twitter",
+          "emoji": "🐦",
+          "topic": "Posts von X"
+        },
+        {
+          "label": "self-promo",
+          "emoji": "📣",
+          "topic": "Eigene Projekte vorstellen",
+          "slowmode": 300
+        }
+      ]
+    },
+    {
+      "label": "vip lounge",
+      "emoji": "💎",
+      "visibility": "vip",
+      "channels": [
+        {
+          "label": "vip-chat",
+          "emoji": "💬",
+          "topic": "Exklusiv für VIPs und Booster"
+        },
+        {
+          "label": "vip-perks",
+          "emoji": "🎁",
+          "topic": "Deine Vorteile",
+          "visibility": "readonly"
+        },
+        {
+          "label": "vip-wishes",
+          "emoji": "🌠",
+          "topic": "Wünsche und Feedback"
+        },
+        {
+          "label": "vip-voice",
+          "emoji": "🥂",
+          "kind": "voice",
+          "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-announcements",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team"
+        },
+        {
+          "label": "tasks",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten"
+        },
+        {
+          "label": "applications",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen"
+        },
+        {
+          "label": "reports",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-voice",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leadership-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "strategy",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personnel",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leadership-voice",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen"
+        },
+        {
+          "label": "member-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte"
+        },
+        {
+          "label": "message-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten"
+        },
+        {
+          "label": "voice-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität"
+        },
+        {
+          "label": "role-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen"
+        },
+        {
+          "label": "channel-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse"
+        },
+        {
+          "label": "invite-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige"
+        }
+      ]
+    }
+  ]
+}

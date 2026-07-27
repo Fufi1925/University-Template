@@ -1,0 +1,848 @@
+{
+  "key": "gaming",
+  "name": "Gaming Pro Hub",
+  "emoji": "🎮",
+  "tagline": "Squads, Turniere und ein Kanal pro Spiel",
+  "premium": true,
+  "accent": "#22D3EE",
+  "description": "Für Gaming-Communities, die mehr als einen Voice-Channel brauchen: eigene Hubs pro Spiel, LFG-System, Turnierverwaltung, Coaching und 20 Squad-Räume in unterschiedlichen Größen.",
+  "highlights": [
+    "Eigene Text-Hubs für 10 Spiele plus LFG-Kanäle",
+    "20 Voice-Räume: Duo, Trio, Squad, Full-Stack und Turnierräume",
+    "Turnier- und Scrim-Verwaltung mit eigener Rollengruppe",
+    "Clip-, Highlight- und Coaching-Bereiche"
+  ],
+  "roles": [
+    {
+      "key": "gamer",
+      "label": "Gamer",
+      "emoji": "🎮",
+      "colour": "#22D3EE",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "competitive",
+      "label": "Competitive",
+      "emoji": "🏆",
+      "colour": "#F59E0B",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "coach",
+      "label": "Coach",
+      "emoji": "🧠",
+      "colour": "#8B5CF6",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "tournament",
+      "label": "Tournament Team",
+      "emoji": "🎯",
+      "colour": "#E11D48",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "caster",
+      "label": "Caster",
+      "emoji": "🎙️",
+      "colour": "#0EA5E9",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "clipper",
+      "label": "Clip Creator",
+      "emoji": "🎬",
+      "colour": "#F97316",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "welcome",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly"
+        },
+        {
+          "label": "verify",
+          "emoji": "✅",
+          "topic": "Hier verifizieren"
+        },
+        {
+          "label": "rules",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly"
+        },
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "announcements",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen"
+        },
+        {
+          "label": "updates",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates"
+        },
+        {
+          "label": "roles",
+          "emoji": "🏷️",
+          "topic": "Selbstvergabe von Rollen"
+        },
+        {
+          "label": "partners",
+          "emoji": "🤝",
+          "topic": "Unsere Partner"
+        },
+        {
+          "label": "giveaways",
+          "emoji": "🎁",
+          "topic": "Aktuelle Gewinnspiele"
+        },
+        {
+          "label": "patch-notes",
+          "emoji": "🩹",
+          "topic": "Patchnotes der Spiele"
+        }
+      ]
+    },
+    {
+      "label": "gaming hub",
+      "emoji": "🎮",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gaming-general",
+          "emoji": "💬",
+          "topic": "Allgemeiner Gaming-Chat"
+        },
+        {
+          "label": "valorant",
+          "emoji": "🔫",
+          "topic": "Valorant"
+        },
+        {
+          "label": "league-of-legends",
+          "emoji": "⚔️",
+          "topic": "League of Legends"
+        },
+        {
+          "label": "counter-strike",
+          "emoji": "💣",
+          "topic": "Counter-Strike"
+        },
+        {
+          "label": "fortnite",
+          "emoji": "🏗️",
+          "topic": "Fortnite"
+        },
+        {
+          "label": "minecraft",
+          "emoji": "⛏️",
+          "topic": "Minecraft"
+        },
+        {
+          "label": "gta-rp",
+          "emoji": "🚗",
+          "topic": "GTA und RP"
+        },
+        {
+          "label": "rocket-league",
+          "emoji": "🚀",
+          "topic": "Rocket League"
+        },
+        {
+          "label": "apex-legends",
+          "emoji": "🎯",
+          "topic": "Apex Legends"
+        },
+        {
+          "label": "call-of-duty",
+          "emoji": "🪖",
+          "topic": "Call of Duty"
+        },
+        {
+          "label": "indie-games",
+          "emoji": "🕹️",
+          "topic": "Indie und Geheimtipps"
+        },
+        {
+          "label": "retro",
+          "emoji": "👾",
+          "topic": "Klassiker"
+        }
+      ]
+    },
+    {
+      "label": "mitspieler",
+      "emoji": "🔎",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "lfg-general",
+          "emoji": "📣",
+          "topic": "Looking for group"
+        },
+        {
+          "label": "lfg-ranked",
+          "emoji": "🏅",
+          "topic": "Ranked-Mitspieler"
+        },
+        {
+          "label": "lfg-casual",
+          "emoji": "🎲",
+          "topic": "Entspannt zocken"
+        },
+        {
+          "label": "scrims",
+          "emoji": "⚔️",
+          "topic": "Scrims und Übungsspiele"
+        },
+        {
+          "label": "team-suche",
+          "emoji": "🧩",
+          "topic": "Feste Teams finden"
+        }
+      ]
+    },
+    {
+      "label": "competitive",
+      "emoji": "🏆",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "tournament-news",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Turnier-Ankündigungen",
+          "visibility": "readonly"
+        },
+        {
+          "label": "tournament-signup",
+          "emoji": "📝",
+          "topic": "Anmeldung"
+        },
+        {
+          "label": "brackets",
+          "emoji": "🗂️",
+          "topic": "Turnierbäume"
+        },
+        {
+          "label": "results",
+          "emoji": "📊",
+          "topic": "Ergebnisse",
+          "visibility": "readonly"
+        },
+        {
+          "label": "coaching",
+          "emoji": "🧠",
+          "kind": "forum",
+          "topic": "Coaching-Anfragen"
+        },
+        {
+          "label": "vod-review",
+          "emoji": "🎞️",
+          "topic": "VOD-Analysen"
+        }
+      ]
+    },
+    {
+      "label": "clips",
+      "emoji": "🎬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "highlights",
+          "emoji": "⭐",
+          "topic": "Deine besten Momente",
+          "slowmode": 60
+        },
+        {
+          "label": "fails",
+          "emoji": "💀",
+          "topic": "Weniger gute Momente"
+        },
+        {
+          "label": "setups",
+          "emoji": "🖥️",
+          "topic": "Zeig dein Setup"
+        },
+        {
+          "label": "screenshots",
+          "emoji": "📸",
+          "topic": "Screenshots"
+        },
+        {
+          "label": "streams",
+          "emoji": "🟣",
+          "topic": "Wer streamt gerade?"
+        }
+      ]
+    },
+    {
+      "label": "squad voice",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "lobby",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "duo-1",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 2
+        },
+        {
+          "label": "duo-2",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 2
+        },
+        {
+          "label": "trio-1",
+          "emoji": "👨‍👩‍👦",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "trio-2",
+          "emoji": "👨‍👩‍👦",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "squad-1",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "squad-2",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "squad-3",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "full-stack-1",
+          "emoji": "⚔️",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "full-stack-2",
+          "emoji": "⚔️",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "scrim-a",
+          "emoji": "🅰️",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "scrim-b",
+          "emoji": "🅱️",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "tournament-1",
+          "emoji": "🏆",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "tournament-2",
+          "emoji": "🏆",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "casting",
+          "emoji": "🎙️",
+          "kind": "stage"
+        },
+        {
+          "label": "chill",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "music",
+          "emoji": "🎶",
+          "kind": "voice"
+        },
+        {
+          "label": "afk",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "multi language",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        },
+        {
+          "label": "francais",
+          "emoji": "🇫🇷",
+          "topic": "Discussion en français",
+          "slowmode": 3
+        },
+        {
+          "label": "espanol",
+          "emoji": "🇪🇸",
+          "topic": "Chat en español",
+          "slowmode": 3
+        },
+        {
+          "label": "italiano",
+          "emoji": "🇮🇹",
+          "topic": "Chat in italiano",
+          "slowmode": 3
+        },
+        {
+          "label": "portugues",
+          "emoji": "🇵🇹",
+          "topic": "Conversa em português",
+          "slowmode": 3
+        },
+        {
+          "label": "brasil",
+          "emoji": "🇧🇷",
+          "topic": "Bate-papo brasileiro",
+          "slowmode": 3
+        },
+        {
+          "label": "nederlands",
+          "emoji": "🇳🇱",
+          "topic": "Nederlandse chat",
+          "slowmode": 3
+        },
+        {
+          "label": "polski",
+          "emoji": "🇵🇱",
+          "topic": "Czat po polsku",
+          "slowmode": 3
+        },
+        {
+          "label": "русский",
+          "emoji": "🇷🇺",
+          "topic": "Русскоязычный чат",
+          "slowmode": 3
+        },
+        {
+          "label": "українська",
+          "emoji": "🇺🇦",
+          "topic": "Українськомовний чат",
+          "slowmode": 3
+        },
+        {
+          "label": "turkce",
+          "emoji": "🇹🇷",
+          "topic": "Türkçe sohbet",
+          "slowmode": 3
+        },
+        {
+          "label": "svenska",
+          "emoji": "🇸🇪",
+          "topic": "Svensk chatt",
+          "slowmode": 3
+        },
+        {
+          "label": "norsk",
+          "emoji": "🇳🇴",
+          "topic": "Norsk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "dansk",
+          "emoji": "🇩🇰",
+          "topic": "Dansk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "suomi",
+          "emoji": "🇫🇮",
+          "topic": "Suomenkielinen chat",
+          "slowmode": 3
+        },
+        {
+          "label": "cestina",
+          "emoji": "🇨🇿",
+          "topic": "Český chat",
+          "slowmode": 3
+        },
+        {
+          "label": "slovencina",
+          "emoji": "🇸🇰",
+          "topic": "Slovenský chat",
+          "slowmode": 3
+        },
+        {
+          "label": "magyar",
+          "emoji": "🇭🇺",
+          "topic": "Magyar csevegés",
+          "slowmode": 3
+        },
+        {
+          "label": "romana",
+          "emoji": "🇷🇴",
+          "topic": "Chat în română",
+          "slowmode": 3
+        },
+        {
+          "label": "other-languages",
+          "emoji": "🌐",
+          "topic": "Every other language is welcome here"
+        }
+      ]
+    },
+    {
+      "label": "language voice",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-voice",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "english-voice",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "francais-voice",
+          "emoji": "🇫🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "espanol-voice",
+          "emoji": "🇪🇸",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "italiano-voice",
+          "emoji": "🇮🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "portugues-voice",
+          "emoji": "🇵🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "brasil-voice",
+          "emoji": "🇧🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "nederlands-voice",
+          "emoji": "🇳🇱",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "polski-voice",
+          "emoji": "🇵🇱",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "русский-voice",
+          "emoji": "🇷🇺",
+          "kind": "voice",
+          "user_limit": 12
+        }
+      ]
+    },
+    {
+      "label": "social",
+      "emoji": "📱",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "instagram",
+          "emoji": "📸",
+          "topic": "Instagram-Posts"
+        },
+        {
+          "label": "tiktok",
+          "emoji": "🎵",
+          "topic": "TikTok-Clips"
+        },
+        {
+          "label": "youtube",
+          "emoji": "▶️",
+          "topic": "YouTube-Uploads"
+        },
+        {
+          "label": "twitch",
+          "emoji": "🟣",
+          "topic": "Twitch-Streams"
+        },
+        {
+          "label": "x-twitter",
+          "emoji": "🐦",
+          "topic": "Posts von X"
+        },
+        {
+          "label": "self-promo",
+          "emoji": "📣",
+          "topic": "Eigene Projekte vorstellen",
+          "slowmode": 300
+        }
+      ]
+    },
+    {
+      "label": "vip lounge",
+      "emoji": "💎",
+      "visibility": "vip",
+      "channels": [
+        {
+          "label": "vip-chat",
+          "emoji": "💬",
+          "topic": "Exklusiv für VIPs und Booster"
+        },
+        {
+          "label": "vip-perks",
+          "emoji": "🎁",
+          "topic": "Deine Vorteile",
+          "visibility": "readonly"
+        },
+        {
+          "label": "vip-wishes",
+          "emoji": "🌠",
+          "topic": "Wünsche und Feedback"
+        },
+        {
+          "label": "vip-voice",
+          "emoji": "🥂",
+          "kind": "voice",
+          "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "support",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "support",
+          "emoji": "🎫",
+          "kind": "forum",
+          "topic": "Hilfe vom Team"
+        },
+        {
+          "label": "tech-help",
+          "emoji": "🛠️",
+          "topic": "Technische Probleme"
+        },
+        {
+          "label": "bug-reports",
+          "emoji": "🐛",
+          "topic": "Fehler melden"
+        },
+        {
+          "label": "suggestions",
+          "emoji": "💡",
+          "topic": "Vorschläge"
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-announcements",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team"
+        },
+        {
+          "label": "tasks",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten"
+        },
+        {
+          "label": "applications",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen"
+        },
+        {
+          "label": "reports",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-voice",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leadership-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "strategy",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personnel",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leadership-voice",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen"
+        },
+        {
+          "label": "member-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte"
+        },
+        {
+          "label": "message-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten"
+        },
+        {
+          "label": "voice-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität"
+        },
+        {
+          "label": "role-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen"
+        },
+        {
+          "label": "channel-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse"
+        },
+        {
+          "label": "invite-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige"
+        }
+      ]
+    }
+  ]
+}

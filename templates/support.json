@@ -1,0 +1,663 @@
+{
+  "key": "support",
+  "name": "Support Center",
+  "emoji": "🛟",
+  "tagline": "Tickets, Wissensdatenbank und Eskalationsstufen",
+  "premium": true,
+  "accent": "#0EA5E9",
+  "description": "Ein Server, der auf Hilfe ausgelegt ist: Ticket-Forum, gepflegte Wissensdatenbank, klare Eskalationsstufen und ein Auswertungsbereich, in dem Qualität und Reaktionszeiten sichtbar werden.",
+  "highlights": [
+    "Ticket-Forum mit getrennten Eskalationsstufen",
+    "Öffentliche Wissensdatenbank und FAQ",
+    "Interner Qualitäts- und Auswertungsbereich",
+    "Sprechstunden-Voice mit Warteschlange"
+  ],
+  "roles": [
+    {
+      "key": "ticket_team",
+      "label": "Ticket Team",
+      "emoji": "🎫",
+      "colour": "#0EA5E9",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "specialist",
+      "label": "Fachberater",
+      "emoji": "🧠",
+      "colour": "#0891B2",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "escalation",
+      "label": "Eskalation",
+      "emoji": "🚨",
+      "colour": "#DC2626",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "quality",
+      "label": "Quality Team",
+      "emoji": "📈",
+      "colour": "#7C3AED",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "knowledge",
+      "label": "Wissensredaktion",
+      "emoji": "📚",
+      "colour": "#16A34A",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "welcome",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly"
+        },
+        {
+          "label": "verify",
+          "emoji": "✅",
+          "topic": "Hier verifizieren"
+        },
+        {
+          "label": "rules",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly"
+        },
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "announcements",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen"
+        },
+        {
+          "label": "updates",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates"
+        },
+        {
+          "label": "roles",
+          "emoji": "🏷️",
+          "topic": "Selbstvergabe von Rollen"
+        },
+        {
+          "label": "partners",
+          "emoji": "🤝",
+          "topic": "Unsere Partner"
+        },
+        {
+          "label": "giveaways",
+          "emoji": "🎁",
+          "topic": "Aktuelle Gewinnspiele"
+        },
+        {
+          "label": "status",
+          "emoji": "🟢",
+          "topic": "Systemstatus und Störungen"
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "start-here",
+          "emoji": "👋",
+          "topic": "So bekommst du Hilfe",
+          "visibility": "readonly"
+        },
+        {
+          "label": "tickets",
+          "emoji": "🎫",
+          "kind": "forum",
+          "topic": "Erstelle hier dein Ticket"
+        },
+        {
+          "label": "quick-questions",
+          "emoji": "⚡",
+          "topic": "Kurze Fragen ohne Ticket"
+        },
+        {
+          "label": "community-help",
+          "emoji": "🤝",
+          "topic": "Nutzer helfen Nutzern"
+        },
+        {
+          "label": "bug-reports",
+          "emoji": "🐛",
+          "kind": "forum",
+          "topic": "Fehler melden"
+        },
+        {
+          "label": "feature-requests",
+          "emoji": "💡",
+          "kind": "forum",
+          "topic": "Wünsche einreichen"
+        }
+      ]
+    },
+    {
+      "label": "wissen",
+      "emoji": "📚",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen"
+        },
+        {
+          "label": "guides",
+          "emoji": "📖",
+          "topic": "Schritt-für-Schritt-Anleitungen"
+        },
+        {
+          "label": "troubleshooting",
+          "emoji": "🔧",
+          "topic": "Problemlösungen"
+        },
+        {
+          "label": "changelog",
+          "emoji": "🔄",
+          "topic": "Was hat sich geändert?"
+        },
+        {
+          "label": "known-issues",
+          "emoji": "⚠️",
+          "topic": "Bekannte Probleme"
+        }
+      ]
+    },
+    {
+      "label": "sprechstunde",
+      "emoji": "🎙️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "warteschlange",
+          "emoji": "⏳",
+          "kind": "voice"
+        },
+        {
+          "label": "support-raum-1",
+          "emoji": "🧑‍💻",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "support-raum-2",
+          "emoji": "🧑‍💻",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "support-raum-3",
+          "emoji": "🧑‍💻",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "screenshare",
+          "emoji": "🖥️",
+          "kind": "voice",
+          "user_limit": 5
+        }
+      ]
+    },
+    {
+      "label": "support intern",
+      "emoji": "🔧",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-briefing",
+          "emoji": "📋",
+          "topic": "Tagesbriefing"
+        },
+        {
+          "label": "eskalation",
+          "emoji": "🚨",
+          "topic": "Eskalierte Fälle"
+        },
+        {
+          "label": "wissensredaktion",
+          "emoji": "✍️",
+          "topic": "Artikel schreiben und pflegen"
+        },
+        {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "interne-voice",
+          "emoji": "🎧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "auswertung",
+      "emoji": "📈",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "statistiken",
+          "emoji": "📊",
+          "topic": "Zahlen und Trends"
+        },
+        {
+          "label": "qualitaet",
+          "emoji": "🏅",
+          "topic": "Qualitätssicherung"
+        },
+        {
+          "label": "feedback-auswertung",
+          "emoji": "💬",
+          "topic": "Was sagen die Nutzer?"
+        },
+        {
+          "label": "verbesserungen",
+          "emoji": "🚀",
+          "topic": "Maßnahmen"
+        }
+      ]
+    },
+    {
+      "label": "multi language",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        },
+        {
+          "label": "francais",
+          "emoji": "🇫🇷",
+          "topic": "Discussion en français",
+          "slowmode": 3
+        },
+        {
+          "label": "espanol",
+          "emoji": "🇪🇸",
+          "topic": "Chat en español",
+          "slowmode": 3
+        },
+        {
+          "label": "italiano",
+          "emoji": "🇮🇹",
+          "topic": "Chat in italiano",
+          "slowmode": 3
+        },
+        {
+          "label": "portugues",
+          "emoji": "🇵🇹",
+          "topic": "Conversa em português",
+          "slowmode": 3
+        },
+        {
+          "label": "brasil",
+          "emoji": "🇧🇷",
+          "topic": "Bate-papo brasileiro",
+          "slowmode": 3
+        },
+        {
+          "label": "nederlands",
+          "emoji": "🇳🇱",
+          "topic": "Nederlandse chat",
+          "slowmode": 3
+        },
+        {
+          "label": "polski",
+          "emoji": "🇵🇱",
+          "topic": "Czat po polsku",
+          "slowmode": 3
+        },
+        {
+          "label": "русский",
+          "emoji": "🇷🇺",
+          "topic": "Русскоязычный чат",
+          "slowmode": 3
+        },
+        {
+          "label": "українська",
+          "emoji": "🇺🇦",
+          "topic": "Українськомовний чат",
+          "slowmode": 3
+        },
+        {
+          "label": "turkce",
+          "emoji": "🇹🇷",
+          "topic": "Türkçe sohbet",
+          "slowmode": 3
+        },
+        {
+          "label": "svenska",
+          "emoji": "🇸🇪",
+          "topic": "Svensk chatt",
+          "slowmode": 3
+        },
+        {
+          "label": "norsk",
+          "emoji": "🇳🇴",
+          "topic": "Norsk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "dansk",
+          "emoji": "🇩🇰",
+          "topic": "Dansk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "suomi",
+          "emoji": "🇫🇮",
+          "topic": "Suomenkielinen chat",
+          "slowmode": 3
+        },
+        {
+          "label": "cestina",
+          "emoji": "🇨🇿",
+          "topic": "Český chat",
+          "slowmode": 3
+        },
+        {
+          "label": "slovencina",
+          "emoji": "🇸🇰",
+          "topic": "Slovenský chat",
+          "slowmode": 3
+        },
+        {
+          "label": "magyar",
+          "emoji": "🇭🇺",
+          "topic": "Magyar csevegés",
+          "slowmode": 3
+        },
+        {
+          "label": "romana",
+          "emoji": "🇷🇴",
+          "topic": "Chat în română",
+          "slowmode": 3
+        },
+        {
+          "label": "български",
+          "emoji": "🇧🇬",
+          "topic": "Български чат",
+          "slowmode": 3
+        },
+        {
+          "label": "ελληνικά",
+          "emoji": "🇬🇷",
+          "topic": "Ελληνικό chat",
+          "slowmode": 3
+        },
+        {
+          "label": "srpski",
+          "emoji": "🇷🇸",
+          "topic": "Srpski čet",
+          "slowmode": 3
+        },
+        {
+          "label": "hrvatski",
+          "emoji": "🇭🇷",
+          "topic": "Hrvatski chat",
+          "slowmode": 3
+        },
+        {
+          "label": "other-languages",
+          "emoji": "🌐",
+          "topic": "Every other language is welcome here"
+        }
+      ]
+    },
+    {
+      "label": "language voice",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-voice",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "english-voice",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "francais-voice",
+          "emoji": "🇫🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "espanol-voice",
+          "emoji": "🇪🇸",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "italiano-voice",
+          "emoji": "🇮🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "portugues-voice",
+          "emoji": "🇵🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "brasil-voice",
+          "emoji": "🇧🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "nederlands-voice",
+          "emoji": "🇳🇱",
+          "kind": "voice",
+          "user_limit": 12
+        }
+      ]
+    },
+    {
+      "label": "community",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "general",
+          "emoji": "💭",
+          "topic": "Allgemeiner Chat"
+        },
+        {
+          "label": "offtopic",
+          "emoji": "🌙",
+          "topic": "Abseits vom Support"
+        },
+        {
+          "label": "lounge-voice",
+          "emoji": "☕",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-announcements",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team"
+        },
+        {
+          "label": "tasks",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten"
+        },
+        {
+          "label": "applications",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen"
+        },
+        {
+          "label": "reports",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-voice",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leadership-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "strategy",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personnel",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leadership-voice",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen"
+        },
+        {
+          "label": "member-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte"
+        },
+        {
+          "label": "message-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten"
+        },
+        {
+          "label": "voice-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität"
+        },
+        {
+          "label": "role-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen"
+        },
+        {
+          "label": "channel-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse"
+        },
+        {
+          "label": "invite-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige"
+        }
+      ]
+    }
+  ]
+}

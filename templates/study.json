@@ -1,0 +1,746 @@
+{
+  "key": "study",
+  "name": "Study & University",
+  "emoji": "🎓",
+  "tagline": "Fächer, Lerngruppen und stille Arbeitsräume",
+  "premium": true,
+  "accent": "#0284C7",
+  "description": "Für Lerngruppen, Fachschaften und Uni-Communities: ein Kanal pro Fach, Lerngruppen, Prüfungsvorbereitung, ein Ressourcen-Archiv und stille Pomodoro-Räume, in denen wirklich gearbeitet wird.",
+  "highlights": [
+    "Eigene Kanäle für 10 Fachbereiche",
+    "Stille Study-Rooms mit Pomodoro-Timer-Kanälen",
+    "Prüfungs-, Hausarbeits- und Abgabe-Bereiche",
+    "Tutor-Rollen mit eigenem Sprechstunden-Voice"
+  ],
+  "roles": [
+    {
+      "key": "student",
+      "label": "Student",
+      "emoji": "🎓",
+      "colour": "#0284C7",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "freshman",
+      "label": "Ersti",
+      "emoji": "🐣",
+      "colour": "#38BDF8",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "tutor",
+      "label": "Tutor",
+      "emoji": "🧑‍🏫",
+      "colour": "#16A34A",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "lecturer",
+      "label": "Lehrkraft",
+      "emoji": "🏫",
+      "colour": "#2563EB",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "study_lead",
+      "label": "Study Leitung",
+      "emoji": "📚",
+      "colour": "#7C3AED",
+      "tier": "admin",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "alumni",
+      "label": "Alumni",
+      "emoji": "🎖️",
+      "colour": "#A16207",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "welcome",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly"
+        },
+        {
+          "label": "verify",
+          "emoji": "✅",
+          "topic": "Hier verifizieren"
+        },
+        {
+          "label": "rules",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly"
+        },
+        {
+          "label": "faq",
+          "emoji": "❔",
+          "topic": "Häufige Fragen",
+          "visibility": "readonly"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "announcements",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen"
+        },
+        {
+          "label": "updates",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates"
+        },
+        {
+          "label": "roles",
+          "emoji": "🏷️",
+          "topic": "Selbstvergabe von Rollen"
+        },
+        {
+          "label": "partners",
+          "emoji": "🤝",
+          "topic": "Unsere Partner"
+        },
+        {
+          "label": "giveaways",
+          "emoji": "🎁",
+          "topic": "Aktuelle Gewinnspiele"
+        },
+        {
+          "label": "semester-plan",
+          "emoji": "📅",
+          "topic": "Termine und Fristen"
+        }
+      ]
+    },
+    {
+      "label": "campus",
+      "emoji": "🏫",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "general",
+          "emoji": "💬",
+          "topic": "Allgemeiner Campus-Chat"
+        },
+        {
+          "label": "introductions",
+          "emoji": "🙋",
+          "topic": "Stell dich vor"
+        },
+        {
+          "label": "questions",
+          "emoji": "❓",
+          "topic": "Kurze Fragen"
+        },
+        {
+          "label": "motivation",
+          "emoji": "🔥",
+          "topic": "Motivation und Erfolge"
+        },
+        {
+          "label": "memes",
+          "emoji": "😂",
+          "topic": "Uni-Memes"
+        },
+        {
+          "label": "bot-commands",
+          "emoji": "🤖",
+          "topic": "Bot-Befehle"
+        }
+      ]
+    },
+    {
+      "label": "faecher",
+      "emoji": "📗",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "mathematik",
+          "emoji": "➗",
+          "topic": "Mathematik"
+        },
+        {
+          "label": "informatik",
+          "emoji": "💻",
+          "topic": "Informatik"
+        },
+        {
+          "label": "physik",
+          "emoji": "⚛️",
+          "topic": "Physik"
+        },
+        {
+          "label": "chemie",
+          "emoji": "🧪",
+          "topic": "Chemie"
+        },
+        {
+          "label": "biologie",
+          "emoji": "🧬",
+          "topic": "Biologie"
+        },
+        {
+          "label": "wirtschaft",
+          "emoji": "📈",
+          "topic": "Wirtschaftswissenschaften"
+        },
+        {
+          "label": "jura",
+          "emoji": "⚖️",
+          "topic": "Rechtswissenschaften"
+        },
+        {
+          "label": "medizin",
+          "emoji": "🩺",
+          "topic": "Medizin"
+        },
+        {
+          "label": "sprachen",
+          "emoji": "🗣️",
+          "topic": "Sprachwissenschaften"
+        },
+        {
+          "label": "geistes",
+          "emoji": "🏛️",
+          "topic": "Geisteswissenschaften"
+        }
+      ]
+    },
+    {
+      "label": "lerngruppen",
+      "emoji": "👥",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gruppensuche",
+          "emoji": "🔎",
+          "topic": "Lerngruppe finden"
+        },
+        {
+          "label": "gruppe-1",
+          "emoji": "1️⃣",
+          "topic": "Lerngruppe 1"
+        },
+        {
+          "label": "gruppe-2",
+          "emoji": "2️⃣",
+          "topic": "Lerngruppe 2"
+        },
+        {
+          "label": "gruppe-3",
+          "emoji": "3️⃣",
+          "topic": "Lerngruppe 3"
+        },
+        {
+          "label": "gruppe-4",
+          "emoji": "4️⃣",
+          "topic": "Lerngruppe 4"
+        },
+        {
+          "label": "projektarbeit",
+          "emoji": "🧩",
+          "kind": "forum",
+          "topic": "Gruppenprojekte"
+        }
+      ]
+    },
+    {
+      "label": "pruefungen",
+      "emoji": "📝",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "pruefungstermine",
+          "emoji": "📅",
+          "topic": "Termine",
+          "visibility": "readonly"
+        },
+        {
+          "label": "altklausuren",
+          "emoji": "🗂️",
+          "topic": "Altklausuren und Übungen"
+        },
+        {
+          "label": "lernplaene",
+          "emoji": "🗺️",
+          "topic": "Lernpläne teilen"
+        },
+        {
+          "label": "hausarbeiten",
+          "emoji": "📄",
+          "topic": "Hausarbeiten und Abgaben"
+        },
+        {
+          "label": "panik-raum",
+          "emoji": "😰",
+          "topic": "Für den Tag vor der Prüfung"
+        }
+      ]
+    },
+    {
+      "label": "study rooms",
+      "emoji": "🔇",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "silent-1",
+          "emoji": "🤫",
+          "kind": "voice"
+        },
+        {
+          "label": "silent-2",
+          "emoji": "🤫",
+          "kind": "voice"
+        },
+        {
+          "label": "pomodoro-25",
+          "emoji": "🍅",
+          "kind": "voice"
+        },
+        {
+          "label": "pomodoro-50",
+          "emoji": "🍅",
+          "kind": "voice"
+        },
+        {
+          "label": "group-study-1",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "group-study-2",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "sprechstunde",
+          "emoji": "🧑‍🏫",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "praesentation",
+          "emoji": "📊",
+          "kind": "stage"
+        },
+        {
+          "label": "pause",
+          "emoji": "☕",
+          "kind": "voice"
+        },
+        {
+          "label": "afk",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "ressourcen",
+      "emoji": "📚",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "skripte",
+          "emoji": "📑",
+          "topic": "Skripte und Folien"
+        },
+        {
+          "label": "buecher",
+          "emoji": "📖",
+          "topic": "Literaturempfehlungen"
+        },
+        {
+          "label": "tools",
+          "emoji": "🛠️",
+          "topic": "Nützliche Werkzeuge"
+        },
+        {
+          "label": "stipendien",
+          "emoji": "💰",
+          "topic": "Förderung und Stipendien"
+        },
+        {
+          "label": "jobs",
+          "emoji": "💼",
+          "topic": "Werkstudentenstellen"
+        },
+        {
+          "label": "archiv",
+          "emoji": "🗄️",
+          "topic": "Vergangene Semester",
+          "visibility": "archive"
+        }
+      ]
+    },
+    {
+      "label": "campusleben",
+      "emoji": "🎉",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "events",
+          "emoji": "📅",
+          "topic": "Partys und Veranstaltungen"
+        },
+        {
+          "label": "sport",
+          "emoji": "⚽",
+          "topic": "Hochschulsport"
+        },
+        {
+          "label": "wohnen",
+          "emoji": "🏠",
+          "topic": "WG- und Zimmersuche"
+        },
+        {
+          "label": "mensa",
+          "emoji": "🍽️",
+          "topic": "Essen auf dem Campus"
+        },
+        {
+          "label": "freizeit-voice",
+          "emoji": "🎪",
+          "kind": "voice",
+          "user_limit": 20
+        }
+      ]
+    },
+    {
+      "label": "multi language",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        },
+        {
+          "label": "francais",
+          "emoji": "🇫🇷",
+          "topic": "Discussion en français",
+          "slowmode": 3
+        },
+        {
+          "label": "espanol",
+          "emoji": "🇪🇸",
+          "topic": "Chat en español",
+          "slowmode": 3
+        },
+        {
+          "label": "italiano",
+          "emoji": "🇮🇹",
+          "topic": "Chat in italiano",
+          "slowmode": 3
+        },
+        {
+          "label": "portugues",
+          "emoji": "🇵🇹",
+          "topic": "Conversa em português",
+          "slowmode": 3
+        },
+        {
+          "label": "brasil",
+          "emoji": "🇧🇷",
+          "topic": "Bate-papo brasileiro",
+          "slowmode": 3
+        },
+        {
+          "label": "nederlands",
+          "emoji": "🇳🇱",
+          "topic": "Nederlandse chat",
+          "slowmode": 3
+        },
+        {
+          "label": "polski",
+          "emoji": "🇵🇱",
+          "topic": "Czat po polsku",
+          "slowmode": 3
+        },
+        {
+          "label": "русский",
+          "emoji": "🇷🇺",
+          "topic": "Русскоязычный чат",
+          "slowmode": 3
+        },
+        {
+          "label": "українська",
+          "emoji": "🇺🇦",
+          "topic": "Українськомовний чат",
+          "slowmode": 3
+        },
+        {
+          "label": "turkce",
+          "emoji": "🇹🇷",
+          "topic": "Türkçe sohbet",
+          "slowmode": 3
+        },
+        {
+          "label": "svenska",
+          "emoji": "🇸🇪",
+          "topic": "Svensk chatt",
+          "slowmode": 3
+        },
+        {
+          "label": "norsk",
+          "emoji": "🇳🇴",
+          "topic": "Norsk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "dansk",
+          "emoji": "🇩🇰",
+          "topic": "Dansk chat",
+          "slowmode": 3
+        },
+        {
+          "label": "suomi",
+          "emoji": "🇫🇮",
+          "topic": "Suomenkielinen chat",
+          "slowmode": 3
+        },
+        {
+          "label": "other-languages",
+          "emoji": "🌐",
+          "topic": "Every other language is welcome here"
+        }
+      ]
+    },
+    {
+      "label": "language voice",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-voice",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "english-voice",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "francais-voice",
+          "emoji": "🇫🇷",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "espanol-voice",
+          "emoji": "🇪🇸",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "italiano-voice",
+          "emoji": "🇮🇹",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "portugues-voice",
+          "emoji": "🇵🇹",
+          "kind": "voice",
+          "user_limit": 12
+        }
+      ]
+    },
+    {
+      "label": "vip lounge",
+      "emoji": "💎",
+      "visibility": "vip",
+      "channels": [
+        {
+          "label": "vip-chat",
+          "emoji": "💬",
+          "topic": "Exklusiv für VIPs und Booster"
+        },
+        {
+          "label": "vip-perks",
+          "emoji": "🎁",
+          "topic": "Deine Vorteile",
+          "visibility": "readonly"
+        },
+        {
+          "label": "vip-wishes",
+          "emoji": "🌠",
+          "topic": "Wünsche und Feedback"
+        },
+        {
+          "label": "vip-voice",
+          "emoji": "🥂",
+          "kind": "voice",
+          "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-announcements",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team"
+        },
+        {
+          "label": "tasks",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten"
+        },
+        {
+          "label": "applications",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen"
+        },
+        {
+          "label": "reports",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-voice",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "meeting-room",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leadership-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "strategy",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personnel",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leadership-voice",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen"
+        },
+        {
+          "label": "member-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte"
+        },
+        {
+          "label": "message-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten"
+        },
+        {
+          "label": "voice-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität"
+        },
+        {
+          "label": "role-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen"
+        },
+        {
+          "label": "channel-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse"
+        },
+        {
+          "label": "invite-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige"
+        }
+      ]
+    }
+  ]
+}

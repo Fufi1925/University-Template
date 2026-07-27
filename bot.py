@@ -1,0 +1,225 @@
+"""Discord Architect — server templates via Components V2.
+
+Entry point. Run with ``python bot.py`` after setting ``DISCORD_TOKEN``.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import logging
+import sys
+
+import aiohttp
+import discord
+from discord.ext import commands
+
+import config
+from core.premium import PremiumStore
+from core.registry import TemplateRegistry
+from core.schema import TemplateError
+from ui.components import notice
+from ui.views import build_start_view
+
+logging.basicConfig(
+    level=config.LOG_LEVEL,
+    format="%(asctime)s │ %(levelname)-7s │ %(name)-20s │ %(message)s",
+    datefmt="%H:%M:%S",
+)
+LOGGER = logging.getLogger("architect")
+
+__all__ = ["ArchitectBot"]
+
+
+class ArchitectBot(commands.Bot):
+    """The bot. Owns the template registry, the premium store and build locks."""
+
+    def __init__(self) -> None:
+        intents = discord.Intents.default()
+        intents.guilds = True
+        intents.message_content = config.ENABLE_PRIVILEGED_INTENTS
+        intents.members = config.ENABLE_PRIVILEGED_INTENTS
+
+        super().__init__(
+            command_prefix=commands.when_mentioned_or(config.COMMAND_PREFIX),
+            intents=intents,
+            help_command=None,
+            allowed_mentions=discord.AllowedMentions.none(),
+            description=f"{config.BRAND_NAME} — {config.BRAND_TAGLINE}",
+        )
+
+        self.registry = TemplateRegistry(config.TEMPLATE_DIR).load()
+        self.premium = PremiumStore(
+            config.PREMIUM_STORE,
+            keys=(config.PREMIUM_KEY, *config.PREMIUM_EXTRA_KEYS),
+            guild_wide=config.PREMIUM_UNLOCKS_GUILD,
+        )
+        self.active_builds: set[int] = set()
+        self._health_runner = None
+
+    # ------------------------------------------------------------ lifecycle --
+    async def setup_hook(self) -> None:
+        if config.HEALTH_SERVER:
+            from health import start_health_server
+
+            self._health_runner = await start_health_server(self)
+
+        try:
+            if config.DISCORD_GUILD_ID:
+                guild = discord.Object(id=int(config.DISCORD_GUILD_ID))
+                self.tree.copy_global_to(guild=guild)
+                await self.tree.sync(guild=guild)
+                LOGGER.info("Slash-Commands mit Guild %s synchronisiert", config.DISCORD_GUILD_ID)
+            else:
+                await self.tree.sync()
+                LOGGER.info("Slash-Commands global synchronisiert")
+        except (ValueError, discord.HTTPException) as exc:
+            LOGGER.warning("Slash-Sync fehlgeschlagen: %s", exc)
+
+        if not config.ENABLE_PRIVILEGED_INTENTS:
+            LOGGER.warning(
+                "Privileged Intents sind aus — '%sstart' funktioniert nicht. "
+                "Nutze /start oder setze ENABLE_PRIVILEGED_INTENTS=true.",
+                config.COMMAND_PREFIX,
+            )
+
+    async def close(self) -> None:
+        if self._health_runner is not None:
+            with contextlib.suppress(Exception):
+                await self._health_runner.cleanup()
+            self._health_runner = None
+        await super().close()
+
+    async def on_ready(self) -> None:
+        totals = self.registry.totals
+        LOGGER.info("Online als %s (%d Server)", self.user, len(self.guilds))
+        LOGGER.info(
+            "%d Templates · %d Kategorien · %d Kanäle",
+            totals["templates"],
+            totals["categories"],
+            totals["channels"],
+        )
+        with contextlib.suppress(discord.HTTPException):
+            await self.change_presence(
+                status=discord.Status.online,
+                activity=discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name=f"{config.COMMAND_PREFIX}start · {totals['templates']} Templates",
+                ),
+            )
+
+    async def on_member_join(self, member: discord.Member) -> None:
+        """Give newcomers the Unverified role so the gate actually gates."""
+
+        if member.bot:
+            return
+        role = discord.utils.find(
+            lambda r: "unverified" in r.name.lower(), member.guild.roles
+        )
+        if role is None or not role.is_assignable():
+            return
+        with contextlib.suppress(discord.HTTPException):
+            await member.add_roles(role, reason="Neues Mitglied")
+
+    # -------------------------------------------------------------- helpers --
+    def has_premium(self, interaction_or_ctx) -> bool:
+        guild = getattr(interaction_or_ctx, "guild", None)
+        user = getattr(interaction_or_ctx, "user", None) or getattr(
+            interaction_or_ctx, "author", None
+        )
+        if user is None:
+            return False
+        return self.premium.has_access(guild.id if guild else None, user.id)
+
+
+bot = ArchitectBot()
+
+
+# --------------------------------------------------------------------------- #
+# Commands
+# --------------------------------------------------------------------------- #
+
+@bot.command(name="start", aliases=["templates", "setup", "menu"])
+@commands.guild_only()
+async def start_prefix(ctx: commands.Context) -> None:
+    """Open the template menu."""
+
+    await ctx.send(view=build_start_view(bot, premium=bot.has_premium(ctx)))
+
+
+@bot.tree.command(name="start", description="Öffnet das Server-Template-Menü")
+@discord.app_commands.guild_only()
+async def start_slash(interaction: discord.Interaction) -> None:
+    await interaction.response.send_message(
+        view=build_start_view(bot, premium=bot.has_premium(interaction))
+    )
+
+
+@bot.command(name="ping")
+async def ping(ctx: commands.Context) -> None:
+    await ctx.send(
+        view=notice(
+            "🏓  Pong",
+            f"Latenz: **{round(bot.latency * 1000)} ms**\n"
+            f"-# {len(bot.registry)} Templates geladen",
+            tone="neutral",
+        )
+    )
+
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    if isinstance(error, commands.CommandNotFound):
+        return
+    if isinstance(error, commands.NoPrivateMessage):
+        await ctx.send(
+            view=notice("❌  Nur auf Servern", "Dieser Befehl funktioniert nur in einem Server.", tone="error")
+        )
+        return
+    if isinstance(error, (commands.MissingPermissions, commands.BotMissingPermissions)):
+        await ctx.send(view=notice("🔐  Keine Berechtigung", str(error), tone="error"))
+        return
+    LOGGER.exception("Command-Fehler in '%s'", ctx.command, exc_info=error)
+
+
+def main() -> None:
+    if not config.DISCORD_TOKEN:
+        print(
+            "\n  ❌  DISCORD_TOKEN fehlt.\n\n"
+            "     Lokal:   cp .env.example .env  und den Token eintragen\n"
+            "     Railway: unter Variables als Secret setzen\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    try:
+        bot.run(config.DISCORD_TOKEN, log_handler=None)
+    except discord.LoginFailure:
+        print("\n  ❌  Token ungültig — bitte im Developer Portal neu generieren.\n", file=sys.stderr)
+        raise SystemExit(1)
+    except discord.PrivilegedIntentsRequired:
+        print(
+            "\n  ❌  Privileged Intents nicht aktiviert.\n\n"
+            "     Developer Portal → Bot → Server Members + Message Content einschalten,\n"
+            "     oder ENABLE_PRIVILEGED_INTENTS=false setzen (dann nur /start).\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    except (OSError, aiohttp.ClientError) as exc:
+        # No traceback for a plain connectivity problem — it is never a bug here.
+        print(
+            f"\n  ❌  Keine Verbindung zu Discord: {exc}\n"
+            "     Prüfe Internetverbindung, Proxy oder Firewall.\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except TemplateError as exc:
+        print(f"\n  ❌  Template-Fehler: {exc}\n", file=sys.stderr)
+        raise SystemExit(1)
+    except KeyboardInterrupt:
+        pass
