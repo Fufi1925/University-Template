@@ -494,3 +494,127 @@ class TestPersistence:
                 len(c.get("content", "")) for c in components if c.get("type") == 10
             )
             assert text <= 4000
+
+
+class TestComponentsV2Contract:
+    """Discord verbietet ``content`` zusammen mit Components V2.
+
+    Der Fehler lautet:
+
+        Invalid Form Body — In content: The 'content' field cannot be used
+        when using IS_COMPONENTS_V2
+
+    Er tritt erst zur Laufzeit auf und traf jede einzelne Kanalnachricht.
+    Diese Tests halten die Regel im gesamten Quelltext fest.
+    """
+
+    @staticmethod
+    def _sources():
+        roots = [BASE_DIR / "core", BASE_DIR / "ui"]
+        files = [p for root in roots for p in root.glob("*.py")]
+        files.append(BASE_DIR / "bot.py")
+        return [(p.name, p.read_text(encoding="utf-8")) for p in files]
+
+    def test_no_send_with_content_and_view(self):
+        import re
+
+        # Findet send(...) / edit(...) mit content= UND view= im selben Aufruf.
+        pattern = re.compile(
+            r"\.(?:send|edit|edit_original_response)\(\s*[^)]*\bcontent\s*=[^)]*\bview\s*=",
+            re.S,
+        )
+        for name, source in self._sources():
+            match = pattern.search(source)
+            assert match is None, (
+                f"{name}: content= und view= im selben Aufruf — "
+                f"Discord lehnt das ab:\n{match.group(0)[:120]}"
+            )
+
+    def test_no_view_then_content(self):
+        """Auch die umgekehrte Reihenfolge ist verboten."""
+
+        import re
+
+        pattern = re.compile(
+            r"\.(?:send|edit|edit_original_response)\(\s*[^)]*\bview\s*=[^)]*\bcontent\s*=",
+            re.S,
+        )
+        for name, source in self._sources():
+            match = pattern.search(source)
+            assert match is None, f"{name}: view= und content= im selben Aufruf"
+
+    def test_marker_lives_in_the_view_not_in_content(self):
+        """Die Signatur muss im gerenderten View stehen, damit sie ankommt."""
+
+        from core.registry import TemplateRegistry
+        from ui.channel_intro import intro_view
+
+        registry = TemplateRegistry(config.TEMPLATE_DIR).load()
+        template = registry.get("community")
+
+        checked = 0
+        for _, spec in template.iter_channels():
+            guide = channel_guide(spec)
+            if guide is None:
+                continue
+            view = intro_view(spec, *guide)
+            rendered = _flatten_text(view)
+            assert MARKER in rendered, f"{spec.label}: Signatur fehlt im View"
+            checked += 1
+        assert checked > 20
+
+    def test_marker_is_readable_from_a_received_message(self):
+        """has_marker muss die Signatur aus message.components lesen können."""
+
+        from discord.components import _component_factory
+
+        from core.content import has_marker
+        from core.registry import TemplateRegistry
+        from ui.channel_intro import intro_view
+
+        registry = TemplateRegistry(config.TEMPLATE_DIR).load()
+        template = registry.get("community")
+        _, spec = next(
+            (c, s) for c, s in template.iter_channels() if s.wants_message
+        )
+        view = intro_view(spec, *channel_guide(spec))
+
+        class Received:
+            content = ""  # Discord liefert bei Components V2 einen leeren String
+            components = [_component_factory(raw) for raw in view.to_components()]
+
+        assert has_marker(Received())
+
+    def test_unmarked_message_is_not_claimed(self):
+        """Fremde Nachrichten dürfen nicht als eigene erkannt werden."""
+
+        from core.content import has_marker
+
+        class Foreign:
+            content = "Ein normaler Beitrag"
+            components = []
+
+        assert not has_marker(Foreign())
+
+    def test_ephemeral_dialogs_are_not_marked(self):
+        """Nur dauerhafte Nachrichten tragen die Signatur."""
+
+        from ui.components import notice
+
+        assert MARKER not in _flatten_text(notice("Titel", "Text"))
+
+
+def _flatten_text(view) -> str:
+    """Alle Textinhalte einer View als ein String."""
+
+    def walk(items):
+        for item in items:
+            yield item
+            yield from walk(item.get("components", []))
+            accessory = item.get("accessory")
+            if accessory:
+                yield accessory
+
+    return "".join(
+        component.get("content", "") for component in walk(view.to_components())
+    )

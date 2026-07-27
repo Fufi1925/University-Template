@@ -20,15 +20,24 @@ from .schema import ChannelMode, ChannelSpec, Visibility, Widget
 
 __all__ = [
     "MARKER",
+    "has_marker",
     "channel_guide",
     "mode_rule",
     "seed_message",
     "CHECKLIST_ITEMS",
 ]
 
-# Unsichtbare Signatur am Ende jeder Bot-Nachricht. Damit findet der Bot
-# seine eigenen Nachrichten beim zweiten Durchlauf wieder und bearbeitet
-# sie, statt sie zu verdoppeln. Ein Zero-Width-Space stoert die Optik nicht.
+# Unsichtbare Signatur in jeder Bot-Nachricht. Damit findet der Bot seine
+# eigenen Nachrichten beim zweiten Durchlauf wieder und bearbeitet sie, statt
+# sie zu verdoppeln.
+#
+# Wichtig: Die Marke steht **im View**, nicht im ``content``-Feld. Discord
+# lehnt Nachrichten mit Components V2 ab, sobald ``content`` gesetzt ist:
+#
+#     Invalid Form Body — In content: The 'content' field cannot be used
+#     when using IS_COMPONENTS_V2
+#
+# Deshalb haengt sie unsichtbar an der Fusszeile.
 MARKER = "\u200b\u2063"
 
 
@@ -65,6 +74,31 @@ def _unfold(label: str) -> str:
     for folded, proper in _UNFOLD:
         label = label.replace(folded, proper)
     return label
+
+
+def has_marker(message: object) -> bool:
+    """Stammt diese Nachricht aus einer Vorlage des Bots?
+
+    Durchsucht die Components-V2-Baeume nach der unsichtbaren Signatur. Das
+    ``content``-Feld wird zusaetzlich geprueft, damit Nachrichten aus
+    aelteren Versionen weiterhin erkannt werden.
+    """
+
+    if MARKER in (getattr(message, "content", "") or ""):
+        return True
+
+    def walk(items) -> bool:
+        for item in items or ():
+            if MARKER in (getattr(item, "content", "") or ""):
+                return True
+            if walk(getattr(item, "children", None)):
+                return True
+            accessory = getattr(item, "accessory", None)
+            if accessory is not None and walk([accessory]):
+                return True
+        return False
+
+    return walk(getattr(message, "components", None))
 
 
 # --------------------------------------------------------------------------- #

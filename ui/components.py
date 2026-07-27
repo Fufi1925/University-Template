@@ -94,12 +94,22 @@ def quote(*lines: str) -> str:
     return "\n".join(out)
 
 
-def footer(extra: str | None = None) -> ui.TextDisplay:
-    """Zurueckhaltende Fusszeile (``-#`` ist Discords Kleinschrift)."""
+def footer(extra: str | None = None, *, mark: bool = False) -> ui.TextDisplay:
+    """Zurueckhaltende Fusszeile (``-#`` ist Discords Kleinschrift).
+
+    Mit ``mark=True`` wird die unsichtbare Signatur angehaengt, an der der Bot
+    seine eigenen dauerhaften Nachrichten wiedererkennt. Sie steht bewusst
+    hier und nicht im ``content``-Feld: Discord verbietet ``content`` in
+    Kombination mit Components V2.
+    """
 
     text = f"-# {BRAND_FOOTER}"
     if extra:
         text += f"  ·  {extra}"
+    if mark:
+        from core.content import MARKER
+
+        text += MARKER
     return ui.TextDisplay(text)
 
 

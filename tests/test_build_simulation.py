@@ -85,6 +85,16 @@ class _FakeResponse:
     reason = "Forbidden"
 
 
+def _components_from_view(view):
+    """Baut aus einer LayoutView die Objekte, die Discord zurueckliefert."""
+
+    if view is None:
+        return []
+    from discord.components import _component_factory
+
+    return [_component_factory(raw) for raw in view.to_components()]
+
+
 class FakeChannel:
     def __init__(self, guild, name, kind, category=None, **kwargs):
         self.guild = guild
@@ -105,6 +115,12 @@ class FakeChannel:
     async def send(self, content=None, view=None, **kwargs):
         if not self.can_send:
             raise discord.Forbidden(_FakeResponse(), "no")
+        # Discord lehnt content zusammen mit Components V2 ab. Reine
+        # Textnachrichten ohne View (z. B. die Start-1 im Zaehl-Kanal)
+        # sind dagegen voellig in Ordnung.
+        assert not (content and view), (
+            "content darf nicht zusammen mit einer Components-V2-View gesendet werden"
+        )
         message = FakeMessage(self, content=content, view=view)
         self.sent.append(message)
         return message
@@ -128,14 +144,21 @@ class FakeChannel:
 
 
 class FakeMessage:
-    """Nachricht mit genau den Faehigkeiten, die der Builder nutzt."""
+    """Nachricht mit genau den Faehigkeiten, die der Builder nutzt.
+
+    Wichtig: ``components`` wird aus der View rekonstruiert — genau wie
+    Discord es tut. Nur so prueft der Idempotenz-Test wirklich, ob der Bot
+    seine eigene Nachricht anhand der Signatur in der Fusszeile wiederfindet.
+    """
 
     def __init__(self, channel, content=None, view=None):
         self.channel = channel
+        # Components V2 erlaubt kein content-Feld; Discord liefert "".
         self.content = content or ""
         self.view = view
         self.author = channel.guild.me
         self.edits = 0
+        self.components = _components_from_view(view)
 
     async def edit(self, content=None, view=None, **kwargs):
         self.edits += 1
@@ -143,6 +166,7 @@ class FakeMessage:
             self.content = content
         if view is not None:
             self.view = view
+            self.components = _components_from_view(view)
 
     async def pin(self, reason=None):
         if self not in self.channel.pinned:

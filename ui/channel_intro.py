@@ -39,7 +39,8 @@ def header_view(spec: ChannelSpec, title: str, lines: list[str]) -> ui.LayoutVie
     if lines:
         container.add_item(RULE())
         container.add_item(ui.TextDisplay(quote(*lines)))
-    container.add_item(footer())
+    # Dauerhafte Nachricht im Kanal — Signatur fuer den Wiedererkennung.
+    container.add_item(footer(mark=True))
 
     view = ui.LayoutView(timeout=None)
     view.add_item(container)

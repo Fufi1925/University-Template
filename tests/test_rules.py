@@ -451,12 +451,18 @@ class TestTemplateIntegration:
 # --------------------------------------------------------------------------- #
 
 class _Msg:
-    def __init__(self, channel, author_id, content=""):
+    def __init__(self, channel, author_id, content="", view=None):
         self.channel = channel
         self.author = type("A", (), {"id": author_id})()
         self.content = content
+        self.view = view
         self.deleted = False
         self.pinned = False
+        self.components = []
+        if view is not None:
+            from discord.components import _component_factory
+
+            self.components = [_component_factory(c) for c in view.to_components()]
 
     async def delete(self):
         self.deleted = True
@@ -483,7 +489,10 @@ class _WritableChannel:
             raise discord.Forbidden(
                 type("R", (), {"status": 403, "reason": "Forbidden"})(), "no"
             )
-        message = _Msg(self, self.bot_id, content or "")
+        assert not (content and view), (
+            "content darf nicht zusammen mit einer Components-V2-View gesendet werden"
+        )
+        message = _Msg(self, self.bot_id, content or "", view=view)
         self.sent.append(message)
         return message
 
@@ -562,16 +571,19 @@ class TestWriting:
         assert channel.sent[0].pinned
 
     async def test_messages_carry_the_bot_marker(self):
-        """Damit spätere Läufe die eigene Nachricht wiedererkennen."""
+        """Die Signatur steckt im View, nicht im verbotenen content-Feld."""
 
-        from core.content import MARKER
+        from core.content import MARKER, has_marker
         from ui.rules import _post, ruleset_views
 
         channel = _WritableChannel()
         interaction = _InteractionStub(_GuildStub(channel))
         await _post(interaction, channel, ruleset_views(get_ruleset("minimal")), reset=False)
 
-        assert MARKER in channel.sent[0].content
+        message = channel.sent[0]
+        assert message.content == "", "content muss bei Components V2 leer bleiben"
+        assert MARKER in "".join(_texts(message.view))
+        assert has_marker(message)
 
     async def test_missing_permission_is_reported(self):
         from ui.rules import _post, ruleset_views

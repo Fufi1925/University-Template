@@ -27,7 +27,7 @@ from typing import Awaitable, Callable, Mapping, Sequence
 import discord
 
 from config import SETUP_REASON
-from .content import MARKER, channel_guide, seed_message
+from .content import channel_guide, has_marker, seed_message
 from .enforcement import mode_tag, reaction_tag
 from .permissions import (
     BASE_ROLES,
@@ -428,9 +428,9 @@ class ServerBuilder:
     ) -> discord.Message | None:
         """Findet eine frueher gesetzte Startnachricht des Bots.
 
-        Gesucht wird zuerst unter den angehefteten Nachrichten — das ist ein
-        einziger API-Aufruf und deckt den Normalfall ab. Erkennungsmerkmal ist
-        die unsichtbare Signatur aus ``core.content.MARKER``.
+        Gesucht wird unter den angehefteten Nachrichten — ein einziger
+        API-Aufruf, der den Normalfall abdeckt. Erkennungsmerkmal ist die
+        unsichtbare Signatur, die in der Fusszeile der View steckt.
         """
 
         me = self.guild.me
@@ -438,7 +438,7 @@ class ServerBuilder:
             return None
         try:
             for message in await channel.pins():
-                if message.author.id == me.id and MARKER in (message.content or ""):
+                if message.author.id == me.id and has_marker(message):
                     return message
         except (discord.Forbidden, discord.HTTPException):
             return None
@@ -465,20 +465,22 @@ class ServerBuilder:
         from ui.channel_intro import intro_view
 
         view = intro_view(spec, title, lines)
-        content = MARKER
 
+        # Kein content= bei Components V2 — Discord lehnt die Nachricht sonst
+        # mit "The 'content' field cannot be used" ab. Die Signatur steckt
+        # stattdessen in der Fusszeile der View.
         existing = await self._existing_bot_message(channel)
         if existing is not None:
             # Zweiter Durchlauf: bearbeiten statt verdoppeln.
             try:
-                await existing.edit(content=content, view=view)
+                await existing.edit(view=view)
                 report.messages_updated += 1
             except (discord.Forbidden, discord.HTTPException):
                 pass
             return
 
         try:
-            message = await channel.send(content=content, view=view)
+            message = await channel.send(view=view)
             report.messages_posted += 1
         except discord.Forbidden:
             report.warn(

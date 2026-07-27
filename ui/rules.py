@@ -24,7 +24,6 @@ import discord
 from discord import ui
 
 from config import COLOR_BRAND, COLOR_DANGER, COLOR_NEUTRAL, COLOR_SUCCESS
-from core.content import MARKER
 from core.rulesets import RULESETS, RuleLength, RuleSet, get_ruleset
 from core.small_caps import strip_decoration
 from .components import RULE, SPACE, footer, notice, quote
@@ -99,7 +98,7 @@ def ruleset_views(ruleset: RuleSet, *, guild_name: str = "") -> list[ui.LayoutVi
         block = quote(*lines)
 
         if used + len(block) > _CHAR_BUDGET:
-            container.add_item(footer())
+            container.add_item(footer(mark=True))
             view = ui.LayoutView(timeout=None)
             view.add_item(container)
             views.append(view)
@@ -114,7 +113,7 @@ def ruleset_views(ruleset: RuleSet, *, guild_name: str = "") -> list[ui.LayoutVi
         container.add_item(RULE())
         container.add_item(ui.TextDisplay(f"-# {ruleset.closing}"))
 
-    container.add_item(footer())
+    container.add_item(footer(mark=True))
     view = ui.LayoutView(timeout=None)
     view.add_item(container)
     views.append(view)
@@ -154,7 +153,7 @@ def custom_rules_view(
             ui.MediaGallery(discord.MediaGalleryItem(bottom_image))
         )
 
-    container.add_item(footer())
+    container.add_item(footer(mark=True))
     view = ui.LayoutView(timeout=None)
     view.add_item(container)
     return view
@@ -198,7 +197,8 @@ async def _post(
     first: discord.Message | None = None
     for view in views:
         try:
-            message = await channel.send(content=MARKER, view=view)
+            # Kein content= — Components V2 verbietet das Feld.
+            message = await channel.send(view=view)
             posted += 1
             first = first or message
         except discord.Forbidden:

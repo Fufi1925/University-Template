@@ -133,7 +133,7 @@ class VerifyView(ui.LayoutView):
         row = ui.ActionRow()
         row.add_item(_VerifyButton())
         container.add_item(row)
-        container.add_item(footer())
+        container.add_item(footer(mark=True))
         self.add_item(container)
 
 
@@ -173,7 +173,7 @@ class RulesView(ui.LayoutView):
         row = ui.ActionRow()
         row.add_item(_AcceptButton())
         container.add_item(row)
-        container.add_item(footer())
+        container.add_item(footer(mark=True))
         self.add_item(container)
 
 
@@ -222,7 +222,7 @@ class SelfRoleView(ui.LayoutView):
         row = ui.ActionRow()
         row.add_item(_SelfRoleSelect())
         container.add_item(row)
-        container.add_item(footer())
+        container.add_item(footer(mark=True))
         self.add_item(container)
 
 
@@ -313,7 +313,7 @@ class TicketView(ui.LayoutView):
         row = ui.ActionRow()
         row.add_item(_TicketButton())
         container.add_item(row)
-        container.add_item(footer())
+        container.add_item(footer(mark=True))
         self.add_item(container)
 
 
@@ -407,7 +407,7 @@ class ChecklistView(ui.LayoutView):
                 )
             )
         )
-        container.add_item(footer())
+        container.add_item(footer(mark=True))
         self.add_item(container)
 
 
