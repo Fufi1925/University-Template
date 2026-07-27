@@ -59,6 +59,13 @@ class ArchitectBot(commands.Bot):
 
     # ------------------------------------------------------------ lifecycle --
     async def setup_hook(self) -> None:
+        # Angeheftete Verify-/Rollen-/Ticket-Nachrichten muessen einen
+        # Neustart ueberleben, sonst sind die Buttons danach tot.
+        from ui.widgets import PERSISTENT_VIEWS
+
+        for view_cls in PERSISTENT_VIEWS:
+            self.add_view(view_cls())
+
         if config.HEALTH_SERVER:
             from health import start_health_server
 
@@ -120,6 +127,27 @@ class ArchitectBot(commands.Bot):
             return
         with contextlib.suppress(discord.HTTPException):
             await member.add_roles(role, reason="Neues Mitglied")
+
+    async def on_message(self, message: discord.Message) -> None:
+        """Setzt Kanal-Modi durch und vergibt Auto-Reaktionen."""
+
+        if message.author.bot or message.guild is None:
+            await self.process_commands(message)
+            return
+
+        from core.enforcement import apply_reactions, check_message
+
+        removed = False
+        with contextlib.suppress(discord.HTTPException):
+            removed = await check_message(message)
+
+        if removed:
+            return
+
+        with contextlib.suppress(discord.HTTPException):
+            await apply_reactions(message)
+
+        await self.process_commands(message)
 
     # -------------------------------------------------------------- helpers --
     def has_premium(self, interaction_or_ctx) -> bool:

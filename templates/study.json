@@ -78,24 +78,34 @@
           "label": "willkommen",
           "emoji": "👋",
           "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
         },
         {
           "label": "verifizieren",
           "emoji": "✅",
-          "topic": "Hier verifizieren"
+          "topic": "Hier verifizieren",
+          "widget": "verify"
         },
         {
           "label": "regeln",
           "emoji": "📜",
           "topic": "Serverregeln",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "widget": "rules"
         },
         {
           "label": "haeufige-fragen",
           "emoji": "❔",
           "topic": "Häufig gestellte Fragen",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
         }
       ]
     },
@@ -108,32 +118,44 @@
           "label": "ankuendigungen",
           "emoji": "📢",
           "kind": "news",
-          "topic": "Wichtige Ankündigungen"
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
         },
         {
           "label": "neuigkeiten",
           "emoji": "🆕",
-          "topic": "Server- und Bot-Updates"
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
         },
         {
           "label": "rollen-vergabe",
           "emoji": "🏷️",
-          "topic": "Rollen selbst vergeben"
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
         },
         {
           "label": "partner",
           "emoji": "🤝",
-          "topic": "Unsere Partner"
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
         },
         {
           "label": "gewinnspiele",
           "emoji": "🎁",
-          "topic": "Aktuelle Gewinnspiele"
+          "topic": "Aktuelle Gewinnspiele",
+          "reactions": [
+            "🎉"
+          ]
         },
         {
           "label": "team-vorstellung",
           "emoji": "👥",
-          "topic": "Wer gehört zum Team?"
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
         },
         {
           "label": "semesterplan",
@@ -150,7 +172,10 @@
         {
           "label": "allgemein",
           "emoji": "💬",
-          "topic": "Allgemeiner Campus-Chat"
+          "topic": "Allgemeiner Campus-Chat",
+          "guide": [
+            "Der Hauptchat für alles, was keinen eigenen Kanal hat."
+          ]
         },
         {
           "label": "vorstellungen",
@@ -170,12 +195,19 @@
         {
           "label": "memes",
           "emoji": "😂",
-          "topic": "Uni-Memes"
+          "topic": "Uni-Memes",
+          "mode": "media",
+          "reactions": [
+            "😂"
+          ]
         },
         {
           "label": "bot-befehle",
           "emoji": "🤖",
-          "topic": "Bot-Befehle"
+          "topic": "Bot-Befehle",
+          "guide": [
+            "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen."
+          ]
         }
       ]
     },
@@ -244,7 +276,8 @@
         {
           "label": "gruppensuche",
           "emoji": "🔎",
-          "topic": "Lerngruppe finden"
+          "topic": "Lerngruppe finden",
+          "mode": "threads"
         },
         {
           "label": "gruppe-1",
@@ -288,7 +321,11 @@
         {
           "label": "altklausuren",
           "emoji": "🗂️",
-          "topic": "Altklausuren und Übungen"
+          "topic": "Altklausuren und Übungen",
+          "guide": [
+            "Altklausuren und Übungsblätter.",
+            "Bitte nur teilen, was weitergegeben werden darf."
+          ]
         },
         {
           "label": "lernplaene",
@@ -303,7 +340,10 @@
         {
           "label": "panikraum",
           "emoji": "😰",
-          "topic": "Für den Tag vor der Prüfung"
+          "topic": "Für den Tag vor der Prüfung",
+          "guide": [
+            "Für den Tag vor der Prüfung. Ihr schafft das."
+          ]
         }
       ]
     },
@@ -529,22 +569,30 @@
         {
           "label": "fehler-melden",
           "emoji": "🐛",
-          "topic": "Fehler melden"
+          "topic": "Fehler melden",
+          "mode": "threads"
         },
         {
           "label": "vorschlaege",
           "emoji": "💡",
-          "topic": "Ideen für den Server"
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
         },
         {
           "label": "beschwerden",
           "emoji": "📣",
-          "topic": "Beschwerden über Mitglieder"
+          "topic": "Beschwerden über Mitglieder",
+          "mode": "threads"
         },
         {
           "label": "entbannungsantrag",
           "emoji": "⚖️",
-          "topic": "Einspruch gegen eine Strafe"
+          "topic": "Einspruch gegen eine Strafe",
+          "mode": "threads"
         }
       ]
     },
@@ -561,17 +609,20 @@
         {
           "label": "team-ankuendigungen",
           "emoji": "📣",
-          "topic": "Ankündigungen fürs Team"
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
         },
         {
           "label": "aufgaben",
           "emoji": "📋",
-          "topic": "Aufgaben und Zuständigkeiten"
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
         },
         {
           "label": "bewerbungen",
           "emoji": "🧾",
-          "topic": "Eingehende Bewerbungen"
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
         },
         {
           "label": "meldungen",
@@ -633,52 +684,62 @@
         {
           "label": "mod-logs",
           "emoji": "🔨",
-          "topic": "Moderationsaktionen"
+          "topic": "Moderationsaktionen",
+          "mode": "log"
         },
         {
           "label": "mitglieder-logs",
           "emoji": "👥",
-          "topic": "Beitritte und Austritte"
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
         },
         {
           "label": "nachrichten-logs",
           "emoji": "✏️",
-          "topic": "Bearbeitete und gelöschte Nachrichten"
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
         },
         {
           "label": "sprach-logs",
           "emoji": "🔊",
-          "topic": "Voice-Aktivität"
+          "topic": "Voice-Aktivität",
+          "mode": "log"
         },
         {
           "label": "rollen-logs",
           "emoji": "🏷️",
-          "topic": "Rollenänderungen"
+          "topic": "Rollenänderungen",
+          "mode": "log"
         },
         {
           "label": "kanal-logs",
           "emoji": "🗂️",
-          "topic": "Kanaländerungen"
+          "topic": "Kanaländerungen",
+          "mode": "log"
         },
         {
           "label": "social-logs",
           "emoji": "📱",
-          "topic": "Social-Media-Feeds und Erwähnungen"
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
         },
         {
           "label": "bot-logs",
           "emoji": "🤖",
-          "topic": "Bot-Ereignisse"
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
         },
         {
           "label": "einladungs-logs",
           "emoji": "🔗",
-          "topic": "Einladungs-Tracking"
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
         },
         {
           "label": "server-logs",
           "emoji": "🗃️",
-          "topic": "Alles Übrige"
+          "topic": "Alles Übrige",
+          "mode": "log"
         }
       ]
     }

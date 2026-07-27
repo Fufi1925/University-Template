@@ -15,6 +15,8 @@ from .small_caps import category_name, channel_name, role_name
 
 __all__ = [
     "ChannelKind",
+    "ChannelMode",
+    "Widget",
     "Visibility",
     "RoleTier",
     "RoleSpec",
@@ -52,6 +54,38 @@ class Visibility(str, Enum):
     STAFF = "staff"            # any staff role
     LEADERSHIP = "leadership"  # senior staff only
     ARCHIVE = "archive"        # visible, nobody writes
+
+
+class ChannelMode(str, Enum):
+    """Wie ein Kanal benutzt werden darf.
+
+    Der Modus wird zur Laufzeit durchgesetzt (siehe ``core/enforcement.py``)
+    und bestimmt ausserdem den Text der angehefteten Startnachricht.
+    """
+
+    FREE = "free"          # keine Einschraenkung
+    MEDIA = "media"        # nur Beitraege mit Bild, Video oder Link
+    THREADS = "threads"    # jeder Beitrag wird zu einem Thread
+    COUNTING = "counting"  # nur die naechste Zahl
+    ANNOUNCE = "announce"  # nur Team schreibt, Rest liest
+    LOG = "log"            # automatische Eintraege, niemand schreibt
+
+    @property
+    def is_enforced(self) -> bool:
+        """Braucht dieser Modus einen Listener auf ``on_message``?"""
+
+        return self in {ChannelMode.MEDIA, ChannelMode.COUNTING}
+
+
+class Widget(str, Enum):
+    """Interaktive Nachricht, die der Bot in den Kanal heftet."""
+
+    NONE = "none"
+    VERIFY = "verify"      # Button vergibt die Verified-Rolle
+    RULES = "rules"        # Regeln akzeptieren -> Verified
+    ROLES = "roles"        # Dropdown zur Selbstvergabe von Rollen
+    TICKET = "ticket"      # Button oeffnet einen privaten Thread
+    CHECKLIST = "checklist"  # Aufgabenliste fuer das Team
 
 
 class RoleTier(str, Enum):
@@ -158,9 +192,33 @@ class ChannelSpec:
     nsfw: bool = False
     small_caps: bool = True
 
+    # --- Inhalte, die der Bot in den Kanal schreibt ------------------------
+    mode: ChannelMode = ChannelMode.FREE
+    widget: Widget = Widget.NONE
+    # Zusaetzliche Zeilen der angehefteten Startnachricht.
+    guide: tuple[str, ...] = ()
+    # Reaktionen, die der Bot unter jeden Beitrag setzt.
+    reactions: tuple[str, ...] = ()
+    # Erste Nachricht, damit der Kanal nicht leer wirkt.
+    seed: str | None = None
+
     @property
     def display_name(self) -> str:
         return channel_name(self.label, self.emoji, small_caps=self.small_caps)
+
+    @property
+    def wants_message(self) -> bool:
+        """Bekommt dieser Kanal ueberhaupt eine Startnachricht?"""
+
+        if self.kind.is_voice_like:
+            return False
+        return bool(
+            self.guide
+            or self.topic
+            or self.seed
+            or self.widget is not Widget.NONE
+            or self.mode is not ChannelMode.FREE
+        )
 
     @classmethod
     def parse(cls, data: Mapping[str, Any], where: str) -> "ChannelSpec":
@@ -188,6 +246,27 @@ class ChannelSpec:
         if not 0 <= user_limit <= 99:
             raise TemplateError(f"{where}: user_limit muss zwischen 0 und 99 liegen")
 
+        raw_mode = data.get("mode", "free")
+        try:
+            mode = ChannelMode(raw_mode)
+        except ValueError as exc:
+            raise TemplateError(f"{where}: unbekannter Modus '{raw_mode}'") from exc
+
+        raw_widget = data.get("widget", "none")
+        try:
+            widget = Widget(raw_widget)
+        except ValueError as exc:
+            raise TemplateError(f"{where}: unbekanntes Widget '{raw_widget}'") from exc
+
+        if widget is not Widget.NONE and kind.is_voice_like:
+            raise TemplateError(f"{where}: Sprachkanäle können kein Widget tragen")
+        if mode.is_enforced and kind.is_voice_like:
+            raise TemplateError(f"{where}: Modus '{mode.value}' gilt nur für Textkanäle")
+
+        reactions = tuple(data.get("reactions", []))
+        if len(reactions) > 5:
+            raise TemplateError(f"{where}: höchstens 5 Auto-Reaktionen erlaubt")
+
         return cls(
             label=label,
             emoji=data.get("emoji"),
@@ -198,6 +277,11 @@ class ChannelSpec:
             user_limit=user_limit,
             nsfw=bool(data.get("nsfw", False)),
             small_caps=bool(data.get("small_caps", True)),
+            mode=mode,
+            widget=widget,
+            guide=tuple(data.get("guide", [])),
+            reactions=reactions,
+            seed=data.get("seed"),
         )
 
 

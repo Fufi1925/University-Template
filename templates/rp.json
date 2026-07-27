@@ -129,7 +129,8 @@
         {
           "label": "verifizieren",
           "emoji": "🔓",
-          "topic": "Verifizierung starten"
+          "topic": "Verifizierung starten",
+          "widget": "verify"
         },
         {
           "label": "verify-info",
@@ -157,7 +158,8 @@
         {
           "label": "serverregeln",
           "emoji": "⚖️",
-          "topic": "Die verbindlichen Serverregeln"
+          "topic": "Die verbindlichen Serverregeln",
+          "widget": "rules"
         },
         {
           "label": "rp-regeln",
@@ -177,7 +179,8 @@
         {
           "label": "regel-aenderungen",
           "emoji": "🔄",
-          "topic": "Änderungen am Regelwerk"
+          "topic": "Änderungen am Regelwerk",
+          "mode": "announce"
         }
       ]
     },
@@ -191,12 +194,14 @@
           "emoji": "📢",
           "kind": "news",
           "topic": "Server-News",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "mode": "announce"
         },
         {
           "label": "stadt-nachrichten",
           "emoji": "📰",
-          "topic": "Was passiert in der Stadt?"
+          "topic": "Was passiert in der Stadt?",
+          "mode": "announce"
         },
         {
           "label": "charaktere",
@@ -230,7 +235,8 @@
           "label": "fraktions-news",
           "emoji": "📣",
           "topic": "Neues aus den Fraktionen",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "mode": "announce"
         },
         {
           "label": "fraktionssuche",
@@ -467,22 +473,34 @@
         {
           "label": "memes",
           "emoji": "😂",
-          "topic": "Memes aus der Stadt"
+          "topic": "Memes aus der Stadt",
+          "mode": "media",
+          "reactions": [
+            "😂"
+          ]
         },
         {
           "label": "clips",
           "emoji": "🎬",
-          "topic": "Deine besten Szenen"
+          "topic": "Deine besten Szenen",
+          "mode": "media",
+          "reactions": [
+            "🔥"
+          ]
         },
         {
           "label": "bildschirmfotos",
           "emoji": "📸",
-          "topic": "Bilder aus dem RP"
+          "topic": "Bilder aus dem RP",
+          "mode": "media"
         },
         {
           "label": "bot-befehle",
           "emoji": "🤖",
-          "topic": "Bot-Befehle"
+          "topic": "Bot-Befehle",
+          "guide": [
+            "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen."
+          ]
         },
         {
           "label": "freizeit-talk",
@@ -500,27 +518,36 @@
           "label": "support",
           "emoji": "🎫",
           "kind": "forum",
-          "topic": "Tickets und Hilfe"
+          "topic": "Tickets und Hilfe",
+          "widget": "ticket"
         },
         {
           "label": "fehler-melden",
           "emoji": "🐛",
-          "topic": "Fehler melden"
+          "topic": "Fehler melden",
+          "mode": "threads"
         },
         {
           "label": "beschwerden",
           "emoji": "📣",
-          "topic": "Beschwerden über Spieler"
+          "topic": "Beschwerden über Spieler",
+          "mode": "threads"
         },
         {
           "label": "entbannungsantrag",
           "emoji": "⚖️",
-          "topic": "Entbannungsanträge"
+          "topic": "Entbannungsanträge",
+          "mode": "threads"
         },
         {
           "label": "vorschlaege",
           "emoji": "💡",
-          "topic": "Ideen für die Stadt"
+          "topic": "Ideen für die Stadt",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
         },
         {
           "label": "warteschlange",
@@ -583,17 +610,20 @@
         {
           "label": "team-ankuendigungen",
           "emoji": "📣",
-          "topic": "Ankündigungen fürs Team"
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
         },
         {
           "label": "aufgaben",
           "emoji": "📋",
-          "topic": "Aufgaben und Zuständigkeiten"
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
         },
         {
           "label": "bewerbungen",
           "emoji": "🧾",
-          "topic": "Eingehende Bewerbungen"
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
         },
         {
           "label": "meldungen",
@@ -689,52 +719,62 @@
         {
           "label": "mod-logs",
           "emoji": "🔨",
-          "topic": "Moderationsaktionen"
+          "topic": "Moderationsaktionen",
+          "mode": "log"
         },
         {
           "label": "mitglieder-logs",
           "emoji": "👥",
-          "topic": "Beitritte und Austritte"
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
         },
         {
           "label": "nachrichten-logs",
           "emoji": "✏️",
-          "topic": "Bearbeitete und gelöschte Nachrichten"
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
         },
         {
           "label": "sprach-logs",
           "emoji": "🔊",
-          "topic": "Voice-Aktivität"
+          "topic": "Voice-Aktivität",
+          "mode": "log"
         },
         {
           "label": "rollen-logs",
           "emoji": "🏷️",
-          "topic": "Rollenänderungen"
+          "topic": "Rollenänderungen",
+          "mode": "log"
         },
         {
           "label": "kanal-logs",
           "emoji": "🗂️",
-          "topic": "Kanaländerungen"
+          "topic": "Kanaländerungen",
+          "mode": "log"
         },
         {
           "label": "social-logs",
           "emoji": "📱",
-          "topic": "Social-Media-Feeds und Erwähnungen"
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
         },
         {
           "label": "bot-logs",
           "emoji": "🤖",
-          "topic": "Bot-Ereignisse"
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
         },
         {
           "label": "einladungs-logs",
           "emoji": "🔗",
-          "topic": "Einladungs-Tracking"
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
         },
         {
           "label": "server-logs",
           "emoji": "🗃️",
-          "topic": "Alles Übrige"
+          "topic": "Alles Übrige",
+          "mode": "log"
         }
       ]
     }

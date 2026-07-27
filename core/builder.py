@@ -18,6 +18,7 @@ still recognised.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -26,13 +27,22 @@ from typing import Awaitable, Callable, Mapping, Sequence
 import discord
 
 from config import SETUP_REASON
+from .content import MARKER, channel_guide, seed_message
+from .enforcement import mode_tag, reaction_tag
 from .permissions import (
     BASE_ROLES,
     category_overwrites,
     channel_overwrites,
     permissions_for_tier,
 )
-from .schema import CategorySpec, ChannelKind, ChannelSpec, RoleSpec, Template
+from .schema import (
+    CategorySpec,
+    ChannelKind,
+    ChannelSpec,
+    RoleSpec,
+    Template,
+    Widget,
+)
 from .small_caps import strip_decoration
 
 LOGGER = logging.getLogger("architect.builder")
@@ -68,6 +78,9 @@ class BuildReport:
     deleted_channels: int = 0
     deleted_roles: int = 0
     undeletable: int = 0
+    messages_posted: int = 0
+    messages_updated: int = 0
+    messages_pinned: int = 0
     warnings: list[str] = field(default_factory=list)
 
     @property
@@ -300,6 +313,20 @@ class ServerBuilder:
                 "die Bot-Rolle steht dafür zu weit unten."
             )
 
+    @staticmethod
+    def _topic_for(spec: ChannelSpec) -> str | None:
+        """Topic inklusive der unsichtbaren Steuermarken.
+
+        Der Modus und die Auto-Reaktionen werden im Topic hinterlegt, damit
+        der Listener sie nach einem Neustart ohne Datenbank wiederfindet.
+        """
+
+        parts = [spec.topic or "", mode_tag(spec.mode), reaction_tag(spec.reactions)]
+        topic = " ".join(part for part in parts if part).strip()
+        if not topic:
+            return None
+        return topic[:1024]
+
     def _channel_kwargs(
         self, category_spec: CategorySpec, spec: ChannelSpec
     ) -> dict[str, object]:
@@ -342,18 +369,18 @@ class ServerBuilder:
         if spec.kind is ChannelKind.FORUM:
             try:
                 return await self.guild.create_forum(
-                    name, category=category, topic=spec.topic, **kwargs
+                    name, category=category, topic=self._topic_for(spec), **kwargs
                 )
             except (discord.Forbidden, discord.HTTPException):
                 return await self.guild.create_text_channel(
-                    name, category=category, topic=spec.topic, **kwargs
+                    name, category=category, topic=self._topic_for(spec), **kwargs
                 )
 
         news = spec.kind is ChannelKind.NEWS
         channel = await self.guild.create_text_channel(
             name,
             category=category,
-            topic=spec.topic,
+            topic=self._topic_for(spec),
             slowmode_delay=spec.slowmode,
             nsfw=spec.nsfw,
             **kwargs,
@@ -383,7 +410,7 @@ class ServerBuilder:
         if overwrites:
             payload["overwrites"] = overwrites
         if isinstance(channel, discord.TextChannel):
-            payload["topic"] = spec.topic
+            payload["topic"] = self._topic_for(spec)
             payload["slowmode_delay"] = spec.slowmode
         elif isinstance(channel, discord.VoiceChannel):
             payload["user_limit"] = spec.user_limit
@@ -395,20 +422,131 @@ class ServerBuilder:
         except (discord.Forbidden, discord.HTTPException):
             return False
 
+    # ------------------------------------------------------ kanalinhalte ----
+    async def _existing_bot_message(
+        self, channel: discord.TextChannel
+    ) -> discord.Message | None:
+        """Findet eine frueher gesetzte Startnachricht des Bots.
+
+        Gesucht wird zuerst unter den angehefteten Nachrichten — das ist ein
+        einziger API-Aufruf und deckt den Normalfall ab. Erkennungsmerkmal ist
+        die unsichtbare Signatur aus ``core.content.MARKER``.
+        """
+
+        me = self.guild.me
+        if me is None:
+            return None
+        try:
+            for message in await channel.pins():
+                if message.author.id == me.id and MARKER in (message.content or ""):
+                    return message
+        except (discord.Forbidden, discord.HTTPException):
+            return None
+        return None
+
+    async def _write_channel_intro(
+        self,
+        channel: discord.abc.GuildChannel,
+        spec: ChannelSpec,
+        report: BuildReport,
+    ) -> None:
+        """Startnachricht schreiben, anheften und ggf. Startwert setzen."""
+
+        if not isinstance(channel, discord.TextChannel):
+            return
+
+        guide = channel_guide(spec)
+        if guide is None:
+            return
+        title, lines = guide
+
+        # Der Import liegt hier, weil ui von core abhaengt und ein
+        # Modulimport auf oberster Ebene einen Zyklus erzeugen wuerde.
+        from ui.channel_intro import intro_view
+
+        view = intro_view(spec, title, lines)
+        content = MARKER
+
+        existing = await self._existing_bot_message(channel)
+        if existing is not None:
+            # Zweiter Durchlauf: bearbeiten statt verdoppeln.
+            try:
+                await existing.edit(content=content, view=view)
+                report.messages_updated += 1
+            except (discord.Forbidden, discord.HTTPException):
+                pass
+            return
+
+        try:
+            message = await channel.send(content=content, view=view)
+            report.messages_posted += 1
+        except discord.Forbidden:
+            report.warn(
+                f"In '{channel.name}' darf der Bot nicht schreiben — "
+                "die Startnachricht fehlt dort."
+            )
+            return
+        except discord.HTTPException as exc:
+            LOGGER.warning("Startnachricht in '%s': %s", channel.name, exc)
+            return
+
+        await asyncio.sleep(_THROTTLE)
+
+        try:
+            await message.pin(reason=SETUP_REASON)
+            report.messages_pinned += 1
+            await asyncio.sleep(_THROTTLE)
+        except (discord.Forbidden, discord.HTTPException):
+            # Anheften ist Komfort, kein Muss — 50 Pins sind das Limit.
+            pass
+
+        seed = seed_message(spec)
+        if seed:
+            with contextlib.suppress(discord.HTTPException):
+                await channel.send(seed)
+                await asyncio.sleep(_THROTTLE)
+
+    async def _write_all_intros(
+        self, report: BuildReport, progress_tick
+    ) -> None:
+        """Zweite Phase des Builds: Inhalte in die fertigen Kanaele."""
+
+        for category_spec in self.template.categories:
+            category = self._find_category(category_spec)
+            if category is None:
+                continue
+            for spec in category_spec.channels:
+                if not spec.wants_message:
+                    continue
+                channel = self._find_channel(category, spec)
+                if channel is None:
+                    continue
+                await self._write_channel_intro(channel, spec, report)
+            await progress_tick(category_spec.display_name)
+
     # --------------------------------------------------------------- apply --
     async def apply(
         self,
         mode: BuildMode,
         *,
         progress: ProgressHook | None = None,
+        write_intros: bool = True,
     ) -> BuildReport:
-        """Run the build and return a report."""
+        """Baut den Server und gibt einen Bericht zurueck.
+
+        Mit ``write_intros`` schreibt der Bot zusaetzlich in jeden Textkanal
+        eine angeheftete Startnachricht. Das ist abschaltbar, weil manche
+        Server ihre Kanaele bewusst leer halten wollen.
+        """
 
         self.preflight()
         report = BuildReport(mode=mode, template_key=self.template.key)
         rebuild = mode is BuildMode.REBUILD
 
+        # Phase 1: Rollen + Kategorien. Phase 2 (optional): Kanalinhalte.
         total_steps = 1 + self.template.category_count
+        if write_intros:
+            total_steps += self.template.category_count
         step = 0
 
         async def tick(label: str) -> None:
@@ -484,6 +622,9 @@ class ServerBuilder:
         # Keep the template's deliberate category order.
         if rebuild:
             await self._order_categories(report)
+
+        if write_intros:
+            await self._write_all_intros(report, tick)
 
         return report
 

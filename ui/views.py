@@ -192,10 +192,25 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
 class ConfirmView(ui.LayoutView):
     """Mode picker shown after a template was selected."""
 
-    def __init__(self, bot: "ArchitectBot", template: Template) -> None:
+    def __init__(
+        self,
+        bot: "ArchitectBot",
+        template: Template,
+        *,
+        write_intros: bool = True,
+    ) -> None:
         super().__init__(timeout=600)
         self.bot = bot
         self.template = template
+        # Startnachrichten sind standardmaessig an, aber abschaltbar.
+        self.write_intros = write_intros
+        self._compose()
+
+    def _compose(self) -> None:
+        """Baut den Inhalt auf. Wird beim Umschalten erneut aufgerufen."""
+
+        template = self.template
+        self.clear_items()
 
         container = ui.Container(accent_colour=discord.Colour(template.accent))
         container.add_item(
@@ -239,13 +254,49 @@ class ConfirmView(ui.LayoutView):
             )
         )
 
+        container.add_item(SPACE())
+        container.add_item(ui.TextDisplay(self._intro_line()))
+
         row = ui.ActionRow()
         row.add_item(_ModeButton(self, BuildMode.EXTEND))
         row.add_item(_ModeButton(self, BuildMode.REBUILD))
         row.add_item(_CancelButton())
         container.add_item(row)
+
+        toggle_row = ui.ActionRow()
+        toggle_row.add_item(_IntroToggle(self))
+        container.add_item(toggle_row)
+
         container.add_item(footer())
         self.add_item(container)
+
+    def _intro_line(self) -> str:
+        if self.write_intros:
+            return (
+                "-# In jeden Textkanal kommt eine angeheftete Startnachricht, "
+                "die den Zweck des Kanals erklärt."
+            )
+        return "-# Die Kanäle bleiben leer — es wird nichts hineingeschrieben."
+
+
+class _IntroToggle(ui.Button["ConfirmView"]):
+    """Schaltet die Startnachrichten an und aus."""
+
+    def __init__(self, parent: ConfirmView) -> None:
+        on = parent.write_intros
+        super().__init__(
+            label="Startnachrichten: an" if on else "Startnachrichten: aus",
+            style=discord.ButtonStyle.secondary,
+        )
+        self.screen = parent
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        screen = self.screen
+        await interaction.response.edit_message(
+            view=ConfirmView(
+                screen.bot, screen.template, write_intros=not screen.write_intros
+            )
+        )
 
 
 class _ModeButton(ui.Button["ConfirmView"]):
@@ -261,7 +312,13 @@ class _ModeButton(ui.Button["ConfirmView"]):
         self.mode = mode
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        await _run_build(interaction, self.screen.bot, self.screen.template, self.mode)
+        await _run_build(
+            interaction,
+            self.screen.bot,
+            self.screen.template,
+            self.mode,
+            write_intros=self.screen.write_intros,
+        )
 
 
 class _CancelButton(ui.Button["ConfirmView"]):
@@ -339,6 +396,14 @@ def _report_view(template: Template, report: BuildReport) -> ui.LayoutView:
             ),
         ]
 
+    if report.messages_posted or report.messages_updated:
+        written = [("Startnachrichten", report.messages_posted)]
+        if report.messages_pinned:
+            written.append(("angeheftet", report.messages_pinned))
+        if report.messages_updated:
+            written.append(("aktualisiert", report.messages_updated))
+        lines += ["", "**Geschrieben**", stat_line(written)]
+
     container.add_item(ui.TextDisplay(quote(*lines)))
 
     if report.warnings:
@@ -347,12 +412,17 @@ def _report_view(template: Template, report: BuildReport) -> ui.LayoutView:
         container.add_item(ui.TextDisplay(quote(*report.warnings[:4])))
 
     container.add_item(RULE())
-    container.add_item(
-        ui.TextDisplay(
+    if report.messages_posted or report.messages_updated:
+        closing = (
+            "-# Jeder Textkanal hat eine angeheftete Startnachricht. "
+            "Sie lässt sich jederzeit bearbeiten oder löschen."
+        )
+    else:
+        closing = (
             "-# Es wurde ausschließlich die Struktur angelegt. "
             "In die Kanäle wurden keine Nachrichten geschrieben."
         )
-    )
+    container.add_item(ui.TextDisplay(closing))
     container.add_item(footer())
 
     view = ui.LayoutView(timeout=None)
@@ -365,6 +435,8 @@ async def _run_build(
     bot: "ArchitectBot",
     template: Template,
     mode: BuildMode,
+    *,
+    write_intros: bool = True,
 ) -> None:
     guild = interaction.guild
     if guild is None:
@@ -433,7 +505,9 @@ async def _run_build(
             pass
 
     try:
-        report = await builder.apply(mode, progress=on_progress)
+        report = await builder.apply(
+            mode, progress=on_progress, write_intros=write_intros
+        )
         await interaction.edit_original_response(view=_report_view(template, report))
         LOGGER.info(
             "Build fertig guild=%s template=%s mode=%s created=%d",
@@ -537,10 +611,25 @@ def _preview_views(template: Template) -> list[ui.LayoutView]:
 class DetailView(ui.LayoutView):
     """Template detail screen with Preview / Apply actions."""
 
-    def __init__(self, bot: "ArchitectBot", template: Template) -> None:
+    def __init__(
+        self,
+        bot: "ArchitectBot",
+        template: Template,
+        *,
+        write_intros: bool = True,
+    ) -> None:
         super().__init__(timeout=600)
         self.bot = bot
         self.template = template
+        # Startnachrichten sind standardmaessig an, aber abschaltbar.
+        self.write_intros = write_intros
+        self._compose()
+
+    def _compose(self) -> None:
+        """Baut den Inhalt auf. Wird beim Umschalten erneut aufgerufen."""
+
+        template = self.template
+        self.clear_items()
 
         container = ui.Container(accent_colour=discord.Colour(template.accent))
         container.add_item(

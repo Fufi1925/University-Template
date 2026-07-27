@@ -29,12 +29,12 @@ sieben weitere Vorlagen zur Verfügung.
 | 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 82 | 15 |
 | 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 75 | 13 |
 
-Der Bot legt **ausschließlich die Struktur** an. Er schreibt keine
-automatischen Nachrichten in deine Kanäle.
+Jeder Textkanal bekommt eine **angeheftete Startnachricht**, die seinen Zweck
+erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
 
 ---
 
-## Die vier Kernpunkte
+## Die fünf Kernpunkte
 
 ### 1 · Deutsch als Hauptsprache, in Small Caps
 
@@ -121,7 +121,53 @@ Während des Einrichtens läuft ein Fortschrittsbalken:
 > 🔊・ꜱᴘʀᴀᴄʜᴋᴀɴᴀᴇʟᴇ
 ```
 
-### 4 · Berechtigungen, die halten
+### 4 · Kanäle, die sich selbst erklären
+
+90 leere Kanäle sind ein Friedhof. Deshalb schreibt der Bot in jeden Textkanal
+eine angeheftete Startnachricht:
+
+```
+### 😂  Memes
+────────────────────────────────────────────────
+> Nur Memes
+> Nur Beiträge mit **Bild, Video oder Link**.
+> Reine Textnachrichten werden automatisch entfernt.
+```
+
+Der Text entsteht aus dem `topic` der Vorlage, aus handgeschriebenen `guide`-
+Zeilen und aus dem **Modus** des Kanals. Fünf Modi gibt es:
+
+| Modus | Wirkung |
+|---|---|
+| `media` | nur Beiträge mit Bild, Video oder Link — Text wird entfernt |
+| `threads` | jeder Beitrag bekommt einen eigenen Thread |
+| `counting` | nur die nächste Zahl zählt |
+| `announce` | nur das Team schreibt |
+| `log` | automatische Einträge, Hinweis „nicht hineinschreiben" |
+
+`media` und `counting` werden **durchgesetzt**: Wer im Bilder-Kanal reinen Text
+schreibt, dessen Nachricht wird gelöscht, mit einem Hinweis, der nach zwölf
+Sekunden von selbst verschwindet. Das Team ist davon ausgenommen — und wenn der
+Member-Cache unvollständig ist, wird im Zweifel **nicht** gelöscht.
+
+Vier Kanäle bekommen statt eines Hinweises ein **funktionierendes Widget**:
+
+- `✅・ᴠᴇʀɪꜰɪᴢɪᴇʀᴇɴ` — Button vergibt die Verified-Rolle und nimmt Unverified weg
+- `📜・ʀᴇɢᴇʟɴ` — Zustimmung per Knopf statt bloßer Behauptung
+- `🏷️・ʀᴏʟʟᴇɴ-ᴠᴇʀɢᴀʙᴇ` — Dropdown für Ping- und Interessensrollen
+- `🎫・ᴛɪᴄᴋᴇᴛꜱ` — öffnet einen privaten Thread
+
+Dazu Auto-Reaktionen (👍/👎 unter Vorschlägen, ⭐ im Showcase), eine `1` als
+Startwert im Zähl-Kanal und eine Checkliste im Team-Bereich mit genau den
+Dingen, die der Bot **nicht** automatisch erledigen kann.
+
+Die Nachrichten sind idempotent: Ein zweiter Durchlauf bearbeitet die
+vorhandene Nachricht, statt eine zweite zu posten. Der Bot erkennt seine
+eigenen Nachrichten an einer unsichtbaren Signatur. Der Kanal-Modus überlebt
+einen Neustart, weil er als unsichtbare Marke im Kanal-Topic steht — ganz ohne
+Datenbank.
+
+### 5 · Berechtigungen, die halten
 
 Rollen bekommen keine handverlesenen Flags, sondern gehören zu einer von zehn
 **Stufen** (`guest` → `member` → `helper` → `moderator` → `admin` → `owner`).
@@ -242,6 +288,8 @@ health.py               HTTP-Health-Endpunkt für Railway
 
 core/
   small_caps.py         Typografie + Namensvergleich
+  content.py            Texte der Startnachrichten
+  enforcement.py        Durchsetzung der Kanal-Modi
   schema.py             Typisiertes Template-Modell mit Validierung
   permissions.py        Rollenstufen und Sichtbarkeitsregeln
   registry.py           Lädt und indexiert templates/*.json
@@ -251,12 +299,15 @@ core/
 ui/
   components.py         Components-V2-Bausteine
   views.py              Startmenü, Premium-Modal, Vorschau, Fortschritt
+  widgets.py            Verify, Regeln, Rollen, Ticket, Checkliste
+  channel_intro.py      Die angeheftete Startnachricht
 
 templates/*.json        Die 10 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
+  enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  113 Tests
+tests/                  172 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -272,7 +323,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 113 Tests
+python -m pytest tests/ -v          # 172 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -295,6 +346,9 @@ Die Testsuite prüft unter anderem:
 - **Layout** — dass Blockzitate genutzt werden, keine H1-Überschriften und
   keine Emoji-Häufung vorkommen, und dass eine Zitatzeile nicht versehentlich
   als Markdown-Überschrift gerendert wird
+- **Kanalinhalte** — dass ein zweiter Durchlauf keine doppelten Nachrichten
+  erzeugt, Sprachkanäle leer bleiben, das Team nie von der Löschregel
+  getroffen wird und die Widget-Buttons einen Neustart überstehen
 
 ---
 

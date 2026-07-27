@@ -98,6 +98,19 @@ class FakeChannel:
         self.nsfw = kwargs.get("nsfw", False)
         self.position = kwargs.get("position", 0)
         self.edits = 0
+        self.sent: list["FakeMessage"] = []
+        self.pinned: list["FakeMessage"] = []
+        self.can_send = True
+
+    async def send(self, content=None, view=None, **kwargs):
+        if not self.can_send:
+            raise discord.Forbidden(_FakeResponse(), "no")
+        message = FakeMessage(self, content=content, view=view)
+        self.sent.append(message)
+        return message
+
+    async def pins(self):
+        return list(self.pinned)
 
     async def edit(self, **kwargs):
         kwargs.pop("reason", None)
@@ -112,6 +125,28 @@ class FakeChannel:
 
     def __hash__(self):
         return id(self)
+
+
+class FakeMessage:
+    """Nachricht mit genau den Faehigkeiten, die der Builder nutzt."""
+
+    def __init__(self, channel, content=None, view=None):
+        self.channel = channel
+        self.content = content or ""
+        self.view = view
+        self.author = channel.guild.me
+        self.edits = 0
+
+    async def edit(self, content=None, view=None, **kwargs):
+        self.edits += 1
+        if content is not None:
+            self.content = content
+        if view is not None:
+            self.view = view
+
+    async def pin(self, reason=None):
+        if self not in self.channel.pinned:
+            self.channel.pinned.append(self)
 
 
 class FakeCategory(FakeChannel):
@@ -129,6 +164,8 @@ class FakeMember:
         self.guild = guild
         self.top_role = top_role
         self.guild_permissions = discord.Permissions.all()
+        self.id = 999_000_001
+        self.bot = True
 
 
 class FakeGuild:
@@ -412,3 +449,153 @@ class TestBuildSimulation:
 
         report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND, progress=broken)
         assert report.channels_created == template.channel_count
+
+
+# --------------------------------------------------------------------------- #
+# Kanalinhalte
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture
+def text_channel_patch(monkeypatch):
+    """Lässt den Builder FakeChannel als Textkanal akzeptieren.
+
+    Der Produktivcode prüft ``isinstance(channel, discord.TextChannel)``. Statt
+    diese sinnvolle Prüfung aufzuweichen, wird sie hier für die Dauer des Tests
+    auf die Fakes ausgeweitet.
+    """
+
+    import core.builder as builder_module
+
+    real_isinstance = builder_module.isinstance if hasattr(builder_module, "isinstance") else isinstance
+
+    def patched(obj, cls):
+        if cls is discord.TextChannel:
+            return isinstance(obj, FakeChannel) and not isinstance(obj, FakeCategory) \
+                and obj.kind in {"text", "news", "forum"}
+        if cls is discord.VoiceChannel:
+            return isinstance(obj, FakeChannel) and obj.kind in {"voice", "stage"}
+        return real_isinstance(obj, cls)
+
+    monkeypatch.setattr(builder_module, "isinstance", patched, raising=False)
+    return patched
+
+
+@pytest.mark.asyncio
+class TestChannelIntros:
+    async def test_intros_are_written_and_pinned(self, registry, text_channel_patch):
+        template = registry.get("community")
+        guild = FakeGuild()
+        report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert report.messages_posted > 0, "Es wurde keine Startnachricht geschrieben"
+        assert report.messages_pinned == report.messages_posted
+
+        expected = sum(
+            1 for _, spec in template.iter_channels() if spec.wants_message
+        )
+        assert report.messages_posted == expected
+
+    async def test_voice_channels_stay_empty(self, registry, text_channel_patch):
+        template = registry.get("social")
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        for channel in guild.channels:
+            if channel.kind in {"voice", "stage"}:
+                assert not channel.sent, f"{channel.name} hat eine Nachricht bekommen"
+
+    async def test_second_run_edits_instead_of_duplicating(self, registry, text_channel_patch):
+        """Der wichtigste Test: kein Zuspammen beim erneuten Anwenden."""
+
+        template = registry.get("community")
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        counts = {c.name: len(c.sent) for c in guild.channels}
+        second = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert second.messages_posted == 0, "Zweiter Lauf hat erneut gepostet"
+        assert second.messages_updated > 0, "Bestehende Nachricht wurde nicht bearbeitet"
+        for channel in guild.channels:
+            assert len(channel.sent) == counts[channel.name], (
+                f"{channel.name} hat eine doppelte Nachricht"
+            )
+
+    async def test_intros_can_be_switched_off(self, registry, text_channel_patch):
+        template = registry.get("community")
+        guild = FakeGuild()
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        assert report.messages_posted == 0
+        assert all(not c.sent for c in guild.channels)
+        # Die Struktur muss trotzdem vollständig sein.
+        assert report.channels_created == template.channel_count
+
+    async def test_counting_channel_gets_seeded(self, registry, text_channel_patch):
+        template = registry.get("community")
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        counting = [c for c in guild.channels if "ᴢᴀᴇʜʟᴇɴ" in c.name]
+        assert counting, "Zähl-Kanal nicht gefunden"
+        contents = [m.content for m in counting[0].sent]
+        assert "1" in contents, "Der Zähl-Kanal wurde nicht mit 1 gestartet"
+
+    async def test_topic_carries_mode_marker(self, registry, text_channel_patch):
+        """Ohne die Marke im Topic kennt der Listener den Modus nach einem Neustart nicht."""
+
+        from core.enforcement import read_mode
+        from core.schema import ChannelMode
+
+        template = registry.get("community")
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        memes = [c for c in guild.channels if "ᴍᴇᴍᴇꜱ" in c.name]
+        assert memes
+        assert read_mode(memes[0]) is ChannelMode.MEDIA
+
+    async def test_no_write_permission_is_reported_not_fatal(self, registry, text_channel_patch):
+        template = registry.get("business")
+        guild = FakeGuild()
+
+        original = FakeGuild._make
+
+        async def make_locked(self, name, kind, category=None, **kwargs):
+            channel = await original(self, name, kind, category=category, **kwargs)
+            channel.can_send = False
+            return channel
+
+        FakeGuild._make = make_locked
+        try:
+            report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        finally:
+            FakeGuild._make = original
+
+        assert report.channels_created == template.channel_count
+        assert report.messages_posted == 0
+        assert any("schreiben" in w for w in report.warnings)
+
+    async def test_progress_accounts_for_second_phase(self, registry, text_channel_patch):
+        template = registry.get("study")
+        guild = FakeGuild()
+        seen: list[tuple[int, int]] = []
+
+        async def hook(_label, step, total):
+            seen.append((step, total))
+
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND, progress=hook)
+
+        assert seen[-1][0] == seen[-1][1], "Fortschritt endet nicht bei 100%"
+        assert seen[-1][1] > template.category_count + 1, (
+            "Die Schreibphase fehlt im Fortschritt"
+        )
+
+    async def test_all_templates_write_without_warnings(self, registry, text_channel_patch):
+        for template in registry:
+            guild = FakeGuild()
+            report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+            assert report.messages_posted > 0, template.key
+            assert not report.warnings, f"{template.key}: {report.warnings}"
