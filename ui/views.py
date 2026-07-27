@@ -624,7 +624,7 @@ class StartView(ui.LayoutView):
         container.add_item(
             ui.TextDisplay(
                 f"# {BRAND_NAME}\n"
-                f"-# {BRAND_TAGLINE}  ·  Small Caps  ·  Multi-Language  ·  Components V2"
+                f"-# {BRAND_TAGLINE}  ·  Deutsch  ·  Small Caps  ·  Components V2"
             )
         )
         container.add_item(RULE(large=True))

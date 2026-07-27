@@ -2,20 +2,20 @@
   "key": "esports",
   "name": "Esports Organisation",
   "emoji": "🏆",
-  "tagline": "Roster, Scrims und Matchday-Betrieb",
+  "tagline": "Kader, Scrims und Spieltagsbetrieb",
   "premium": true,
   "accent": "#E11D48",
-  "description": "Für Esports-Organisationen mit mehreren Teams: getrennte Roster-Bereiche, Matchday-Betrieb, Analyse und ein Bereich für Sponsoren und Presse — sauber abgeschirmt von der öffentlichen Fan-Community.",
+  "description": "Für Esports-Organisationen mit mehreren Teams: getrennte Kaderbereiche, Spieltagsbetrieb, Analyse und ein Bereich für Sponsoren und Presse — sauber abgeschirmt von der öffentlichen Fan-Community.",
   "highlights": [
-    "Eigene, private Bereiche für vier Roster",
-    "Matchday-Kanäle mit Vorbereitung, Live und Nachbesprechung",
-    "Analyse- und VOD-Review-Struktur",
+    "Eigene, private Bereiche für vier Kader",
+    "Spieltags-Kanäle mit Vorbereitung, Live und Nachbesprechung",
+    "Analyse- und Aufzeichnungsstruktur",
     "Getrennte Zonen für Fans, Presse und Sponsoren"
   ],
   "roles": [
     {
       "key": "player",
-      "label": "Player",
+      "label": "Spieler",
       "emoji": "🎮",
       "colour": "#E11D48",
       "tier": "trusted",
@@ -24,7 +24,7 @@
     },
     {
       "key": "captain",
-      "label": "Captain",
+      "label": "Kapitaen",
       "emoji": "🎖️",
       "colour": "#BE123C",
       "tier": "helper",
@@ -51,7 +51,7 @@
     },
     {
       "key": "manager",
-      "label": "Team Manager",
+      "label": "Teammanager",
       "emoji": "📋",
       "colour": "#F59E0B",
       "tier": "moderator",
@@ -84,26 +84,26 @@
       "visibility": "gate",
       "channels": [
         {
-          "label": "welcome",
+          "label": "willkommen",
           "emoji": "👋",
           "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
           "visibility": "readonly"
         },
         {
-          "label": "verify",
+          "label": "verifizieren",
           "emoji": "✅",
           "topic": "Hier verifizieren"
         },
         {
-          "label": "rules",
+          "label": "regeln",
           "emoji": "📜",
           "topic": "Serverregeln",
           "visibility": "readonly"
         },
         {
-          "label": "faq",
+          "label": "haeufige-fragen",
           "emoji": "❔",
-          "topic": "Häufige Fragen",
+          "topic": "Häufig gestellte Fragen",
           "visibility": "readonly"
         }
       ]
@@ -114,119 +114,124 @@
       "visibility": "readonly",
       "channels": [
         {
-          "label": "announcements",
+          "label": "ankuendigungen",
           "emoji": "📢",
           "kind": "news",
           "topic": "Wichtige Ankündigungen"
         },
         {
-          "label": "updates",
+          "label": "neuigkeiten",
           "emoji": "🆕",
           "topic": "Server- und Bot-Updates"
         },
         {
-          "label": "roles",
+          "label": "rollen-vergabe",
           "emoji": "🏷️",
-          "topic": "Selbstvergabe von Rollen"
+          "topic": "Rollen selbst vergeben"
         },
         {
-          "label": "partners",
+          "label": "partner",
           "emoji": "🤝",
           "topic": "Unsere Partner"
         },
         {
-          "label": "giveaways",
+          "label": "gewinnspiele",
           "emoji": "🎁",
           "topic": "Aktuelle Gewinnspiele"
         },
         {
-          "label": "match-schedule",
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?"
+        },
+        {
+          "label": "spielplan",
           "emoji": "📅",
           "topic": "Kommende Spiele"
         }
       ]
     },
     {
-      "label": "fanzone",
+      "label": "fanbereich",
       "emoji": "💛",
       "visibility": "public",
       "channels": [
         {
-          "label": "general",
+          "label": "allgemein",
           "emoji": "💬",
           "topic": "Fan-Chat"
         },
         {
-          "label": "match-talk",
+          "label": "spieltag-chat",
           "emoji": "🔥",
           "topic": "Live mitfiebern"
         },
         {
-          "label": "predictions",
+          "label": "tippspiel",
           "emoji": "🔮",
           "topic": "Tippspiel"
         },
         {
           "label": "fanart",
           "emoji": "🎨",
-          "topic": "Fanart und Support"
+          "topic": "Fanart und Unterstützung"
         },
         {
-          "label": "merch",
+          "label": "fanartikel",
           "emoji": "👕",
           "topic": "Merchandise"
         },
         {
-          "label": "watchparty",
+          "label": "gemeinsam-schauen",
           "emoji": "📺",
           "kind": "voice",
           "user_limit": 50
         },
         {
-          "label": "fan-stage",
+          "label": "fan-buehne",
           "emoji": "📣",
           "kind": "stage"
         }
       ]
     },
     {
-      "label": "roster",
+      "label": "kader",
       "emoji": "🎯",
       "visibility": "staff",
       "channels": [
         {
-          "label": "roster-main",
+          "label": "hauptteam",
           "emoji": "🥇",
           "topic": "Hauptteam"
         },
         {
-          "label": "roster-academy",
+          "label": "nachwuchs",
           "emoji": "🥈",
           "topic": "Academy"
         },
         {
-          "label": "roster-female",
+          "label": "frauen-team",
           "emoji": "🥉",
           "topic": "Female Roster"
         },
         {
-          "label": "roster-content",
+          "label": "content-team",
           "emoji": "🎬",
           "topic": "Content-Team"
         },
         {
-          "label": "tryouts",
+          "label": "sichtungen",
           "emoji": "📝",
-          "topic": "Sichtungen"
+          "topic": "Probetrainings"
         },
         {
-          "label": "roster-voice-1",
+          "label": "kader-talk-1",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 8
         },
         {
-          "label": "roster-voice-2",
+          "label": "kader-talk-2",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 8
@@ -234,43 +239,43 @@
       ]
     },
     {
-      "label": "matchday",
+      "label": "spieltag",
       "emoji": "⚔️",
       "visibility": "staff",
       "channels": [
         {
-          "label": "preparation",
+          "label": "vorbereitung",
           "emoji": "📋",
           "topic": "Vorbereitung"
         },
         {
-          "label": "lineups",
+          "label": "aufstellungen",
           "emoji": "🧩",
           "topic": "Aufstellungen"
         },
         {
           "label": "live",
           "emoji": "🔴",
-          "topic": "Während des Matches"
+          "topic": "Während des Spiels"
         },
         {
-          "label": "debrief",
+          "label": "nachbesprechung",
           "emoji": "🗣️",
           "topic": "Nachbesprechung"
         },
         {
-          "label": "results",
+          "label": "ergebnisse",
           "emoji": "📊",
           "topic": "Ergebnisse"
         },
         {
-          "label": "matchroom-1",
+          "label": "spielraum-1",
           "emoji": "🅰️",
           "kind": "voice",
           "user_limit": 6
         },
         {
-          "label": "matchroom-2",
+          "label": "spielraum-2",
           "emoji": "🅱️",
           "kind": "voice",
           "user_limit": 6
@@ -283,27 +288,27 @@
       "visibility": "staff",
       "channels": [
         {
-          "label": "vod-review",
+          "label": "spielanalyse",
           "emoji": "🎞️",
-          "topic": "VOD-Analysen"
+          "topic": "Aufzeichnungen analysieren"
         },
         {
-          "label": "scouting",
+          "label": "gegner-beobachtung",
           "emoji": "🔭",
           "topic": "Gegner beobachten"
         },
         {
-          "label": "stats",
+          "label": "statistiken",
           "emoji": "📈",
           "topic": "Statistiken"
         },
         {
-          "label": "strategy",
+          "label": "strategie",
           "emoji": "🗺️",
           "topic": "Strategien"
         },
         {
-          "label": "review-voice",
+          "label": "analyse-talk",
           "emoji": "🖥️",
           "kind": "voice",
           "user_limit": 10
@@ -316,7 +321,7 @@
       "visibility": "leadership",
       "channels": [
         {
-          "label": "management",
+          "label": "geschaeftsleitung",
           "emoji": "🏛️",
           "topic": "Orga-Leitung"
         },
@@ -341,7 +346,7 @@
           "topic": "Budget"
         },
         {
-          "label": "orga-voice",
+          "label": "orga-talk",
           "emoji": "🔐",
           "kind": "voice",
           "user_limit": 10
@@ -349,14 +354,14 @@
       ]
     },
     {
-      "label": "social",
+      "label": "social media",
       "emoji": "📱",
       "visibility": "public",
       "channels": [
         {
           "label": "instagram",
           "emoji": "📸",
-          "topic": "Instagram-Posts"
+          "topic": "Instagram-Beiträge"
         },
         {
           "label": "tiktok",
@@ -376,10 +381,10 @@
         {
           "label": "x-twitter",
           "emoji": "🐦",
-          "topic": "Posts von X"
+          "topic": "Beiträge von X"
         },
         {
-          "label": "self-promo",
+          "label": "eigenwerbung",
           "emoji": "📣",
           "topic": "Eigene Projekte vorstellen",
           "slowmode": 300
@@ -387,14 +392,14 @@
       ]
     },
     {
-      "label": "multi language",
+      "label": "sprachen",
       "emoji": "🌍",
       "visibility": "public",
       "channels": [
         {
           "label": "deutsch",
           "emoji": "🇩🇪",
-          "topic": "Deutschsprachiger Chat",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
           "slowmode": 3
         },
         {
@@ -402,143 +407,40 @@
           "emoji": "🇬🇧",
           "topic": "English speaking chat",
           "slowmode": 3
-        },
-        {
-          "label": "francais",
-          "emoji": "🇫🇷",
-          "topic": "Discussion en français",
-          "slowmode": 3
-        },
-        {
-          "label": "espanol",
-          "emoji": "🇪🇸",
-          "topic": "Chat en español",
-          "slowmode": 3
-        },
-        {
-          "label": "italiano",
-          "emoji": "🇮🇹",
-          "topic": "Chat in italiano",
-          "slowmode": 3
-        },
-        {
-          "label": "portugues",
-          "emoji": "🇵🇹",
-          "topic": "Conversa em português",
-          "slowmode": 3
-        },
-        {
-          "label": "brasil",
-          "emoji": "🇧🇷",
-          "topic": "Bate-papo brasileiro",
-          "slowmode": 3
-        },
-        {
-          "label": "nederlands",
-          "emoji": "🇳🇱",
-          "topic": "Nederlandse chat",
-          "slowmode": 3
-        },
-        {
-          "label": "polski",
-          "emoji": "🇵🇱",
-          "topic": "Czat po polsku",
-          "slowmode": 3
-        },
-        {
-          "label": "русский",
-          "emoji": "🇷🇺",
-          "topic": "Русскоязычный чат",
-          "slowmode": 3
-        },
-        {
-          "label": "українська",
-          "emoji": "🇺🇦",
-          "topic": "Українськомовний чат",
-          "slowmode": 3
-        },
-        {
-          "label": "turkce",
-          "emoji": "🇹🇷",
-          "topic": "Türkçe sohbet",
-          "slowmode": 3
-        },
-        {
-          "label": "svenska",
-          "emoji": "🇸🇪",
-          "topic": "Svensk chatt",
-          "slowmode": 3
-        },
-        {
-          "label": "norsk",
-          "emoji": "🇳🇴",
-          "topic": "Norsk chat",
-          "slowmode": 3
-        },
-        {
-          "label": "dansk",
-          "emoji": "🇩🇰",
-          "topic": "Dansk chat",
-          "slowmode": 3
-        },
-        {
-          "label": "suomi",
-          "emoji": "🇫🇮",
-          "topic": "Suomenkielinen chat",
-          "slowmode": 3
-        },
-        {
-          "label": "other-languages",
-          "emoji": "🌐",
-          "topic": "Every other language is welcome here"
         }
       ]
     },
     {
-      "label": "language voice",
+      "label": "sprach-talks",
       "emoji": "🗣️",
       "visibility": "public",
       "channels": [
         {
-          "label": "deutsch-voice",
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
           "emoji": "🇩🇪",
           "kind": "voice",
-          "user_limit": 12
+          "user_limit": 10
         },
         {
-          "label": "english-voice",
+          "label": "english-talk-2",
           "emoji": "🇬🇧",
           "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "francais-voice",
-          "emoji": "🇫🇷",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "espanol-voice",
-          "emoji": "🇪🇸",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "italiano-voice",
-          "emoji": "🇮🇹",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "portugues-voice",
-          "emoji": "🇵🇹",
-          "kind": "voice",
-          "user_limit": 12
+          "user_limit": 10
         }
       ]
     },
     {
-      "label": "vip lounge",
+      "label": "vip bereich",
       "emoji": "💎",
       "visibility": "vip",
       "channels": [
@@ -548,21 +450,54 @@
           "topic": "Exklusiv für VIPs und Booster"
         },
         {
-          "label": "vip-perks",
+          "label": "vip-vorteile",
           "emoji": "🎁",
           "topic": "Deine Vorteile",
           "visibility": "readonly"
         },
         {
-          "label": "vip-wishes",
+          "label": "vip-wuensche",
           "emoji": "🌠",
-          "topic": "Wünsche und Feedback"
+          "topic": "Wünsche und Rückmeldungen"
         },
         {
-          "label": "vip-voice",
+          "label": "vip-talk",
           "emoji": "🥂",
           "kind": "voice",
           "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server"
+        },
+        {
+          "label": "beschwerden",
+          "emoji": "📣",
+          "topic": "Beschwerden über Mitglieder"
+        },
+        {
+          "label": "entbannungsantrag",
+          "emoji": "⚖️",
+          "topic": "Einspruch gegen eine Strafe"
         }
       ]
     },
@@ -577,33 +512,38 @@
           "topic": "Interner Teamchat"
         },
         {
-          "label": "team-announcements",
+          "label": "team-ankuendigungen",
           "emoji": "📣",
           "topic": "Ankündigungen fürs Team"
         },
         {
-          "label": "tasks",
+          "label": "aufgaben",
           "emoji": "📋",
           "topic": "Aufgaben und Zuständigkeiten"
         },
         {
-          "label": "applications",
+          "label": "bewerbungen",
           "emoji": "🧾",
           "topic": "Eingehende Bewerbungen"
         },
         {
-          "label": "reports",
+          "label": "meldungen",
           "emoji": "🚨",
           "topic": "Gemeldete Vorfälle"
         },
         {
-          "label": "team-voice",
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 15
         },
         {
-          "label": "meeting-room",
+          "label": "besprechungsraum",
           "emoji": "🪑",
           "kind": "voice",
           "user_limit": 25
@@ -621,27 +561,27 @@
           "topic": "Moderationsaktionen"
         },
         {
-          "label": "member-logs",
+          "label": "mitglieder-logs",
           "emoji": "👥",
           "topic": "Beitritte und Austritte"
         },
         {
-          "label": "message-logs",
+          "label": "nachrichten-logs",
           "emoji": "✏️",
           "topic": "Bearbeitete und gelöschte Nachrichten"
         },
         {
-          "label": "voice-logs",
+          "label": "sprach-logs",
           "emoji": "🔊",
           "topic": "Voice-Aktivität"
         },
         {
-          "label": "role-logs",
+          "label": "rollen-logs",
           "emoji": "🏷️",
           "topic": "Rollenänderungen"
         },
         {
-          "label": "channel-logs",
+          "label": "kanal-logs",
           "emoji": "🗂️",
           "topic": "Kanaländerungen"
         },
@@ -656,7 +596,7 @@
           "topic": "Bot-Ereignisse"
         },
         {
-          "label": "invite-logs",
+          "label": "einladungs-logs",
           "emoji": "🔗",
           "topic": "Einladungs-Tracking"
         },

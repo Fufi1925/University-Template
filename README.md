@@ -1,8 +1,8 @@
 # 🏛️ Discord Architect
 
 Ein Discord-Bot, der komplette Server-Strukturen aus fertigen Vorlagen baut —
-**10 Templates, 1.089 Kanäle, 247 Voice-Räume**, alles in Small Caps, mit
-Multi-Language-Bereichen und einer Oberfläche komplett aus **Components V2**.
+**10 Templates, 886 Kanäle, 195 Voice-Räume** — komplett auf Deutsch, in
+Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 
 ```
 !start
@@ -18,16 +18,16 @@ sieben weitere Vorlagen zur Verfügung.
 
 | | Template | Kategorien | Kanäle | Voice |
 |---|---|---:|---:|---:|
-| 🆓 | **Community Discord** — der Allrounder | 14 | 123 | 28 |
-| 🆓 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 122 | 31 |
-| 🆓 | **Social Lounge** — 37 Sprachen, 24 Sprach-Voice | 14 | 141 | 42 |
-| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 122 | 32 |
-| 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 16 | 112 | 25 |
-| 💎 | **Study & University** — Fächer, Pomodoro-Räume | 15 | 106 | 21 |
-| 💎 | **Creator Studio** — Produktions-Pipeline | 14 | 93 | 18 |
-| 💎 | **Support Center** — Tickets, Eskalation | 13 | 92 | 18 |
-| 💎 | **Esports Organisation** — Roster, Matchday | 13 | 92 | 17 |
-| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 86 | 15 |
+| 🆓 | **Community Discord** — der Allrounder | 15 | 93 | 21 |
+| 🆓 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 100 | 27 |
+| 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 95 | 22 |
+| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 99 | 26 |
+| 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 17 | 96 | 22 |
+| 💎 | **Study & University** — Fächer, Pomodoro-Räume | 16 | 96 | 19 |
+| 💎 | **Creator Studio** — Produktionsablauf | 15 | 83 | 16 |
+| 💎 | **Support Center** — Tickets, Eskalation | 13 | 67 | 14 |
+| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 82 | 15 |
+| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 75 | 13 |
 
 Der Bot legt **ausschließlich die Struktur** an. Er schreibt keine
 automatischen Nachrichten in deine Kanäle.
@@ -36,34 +36,46 @@ automatischen Nachrichten in deine Kanäle.
 
 ## Die vier Kernpunkte
 
-### 1 · Small Caps Basic, die Discord überlebt
+### 1 · Deutsch als Hauptsprache, in Small Caps
 
-Discord schreibt Kanalnamen zwangsweise klein — normale Formatierung geht
-dabei kaputt. Unicode-Kapitälchen überstehen das, weil jedes Zeichen **selbst**
-schon seine Kleinform ist:
+Alle Kanal- und Kategorienamen sind deutsch. Discord schreibt Kanalnamen
+zwangsweise klein — normale Formatierung geht dabei kaputt.
+Unicode-Kapitälchen überstehen das, weil jedes Zeichen **selbst** schon seine
+Kleinform ist:
 
 ```
-📢・ᴀɴɴᴏᴜɴᴄᴇᴍᴇɴᴛꜱ      🔊・ᴠᴏɪᴄᴇ-ʟᴏᴜɴɢᴇ      🛡️・ᴛᴇᴀᴍ-ᴄʜᴀᴛ
+📢・ᴀɴᴋᴜᴇɴᴅɪɢᴜɴɢᴇɴ    🔊・ᴀʟʟɢᴇᴍᴇɪɴᴇʀ-ᴛᴀʟᴋ    🛡️・ᴛᴇᴀᴍ-ᴄʜᴀᴛ
 ```
 
-Deutsche Umlaute werden gefaltet (`Größe` → `ɢʀᴏᴇꜱꜱᴇ`), damit die Zeile optisch
-ruhig bleibt. **Nicht-lateinische Schriften bleiben unangetastet** — `русский`,
-`日本語` und `العربية` behalten ihre native Schreibweise, statt zu Buchstabensalat
-zu werden.
+Umlaute werden zu `ae/oe/ue` gefaltet (`ankündigungen` → `ᴀɴᴋᴜᴇɴᴅɪɢᴜɴɢᴇɴ`).
+Das ist keine Bequemlichkeit, sondern Notwendigkeit: Unicode kennt schlicht
+keine Kapitälchen-Umlaute. Die Alternative wäre ein optischer Bruch mitten im
+Wort gewesen.
 
-### 2 · Sprachkanäle in jeder Vorlage
+Etablierte Lehnwörter bleiben stehen, wo eine Eindeutschung gestelzt wirken
+würde — `memes`, `clips`, `tickets`, `podcast`, `budget`, `pomodoro`.
 
-Der „Social Logs"-Gedanke, konsequent ausgebaut: **37 Sprachen** mit eigenem
-Text- und Voice-Kanal, inklusive Ukrainisch, Thai, Hebräisch, Vietnamesisch und
-Filipino. Jede Vorlage bekommt einen passend dimensionierten Sprachblock, die
-Social Lounge den größten.
+### 2 · Sprachbereich: Deutsch und English
+
+Jede Vorlage hat einen eigenen Sprachbereich mit genau zwei Kanälen plus
+passenden Talks:
+
+```
+🌍・ꜱᴘʀᴀᴄʜᴇɴ            🗣️・ꜱᴘʀᴀᴄʜ-ᴛᴀʟᴋꜱ
+   🇩🇪・ᴅᴇᴜᴛꜱᴄʜ            🇩🇪・ᴅᴇᴜᴛꜱᴄʜ-ᴛᴀʟᴋ
+   🇬🇧・ᴇɴɢʟɪꜱʜ            🇬🇧・ᴇɴɢʟɪꜱʜ-ᴛᴀʟᴋ
+```
+
+Deutsch ist die Hauptsprache, English der Kanal für internationale Mitglieder.
+Bewusst nicht mehr: ein halb ausgestorbener Kanal je Sprache schadet einer
+Community mehr, als er nutzt.
 
 Dazu in **jeder** Vorlage die vollständige Log-Suite:
 
 ```
-🔨・mod-logs      ✏️・message-logs    🏷️・role-logs      📱・social-logs
-👥・member-logs   🔊・voice-logs      🗂️・channel-logs   🤖・bot-logs
-🔗・invite-logs   🗃️・server-logs
+🔨・mod-logs           ✏️・nachrichten-logs   🏷️・rollen-logs      📱・social-logs
+👥・mitglieder-logs    🔊・sprach-logs        🗂️・kanal-logs       🤖・bot-logs
+🔗・einladungs-logs    🗃️・server-logs
 ```
 
 ### 3 · Components V2 statt Embeds
@@ -148,7 +160,7 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 `/health` liefert Live-Status:
 
 ```json
-{"status":"online","guilds":3,"templates":10,"channels":1089,"active_builds":0}
+{"status":"online","guilds":3,"templates":10,"channels":886,"active_builds":0}
 ```
 
 ---
@@ -209,7 +221,7 @@ templates/*.json        Die 10 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   preview.py            Templates im Terminal ansehen
-tests/                  94 Tests
+tests/                  98 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -225,7 +237,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 94 Tests
+python -m pytest tests/ -v          # 98 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen

@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Generates the JSON files in ``templates/``.
+"""Erzeugt die JSON-Dateien in ``templates/``.
 
-The templates themselves are plain data — this script only exists so the shared
-building blocks (language channels, log categories, staff areas) stay identical
-across every template instead of drifting apart through copy-paste.
+Die Templates selbst sind reine Daten — dieses Skript existiert nur, damit die
+gemeinsamen Bausteine (Sprachbereich, Logs, Team-Bereiche) in allen Vorlagen
+identisch bleiben, statt durch Copy-Paste auseinanderzudriften.
 
-Run after editing:  ``python tools/generate_templates.py``
+Hauptsprache ist Deutsch: alle Kanal- und Kategorienamen sind deutsch.
+Der Sprachbereich enthält bewusst nur Deutsch und English.
+
+Zur Typografie: Kanal- und Kategorienamen sind mit ae/oe/ue geschrieben, weil
+Unicode keine Small-Caps-Umlaute kennt und ``ä`` im Namen sonst optisch aus der
+Zeile brechen würde. Beschreibungen, Taglines und Topics sind normaler
+Fließtext und verwenden echte Umlaute.
+
+Nach Änderungen ausführen:  ``python tools/generate_templates.py``
 """
 
 from __future__ import annotations
@@ -22,7 +30,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 
 # --------------------------------------------------------------------------- #
-# Helpers
+# Helfer
 # --------------------------------------------------------------------------- #
 
 def ch(
@@ -88,201 +96,6 @@ def role(
 
 
 # --------------------------------------------------------------------------- #
-# Language blocks — the "Social Logs" idea, scaled up
-# --------------------------------------------------------------------------- #
-
-# (flag, label, native topic)
-LANGUAGES: list[tuple[str, str, str]] = [
-    ("🇩🇪", "deutsch", "Deutschsprachiger Chat"),
-    ("🇬🇧", "english", "English speaking chat"),
-    ("🇫🇷", "francais", "Discussion en français"),
-    ("🇪🇸", "espanol", "Chat en español"),
-    ("🇮🇹", "italiano", "Chat in italiano"),
-    ("🇵🇹", "portugues", "Conversa em português"),
-    ("🇧🇷", "brasil", "Bate-papo brasileiro"),
-    ("🇳🇱", "nederlands", "Nederlandse chat"),
-    ("🇵🇱", "polski", "Czat po polsku"),
-    ("🇷🇺", "русский", "Русскоязычный чат"),
-    ("🇺🇦", "українська", "Українськомовний чат"),
-    ("🇹🇷", "turkce", "Türkçe sohbet"),
-    ("🇸🇪", "svenska", "Svensk chatt"),
-    ("🇳🇴", "norsk", "Norsk chat"),
-    ("🇩🇰", "dansk", "Dansk chat"),
-    ("🇫🇮", "suomi", "Suomenkielinen chat"),
-    ("🇨🇿", "cestina", "Český chat"),
-    ("🇸🇰", "slovencina", "Slovenský chat"),
-    ("🇭🇺", "magyar", "Magyar csevegés"),
-    ("🇷🇴", "romana", "Chat în română"),
-    ("🇧🇬", "български", "Български чат"),
-    ("🇬🇷", "ελληνικά", "Ελληνικό chat"),
-    ("🇷🇸", "srpski", "Srpski čet"),
-    ("🇭🇷", "hrvatski", "Hrvatski chat"),
-    ("🇱🇹", "lietuviu", "Lietuviškas pokalbis"),
-    ("🇯🇵", "日本語", "日本語チャット"),
-    ("🇰🇷", "한국어", "한국어 채팅"),
-    ("🇨🇳", "中文", "中文聊天"),
-    ("🇹🇭", "ไทย", "แชทภาษาไทย"),
-    ("🇻🇳", "tieng-viet", "Trò chuyện tiếng Việt"),
-    ("🇮🇩", "indonesia", "Obrolan bahasa Indonesia"),
-    ("🇵🇭", "filipino", "Filipino chat"),
-    ("🇮🇳", "हिन्दी", "हिंदी चैट"),
-    ("🇸🇦", "العربية", "دردشة عربية"),
-    ("🇮🇱", "עברית", "צ׳אט בעברית"),
-    ("🇮🇷", "فارسی", "گفتگوی فارسی"),
-]
-
-
-def language_text(count: int, *, slowmode: int = 3) -> list[dict[str, Any]]:
-    """Text channels, one per language."""
-
-    return [
-        ch(label, flag, topic=topic, slowmode=slowmode)
-        for flag, label, topic in LANGUAGES[:count]
-    ] + [ch("other-languages", "🌐", topic="Every other language is welcome here")]
-
-
-def language_voice(count: int, *, user_limit: int = 12) -> list[dict[str, Any]]:
-    """Voice rooms, one per language."""
-
-    return [
-        ch(f"{label}-voice", flag, "voice", user_limit=user_limit)
-        for flag, label, _ in LANGUAGES[:count]
-    ]
-
-
-def language_category(text_count: int, voice_count: int) -> list[dict[str, Any]]:
-    blocks = [
-        cat("multi language", "🌍", "public", language_text(text_count)),
-    ]
-    if voice_count:
-        blocks.append(
-            cat("language voice", "🗣️", "public", language_voice(voice_count))
-        )
-    return blocks
-
-
-# --------------------------------------------------------------------------- #
-# Reusable categories
-# --------------------------------------------------------------------------- #
-
-def gate_category() -> dict[str, Any]:
-    """The only thing an unverified member sees."""
-
-    return cat(
-        "willkommen", "🚪", "gate",
-        [
-            ch("welcome", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
-            ch("verify", "✅", topic="Hier verifizieren"),
-            ch("rules", "📜", topic="Serverregeln", visibility="readonly"),
-            ch("faq", "❔", topic="Häufige Fragen", visibility="readonly"),
-        ],
-    )
-
-
-def info_category(extra: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return cat(
-        "information", "📌", "readonly",
-        [
-            ch("announcements", "📢", "news", topic="Wichtige Ankündigungen"),
-            ch("updates", "🆕", topic="Server- und Bot-Updates"),
-            ch("roles", "🏷️", topic="Selbstvergabe von Rollen"),
-            ch("partners", "🤝", topic="Unsere Partner"),
-            ch("giveaways", "🎁", topic="Aktuelle Gewinnspiele"),
-            *(extra or []),
-        ],
-    )
-
-
-def staff_category(name: str = "team") -> dict[str, Any]:
-    return cat(
-        name, "🛡️", "staff",
-        [
-            ch("team-chat", "💼", topic="Interner Teamchat"),
-            ch("team-announcements", "📣", topic="Ankündigungen fürs Team"),
-            ch("tasks", "📋", topic="Aufgaben und Zuständigkeiten"),
-            ch("applications", "🧾", topic="Eingehende Bewerbungen"),
-            ch("reports", "🚨", topic="Gemeldete Vorfälle"),
-            ch("team-voice", "🎙️", "voice", user_limit=15),
-            ch("meeting-room", "🪑", "voice", user_limit=25),
-        ],
-    )
-
-
-def leadership_category() -> dict[str, Any]:
-    return cat(
-        "leitung", "👑", "leadership",
-        [
-            ch("leadership-chat", "🏛️", topic="Nur für die Serverleitung"),
-            ch("strategy", "🗺️", topic="Planung und Ausrichtung"),
-            ch("personnel", "🧑‍💼", topic="Personalthemen"),
-            ch("leadership-voice", "🔐", "voice", user_limit=10),
-        ],
-    )
-
-
-def logs_category() -> dict[str, Any]:
-    """The full log suite — this is the 'Social Logs' pattern expanded."""
-
-    return cat(
-        "logs", "📜", "staff",
-        [
-            ch("mod-logs", "🔨", topic="Moderationsaktionen"),
-            ch("member-logs", "👥", topic="Beitritte und Austritte"),
-            ch("message-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
-            ch("voice-logs", "🔊", topic="Voice-Aktivität"),
-            ch("role-logs", "🏷️", topic="Rollenänderungen"),
-            ch("channel-logs", "🗂️", topic="Kanaländerungen"),
-            ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
-            ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
-            ch("invite-logs", "🔗", topic="Einladungs-Tracking"),
-            ch("server-logs", "🗃️", topic="Alles Übrige"),
-        ],
-    )
-
-
-def voice_lounge(count: int = 8, *, prefix: str = "lounge") -> dict[str, Any]:
-    rooms = [
-        ch("general-voice", "🎙️", "voice", user_limit=0),
-        ch("chill", "☕", "voice", user_limit=10),
-        ch("music", "🎶", "voice", user_limit=0),
-        ch("duo", "👥", "voice", user_limit=2),
-        ch("trio", "👨‍👩‍👦", "voice", user_limit=3),
-        ch("squad", "🛡️", "voice", user_limit=5),
-        ch("study", "📚", "voice", user_limit=0),
-        ch("stream-room", "📺", "voice", user_limit=20),
-        ch("late-night", "🌙", "voice", user_limit=12),
-        ch("afk", "💤", "voice", user_limit=0),
-    ]
-    return cat(prefix, "🔊", "public", rooms[:count] + [rooms[-1]])
-
-
-def vip_category() -> dict[str, Any]:
-    return cat(
-        "vip lounge", "💎", "vip",
-        [
-            ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
-            ch("vip-perks", "🎁", topic="Deine Vorteile", visibility="readonly"),
-            ch("vip-wishes", "🌠", topic="Wünsche und Feedback"),
-            ch("vip-voice", "🥂", "voice", user_limit=15),
-        ],
-    )
-
-
-def social_category() -> dict[str, Any]:
-    return cat(
-        "social", "📱", "public",
-        [
-            ch("instagram", "📸", topic="Instagram-Posts"),
-            ch("tiktok", "🎵", topic="TikTok-Clips"),
-            ch("youtube", "▶️", topic="YouTube-Uploads"),
-            ch("twitch", "🟣", topic="Twitch-Streams"),
-            ch("x-twitter", "🐦", topic="Posts von X"),
-            ch("self-promo", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
-        ],
-    )
-
-
-# --------------------------------------------------------------------------- #
 # Templates
 # --------------------------------------------------------------------------- #
 
@@ -295,16 +108,16 @@ def community() -> dict[str, Any]:
         "premium": False,
         "accent": "#5865F2",
         "description": (
-            "Ein vollständig strukturierter Community-Server: klare Eingangsschleuse, "
-            "lebendige Chatbereiche, 37 Sprachkanäle, großzügige Voice-Zone und ein "
-            "abgeschirmter Team- und Log-Bereich. Ideal, wenn du ohne Umwege einen "
-            "professionellen Server willst."
+            "Ein vollständig strukturierter Community-Server auf Deutsch: klare "
+            "Eingangsschleuse, lebendige Chatbereiche, Events, Kreativzone und "
+            "ein abgeschirmter Team- und Log-Bereich. Ideal, wenn du ohne Umwege "
+            "einen professionellen Server willst."
         ),
         "highlights": [
+            "Komplett deutsche Kanalnamen in Small Caps",
             "Verify-Schleuse — Neulinge sehen erst nach der Freigabe den ganzen Server",
-            "37 Sprachkanäle plus 12 Sprach-Voice-Räume",
+            "Sprachbereich mit Deutsch und English",
             "Vollständige Log-Suite inklusive Social- und Voice-Logs",
-            "Abgestufte Team-, Leitungs- und VIP-Bereiche",
         ],
         "roles": [
             role("creator", "Content Creator", "🎨", "#F97316", "trusted"),
@@ -312,47 +125,129 @@ def community() -> dict[str, Any]:
             role("designer", "Designer", "🖌️", "#EC4899", "trusted", hoist=False),
         ],
         "categories": [
-            gate_category(),
-            info_category(),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+            ]),
             cat("community", "💬", "public", [
-                ch("general", "💭", topic="Der Hauptchat", slowmode=3),
-                ch("small-talk", "🫧", topic="Kurz und locker"),
-                ch("media", "🖼️", topic="Bilder, Clips, Fundstücke"),
+                ch("allgemein", "💭", topic="Der Hauptchat", slowmode=3),
+                ch("plauderecke", "🫧", topic="Kurz und locker"),
+                ch("bilder-und-clips", "🖼️", topic="Bilder, Clips, Fundstücke"),
                 ch("memes", "😂", topic="Nur Memes"),
-                ch("pets", "🐾", topic="Deine Haustiere"),
-                ch("food", "🍕", topic="Essen und Rezepte"),
-                ch("music-share", "🎧", topic="Was hörst du gerade?"),
-                ch("off-topic", "🌙", topic="Alles, was sonst nirgends passt"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle gehören hierher"),
-                ch("counting", "🔢", topic="Gemeinsam zählen"),
+                ch("haustiere", "🐾", topic="Deine Haustiere"),
+                ch("essen", "🍕", topic="Essen und Rezepte"),
+                ch("musik-tipps", "🎧", topic="Was hörst du gerade?"),
+                ch("sport", "⚽", topic="Sport und Fitness"),
+                ch("technik", "💻", topic="Technik und Gadgets"),
+                ch("reisen", "✈️", topic="Reisen und Urlaub"),
+                ch("sonstiges", "🌙", topic="Alles, was sonst nirgends passt"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle gehören hierher"),
+                ch("zaehlen", "🔢", topic="Gemeinsam zählen"),
+                ch("geburtstage", "🎂", topic="Wer hat heute Geburtstag?"),
             ]),
-            *language_category(36, 12),
-            voice_lounge(9),
-            cat("events", "🎉", "public", [
-                ch("event-announcements", "📅", "news", topic="Kommende Events", visibility="readonly"),
-                ch("event-signup", "🎟️", topic="Anmeldungen"),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("sprachkanaele", "🔊", "public", [
+                ch("allgemeiner-talk", "🎙️", "voice"),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("musik", "🎶", "voice"),
+                ch("zu-zweit", "👥", "voice", user_limit=2),
+                ch("zu-dritt", "👨‍👩‍👦", "voice", user_limit=3),
+                ch("gruppe", "🛡️", "voice", user_limit=5),
+                ch("lernen", "📚", "voice"),
+                ch("stream-raum", "📺", "voice", user_limit=20),
+                ch("nachtschicht", "🌙", "voice", user_limit=12),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("veranstaltungen", "🎉", "public", [
+                ch("event-ankuendigungen", "📅", "news", topic="Kommende Events", visibility="readonly"),
+                ch("event-anmeldung", "🎟️", topic="Anmeldungen"),
                 ch("event-chat", "🎊", topic="Rund ums Event"),
-                ch("event-photos", "📷", topic="Rückblicke"),
-                ch("event-stage", "🎤", "stage"),
-                ch("event-voice", "🎪", "voice", user_limit=50),
+                ch("event-rueckblick", "📷", topic="Bilder vergangener Events"),
+                ch("umfragen", "📊", topic="Abstimmungen"),
+                ch("event-buehne", "🎤", "stage"),
+                ch("event-talk", "🎪", "voice", user_limit=50),
             ]),
-            cat("creative", "🎨", "public", [
-                ch("showcase", "🖼️", topic="Zeig deine Arbeit", slowmode=60),
-                ch("feedback", "💡", topic="Konstruktive Kritik"),
-                ch("resources", "📚", topic="Tools und Fundstücke"),
-                ch("collabs", "🤝", topic="Partner für Projekte finden"),
+            cat("kreativ", "🎨", "public", [
+                ch("vorzeigen", "🖼️", topic="Zeig deine Arbeit", slowmode=60),
+                ch("rueckmeldungen", "💡", topic="Konstruktive Kritik"),
+                ch("fundstuecke", "📚", topic="Werkzeuge und Fundstücke"),
+                ch("zusammenarbeit", "🤝", topic="Partner für Projekte finden"),
+                ch("auftraege", "💼", topic="Auftragsarbeiten", slowmode=600),
+            ]),
+            cat("gaming", "🎮", "public", [
+                ch("gaming-chat", "🎮", topic="Allgemeiner Gaming-Chat"),
+                ch("mitspieler-suche", "🔎", topic="Mitspieler finden"),
+                ch("spiele-tipps", "🏆", topic="Empfehlungen und Highlights"),
+                ch("gaming-talk", "🕹️", "voice", user_limit=10),
             ]),
             cat("hilfe", "🛟", "public", [
-                ch("support", "❓", "forum", topic="Frag die Community"),
-                ch("bug-reports", "🐛", topic="Fehler melden"),
-                ch("suggestions", "💭", topic="Ideen für den Server"),
-                ch("appeals", "⚖️", topic="Einspruch gegen eine Strafe"),
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
             ]),
-            social_category(),
-            vip_category(),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -362,25 +257,26 @@ def rp() -> dict[str, Any]:
         "key": "rp",
         "name": "RP Server",
         "emoji": "🎭",
-        "tagline": "Roleplay mit Fraktionen, Ämtern und Immersion",
+        "tagline": "Roleplay mit Fraktionen, Behörden und Wirtschaft",
         "premium": False,
         "accent": "#9333EA",
         "description": (
-            "Ein durchgeplanter Roleplay-Server. Die Reihenfolge ist bewusst gewählt: "
-            "Flughafen und Verify zuerst, dann Regelwerke, RP-Start, Fraktionen, "
-            "Behörden und Wirtschaft. Dazu abgeschirmte Team-, Büro- und Log-Bereiche."
+            "Ein durchgeplanter Roleplay-Server auf Deutsch. Die Reihenfolge ist "
+            "bewusst gewählt: Flughafen und Verify zuerst, dann Regelwerke, "
+            "RP-Start, Fraktionen, Behörden und Wirtschaft. Dazu abgeschirmte "
+            "Team-, Büro- und Log-Bereiche."
         ),
         "highlights": [
-            "Bewusste Kategorie-Reihenfolge: Flughafen → Verify → Regelwerk → RP",
+            "Bewusste Reihenfolge: Flughafen → Verify → Regelwerk → RP",
             "Eigene Bereiche für Fraktionen, Behörden und Wirtschaft",
-            "18 RP-Voice-Räume inklusive Funk- und Gerichtssaal",
+            "Viele RP-Talks inklusive Funk- und Gerichtssaal",
             "Getrennte Büro- und Aktenbereiche für das High-Team",
         ],
         "roles": [
             role("roleplayer", "Roleplayer", "🎭", "#7C3AED", "member", hoist=False),
             role("whitelist", "Whitelist", "📝", "#8B5CF6", "trusted", hoist=False),
             role("faction_lead", "Fraktionsleitung", "🏴", "#A21CAF", "helper"),
-            role("gov", "Behörde", "🏛️", "#0EA5E9", "helper"),
+            role("gov", "Behoerde", "🏛️", "#0EA5E9", "helper"),
             role("emergency", "Rettungsdienst", "🚑", "#EF4444", "helper"),
             role("police", "Polizei", "🚓", "#2563EB", "helper"),
             role("rp_event", "RP Event Team", "🎬", "#C026D3", "helper"),
@@ -394,7 +290,7 @@ def rp() -> dict[str, Any]:
                 ch("flughafen-info", "📋", topic="Alles zum Einstieg", visibility="readonly"),
                 ch("fundbuero", "🧳", topic="Verlorenes und Gefundenes"),
             ]),
-            cat("verify", "✅", "gate", [
+            cat("verifizierung", "✅", "gate", [
                 ch("verifizieren", "🔓", topic="Verifizierung starten"),
                 ch("verify-info", "📖", topic="So läuft die Verifizierung", visibility="readonly"),
                 ch("verify-fragen", "❔", topic="Fragen zur Verifizierung"),
@@ -405,23 +301,23 @@ def rp() -> dict[str, Any]:
                 ch("rp-regeln", "🎭", topic="Roleplay-spezifische Regeln"),
                 ch("fraktionsregeln", "🏴", topic="Regeln für Fraktionen"),
                 ch("strafenkatalog", "📕", topic="Welche Strafe folgt worauf"),
-                ch("changelog", "🔄", topic="Änderungen am Regelwerk"),
+                ch("regel-aenderungen", "🔄", topic="Änderungen am Regelwerk"),
             ]),
             cat("rp start", "🚀", "public", [
                 ch("ankuendigungen", "📢", "news", topic="Server-News", visibility="readonly"),
-                ch("rp-news", "📰", topic="Was passiert in der Stadt?"),
+                ch("stadt-nachrichten", "📰", topic="Was passiert in der Stadt?"),
                 ch("charaktere", "🧑‍🎤", topic="Stelle deinen Charakter vor", slowmode=120),
                 ch("steckbriefe", "📇", topic="Charakter-Steckbriefe"),
-                ch("suche-rp", "🔍", topic="Mitspieler für Szenen finden"),
-                ch("ooc-chat", "💬", topic="Out of character"),
+                ch("rp-suche", "🔍", topic="Mitspieler für Szenen finden"),
+                ch("ooc-chat", "💬", topic="Ausserhalb des Rollenspiels"),
             ]),
             cat("fraktionen", "🏴", "public", [
                 ch("fraktions-news", "📣", topic="Neues aus den Fraktionen", visibility="readonly"),
                 ch("fraktionssuche", "🔎", topic="Fraktion gesucht?"),
-                ch("bewerbungen", "📨", topic="Fraktionsbewerbungen"),
-                ch("allianzen", "🤝", topic="Bündnisse und Konflikte"),
+                ch("fraktions-bewerbung", "📨", topic="Fraktionsbewerbungen"),
+                ch("buendnisse", "🤝", topic="Bündnisse und Konflikte"),
                 ch("fraktions-chat", "💼", topic="Übergreifender Austausch"),
-                ch("fraktions-voice", "🎙️", "voice", user_limit=20),
+                ch("fraktions-talk", "🎙️", "voice", user_limit=20),
             ]),
             cat("behoerden", "🏛️", "public", [
                 ch("polizei", "🚓", topic="Polizeidienststelle"),
@@ -436,43 +332,66 @@ def rp() -> dict[str, Any]:
                 ch("marktplatz", "🛒", topic="Kaufen und verkaufen", slowmode=60),
                 ch("fahrzeuge", "🚗", topic="Fahrzeughandel"),
                 ch("immobilien", "🏠", topic="Häuser und Grundstücke"),
-                ch("jobs", "💼", topic="Stellenangebote"),
+                ch("stellenangebote", "💼", topic="Jobs in der Stadt"),
                 ch("werbung", "📺", topic="Werbung für dein Unternehmen", slowmode=600),
             ]),
             cat("rp talks", "🎙️", "public", [
-                ch("stadt-1", "🏙️", "voice", user_limit=0),
-                ch("stadt-2", "🌆", "voice", user_limit=0),
-                ch("stadt-3", "🌃", "voice", user_limit=0),
+                ch("stadt-1", "🏙️", "voice"),
+                ch("stadt-2", "🌆", "voice"),
+                ch("stadt-3", "🌃", "voice"),
                 ch("funk-polizei", "📻", "voice", user_limit=15),
                 ch("funk-rettung", "🚨", "voice", user_limit=15),
                 ch("fraktion-a", "🅰️", "voice", user_limit=12),
                 ch("fraktion-b", "🅱️", "voice", user_limit=12),
                 ch("privat-1", "🔒", "voice", user_limit=4),
                 ch("privat-2", "🔒", "voice", user_limit=4),
-                ch("warteraum", "⏳", "voice", user_limit=0),
-                ch("afk", "💤", "voice", user_limit=0),
+                ch("warteraum", "⏳", "voice"),
+                ch("abwesend", "💤", "voice"),
             ]),
-            *language_category(20, 8),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
             cat("freizeit", "🎲", "public", [
-                ch("offtopic", "🌙", topic="Alles außerhalb des RP"),
+                ch("sonstiges", "🌙", topic="Alles ausserhalb des RP"),
                 ch("memes", "😂", topic="Memes aus der Stadt"),
                 ch("clips", "🎬", topic="Deine besten Szenen"),
-                ch("screenshots", "📸", topic="Bilder aus dem RP"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle"),
-                ch("lounge-voice", "☕", "voice", user_limit=0),
+                ch("bildschirmfotos", "📸", topic="Bilder aus dem RP"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle"),
+                ch("freizeit-talk", "☕", "voice"),
             ]),
-            cat("support", "🛟", "public", [
+            cat("hilfe", "🛟", "public", [
                 ch("support", "🎫", "forum", topic="Tickets und Hilfe"),
-                ch("bug-reports", "🐛", topic="Fehler melden"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
                 ch("beschwerden", "📣", topic="Beschwerden über Spieler"),
-                ch("entbannung", "⚖️", topic="Entbannungsanträge"),
+                ch("entbannungsantrag", "⚖️", topic="Entbannungsanträge"),
                 ch("vorschlaege", "💡", topic="Ideen für die Stadt"),
-                ch("warteschlange", "⏱️", "voice", user_limit=0),
+                ch("warteschlange", "⏱️", "voice"),
                 ch("support-1", "🧑‍💻", "voice", user_limit=3),
                 ch("support-2", "🧑‍💻", "voice", user_limit=3),
             ]),
-            vip_category(),
-            staff_category(),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
             cat("bueros", "💼", "leadership", [
                 ch("buero-leitung", "🗝️", topic="Büro der Serverleitung"),
                 ch("buero-entwicklung", "🛠️", topic="Entwicklung und Skripte"),
@@ -480,8 +399,24 @@ def rp() -> dict[str, Any]:
                 ch("akten", "🗄️", topic="Archiv", visibility="archive"),
                 ch("besprechung", "🪑", "voice", user_limit=12),
             ]),
-            leadership_category(),
-            logs_category(),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -491,84 +426,152 @@ def social() -> dict[str, Any]:
         "key": "social",
         "name": "Social Lounge",
         "emoji": "☕",
-        "tagline": "Chillen, quatschen, Leute treffen — in 37 Sprachen",
+        "tagline": "Chillen, quatschen, Leute treffen",
         "premium": False,
         "accent": "#14B8A6",
         "description": (
             "Der geselligste Server der Sammlung. Der Fokus liegt auf Gesprächen: "
-            "37 Sprachkanäle, 24 Sprach-Voice-Räume, ein großer Voice-Bereich, "
-            "Medien, Aktivitäten und eine vollständige Social-Log-Struktur."
+            "viele Themenkanäle, ein großzügiger Voice-Bereich, Medien, "
+            "Aktivitäten und eine vollständige Social-Log-Struktur."
         ),
         "highlights": [
-            "Größter Sprachbereich: 37 Textkanäle und 24 Voice-Räume",
+            "Größter Voice-Bereich aller Vorlagen",
+            "Viele Themenkanäle für echte Gespräche",
             "Aktivitäten, Watch-Partys und Musikräume",
             "Vorbereitete Vorstellungs- und Kennenlern-Kanäle",
-            "Komplette Social-Log-Suite für Moderation",
         ],
         "roles": [
             role("host", "Lounge Host", "🌟", "#F97316", "helper"),
-            role("nightowl", "Night Owl", "🌙", "#6366F1", "trusted", hoist=False),
+            role("nightowl", "Nachteule", "🌙", "#6366F1", "trusted", hoist=False),
             role("dj", "DJ", "🎧", "#EC4899", "trusted", hoist=False),
-            role("welcomer", "Welcomer", "🫶", "#22D3EE", "helper"),
+            role("welcomer", "Begruesser", "🫶", "#22D3EE", "helper"),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("introductions", "🙋", topic="Stell dich kurz vor")]),
-            cat("lounge", "☕", "public", [
-                ch("general", "💬", topic="Der Hauptchat", slowmode=3),
-                ch("vent", "🫂", topic="Wenn du reden musst", slowmode=30),
-                ch("good-news", "🎉", topic="Teile deine guten Nachrichten"),
-                ch("daily-question", "❓", topic="Frage des Tages"),
-                ch("confessions", "🤫", topic="Anonyme Geständnisse"),
-                ch("compliments", "💐", topic="Sag jemandem etwas Nettes"),
-                ch("advice", "🧭", topic="Rat von der Community"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle"),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
             ]),
-            *language_category(36, 24),
-            cat("voice lounge", "🔊", "public", [
-                ch("hangout-1", "🎙️", "voice", user_limit=0),
-                ch("hangout-2", "🎙️", "voice", user_limit=0),
-                ch("hangout-3", "🎙️", "voice", user_limit=0),
-                ch("chill", "☕", "voice", user_limit=10),
-                ch("deep-talk", "🌌", "voice", user_limit=6),
-                ch("music", "🎶", "voice", user_limit=0),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("vorstellungen", "🙋", topic="Stell dich kurz vor"),
+            ]),
+            cat("lounge", "☕", "public", [
+                ch("allgemein", "💬", topic="Der Hauptchat", slowmode=3),
+                ch("sorgen-ecke", "🫂", topic="Wenn du reden musst", slowmode=30),
+                ch("gute-nachrichten", "🎉", topic="Teile deine guten Nachrichten"),
+                ch("frage-des-tages", "❓", topic="Frage des Tages"),
+                ch("gestaendnisse", "🤫", topic="Anonyme Geständnisse"),
+                ch("komplimente", "💐", topic="Sag jemandem etwas Nettes"),
+                ch("ratschlaege", "🧭", topic="Rat von der Community"),
+                ch("smalltalk", "🫧", topic="Kurz und locker"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle"),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("sprachkanaele", "🔊", "public", [
+                ch("treffpunkt-1", "🎙️", "voice"),
+                ch("treffpunkt-2", "🎙️", "voice"),
+                ch("treffpunkt-3", "🎙️", "voice"),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("tiefgruendig", "🌌", "voice", user_limit=6),
+                ch("musik", "🎶", "voice"),
                 ch("karaoke", "🎤", "voice", user_limit=12),
-                ch("duo", "👥", "voice", user_limit=2),
-                ch("trio", "👨‍👩‍👦", "voice", user_limit=3),
-                ch("study-together", "📚", "voice", user_limit=0),
-                ch("late-night", "🌙", "voice", user_limit=12),
-                ch("stage", "🎭", "stage"),
-                ch("afk", "💤", "voice", user_limit=0),
+                ch("zu-zweit", "👥", "voice", user_limit=2),
+                ch("zu-dritt", "👨‍👩‍👦", "voice", user_limit=3),
+                ch("gemeinsam-lernen", "📚", "voice"),
+                ch("nachtschicht", "🌙", "voice", user_limit=12),
+                ch("buehne", "🎭", "stage"),
+                ch("abwesend", "💤", "voice"),
             ]),
             cat("medien", "🖼️", "public", [
-                ch("photos", "📸", topic="Deine Fotos"),
-                ch("art", "🎨", topic="Kunst und Zeichnungen"),
+                ch("fotos", "📸", topic="Deine Fotos"),
+                ch("kunst", "🎨", topic="Kunst und Zeichnungen"),
                 ch("memes", "😂", topic="Memes"),
-                ch("music-share", "🎧", topic="Songempfehlungen"),
-                ch("movies-series", "🎬", topic="Filme und Serien"),
-                ch("books", "📖", topic="Was liest du gerade?"),
-                ch("pets", "🐾", topic="Haustiere"),
+                ch("musik-tipps", "🎧", topic="Songempfehlungen"),
+                ch("filme-und-serien", "🎬", topic="Filme und Serien"),
+                ch("buecher", "📖", topic="Was liest du gerade?"),
+                ch("haustiere", "🐾", topic="Haustiere"),
                 ch("outfits", "👗", topic="Outfit des Tages"),
             ]),
             cat("aktivitaeten", "🎲", "public", [
-                ch("game-night", "🕹️", topic="Spieleabende"),
+                ch("spieleabend", "🕹️", topic="Spieleabende"),
                 ch("watch-party", "🍿", topic="Gemeinsam schauen"),
-                ch("challenges", "🏅", topic="Community-Challenges"),
-                ch("birthdays", "🎂", topic="Geburtstage"),
-                ch("polls", "📊", topic="Abstimmungen"),
-                ch("activity-voice", "🎪", "voice", user_limit=25),
+                ch("wettbewerbe", "🏅", topic="Community-Challenges"),
+                ch("geburtstage", "🎂", topic="Geburtstage"),
+                ch("umfragen", "📊", topic="Abstimmungen"),
+                ch("aktivitaets-talk", "🎪", "voice", user_limit=25),
             ]),
-            social_category(),
-            vip_category(),
+            cat("alltag", "🌤️", "public", [
+                ch("essen-und-trinken", "🍕", topic="Rezepte und Restaurants"),
+                ch("sport-und-fitness", "⚽", topic="Sport und Bewegung"),
+                ch("reisen", "✈️", topic="Reiseziele und Tipps"),
+                ch("technik", "💻", topic="Technik und Gadgets"),
+                ch("schule-und-arbeit", "🎓", topic="Alltag, Studium, Job"),
+            ]),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
             cat("hilfe", "🛟", "public", [
-                ch("support", "❓", "forum", topic="Fragen an das Team"),
-                ch("suggestions", "💡", topic="Vorschläge"),
-                ch("reports", "🚩", topic="Etwas melden"),
-                ch("appeals", "⚖️", topic="Einspruch"),
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
             ]),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -582,95 +585,154 @@ def gaming() -> dict[str, Any]:
         "premium": True,
         "accent": "#22D3EE",
         "description": (
-            "Für Gaming-Communities, die mehr als einen Voice-Channel brauchen: "
-            "eigene Hubs pro Spiel, LFG-System, Turnierverwaltung, Coaching und "
-            "20 Squad-Räume in unterschiedlichen Größen."
+            "Für Gaming-Communities, die mehr als einen Sprachkanal brauchen: "
+            "eigene Bereiche pro Spiel, Mitspielersuche, Turnierverwaltung, "
+            "Coaching und viele Squad-Räume in unterschiedlichen Größen."
         ),
         "highlights": [
-            "Eigene Text-Hubs für 10 Spiele plus LFG-Kanäle",
-            "20 Voice-Räume: Duo, Trio, Squad, Full-Stack und Turnierräume",
+            "Eigene Kanäle für 12 Spiele plus Mitspielersuche",
+            "18 Sprachkanäle: zu zweit, zu dritt, Squad und Turnierräume",
             "Turnier- und Scrim-Verwaltung mit eigener Rollengruppe",
             "Clip-, Highlight- und Coaching-Bereiche",
         ],
         "roles": [
             role("gamer", "Gamer", "🎮", "#22D3EE", "member", hoist=False),
-            role("competitive", "Competitive", "🏆", "#F59E0B", "trusted"),
+            role("competitive", "Turnierspieler", "🏆", "#F59E0B", "trusted"),
             role("coach", "Coach", "🧠", "#8B5CF6", "helper"),
-            role("tournament", "Tournament Team", "🎯", "#E11D48", "helper"),
-            role("caster", "Caster", "🎙️", "#0EA5E9", "helper"),
+            role("tournament", "Turnier Team", "🎯", "#E11D48", "helper"),
+            role("caster", "Kommentator", "🎙️", "#0EA5E9", "helper"),
             role("clipper", "Clip Creator", "🎬", "#F97316", "trusted", hoist=False),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("patch-notes", "🩹", topic="Patchnotes der Spiele")]),
-            cat("gaming hub", "🎮", "public", [
-                ch("gaming-general", "💬", topic="Allgemeiner Gaming-Chat"),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("patchnotes", "🩹", topic="Patchnotes der Spiele"),
+            ]),
+            cat("spiele", "🎮", "public", [
+                ch("gaming-allgemein", "💬", topic="Allgemeiner Gaming-Chat"),
                 ch("valorant", "🔫", topic="Valorant"),
                 ch("league-of-legends", "⚔️", topic="League of Legends"),
                 ch("counter-strike", "💣", topic="Counter-Strike"),
                 ch("fortnite", "🏗️", topic="Fortnite"),
                 ch("minecraft", "⛏️", topic="Minecraft"),
-                ch("gta-rp", "🚗", topic="GTA und RP"),
+                ch("gta-rp", "🚗", topic="GTA und Rollenspiel"),
                 ch("rocket-league", "🚀", topic="Rocket League"),
                 ch("apex-legends", "🎯", topic="Apex Legends"),
                 ch("call-of-duty", "🪖", topic="Call of Duty"),
-                ch("indie-games", "🕹️", topic="Indie und Geheimtipps"),
-                ch("retro", "👾", topic="Klassiker"),
+                ch("indie-spiele", "🕹️", topic="Indie und Geheimtipps"),
+                ch("klassiker", "👾", topic="Retro und Klassiker"),
             ]),
             cat("mitspieler", "🔎", "public", [
-                ch("lfg-general", "📣", topic="Looking for group"),
-                ch("lfg-ranked", "🏅", topic="Ranked-Mitspieler"),
-                ch("lfg-casual", "🎲", topic="Entspannt zocken"),
+                ch("mitspieler-suche", "📣", topic="Mitspieler finden"),
+                ch("ranked-suche", "🏅", topic="Ranked-Mitspieler"),
+                ch("entspannt-zocken", "🎲", topic="Ohne Druck spielen"),
                 ch("scrims", "⚔️", topic="Scrims und Übungsspiele"),
                 ch("team-suche", "🧩", topic="Feste Teams finden"),
             ]),
-            cat("competitive", "🏆", "public", [
-                ch("tournament-news", "📢", "news", topic="Turnier-Ankündigungen", visibility="readonly"),
-                ch("tournament-signup", "📝", topic="Anmeldung"),
-                ch("brackets", "🗂️", topic="Turnierbäume"),
-                ch("results", "📊", topic="Ergebnisse", visibility="readonly"),
+            cat("turniere", "🏆", "public", [
+                ch("turnier-news", "📢", "news", topic="Turnier-Ankündigungen", visibility="readonly"),
+                ch("turnier-anmeldung", "📝", topic="Anmeldung"),
+                ch("turnierbaum", "🗂️", topic="Turnierbäume"),
+                ch("ergebnisse", "📊", topic="Ergebnisse", visibility="readonly"),
                 ch("coaching", "🧠", "forum", topic="Coaching-Anfragen"),
-                ch("vod-review", "🎞️", topic="VOD-Analysen"),
+                ch("spielanalyse", "🎞️", topic="Aufzeichnungen analysieren"),
             ]),
             cat("clips", "🎬", "public", [
                 ch("highlights", "⭐", topic="Deine besten Momente", slowmode=60),
                 ch("fails", "💀", topic="Weniger gute Momente"),
                 ch("setups", "🖥️", topic="Zeig dein Setup"),
-                ch("screenshots", "📸", topic="Screenshots"),
+                ch("bildschirmfotos", "📸", topic="Bildschirmfotos"),
                 ch("streams", "🟣", topic="Wer streamt gerade?"),
             ]),
-            cat("squad voice", "🔊", "public", [
-                ch("lobby", "🎙️", "voice", user_limit=0),
-                ch("duo-1", "👥", "voice", user_limit=2),
-                ch("duo-2", "👥", "voice", user_limit=2),
-                ch("trio-1", "👨‍👩‍👦", "voice", user_limit=3),
-                ch("trio-2", "👨‍👩‍👦", "voice", user_limit=3),
+            cat("squad talks", "🔊", "public", [
+                ch("lobby", "🎙️", "voice"),
+                ch("zu-zweit-1", "👥", "voice", user_limit=2),
+                ch("zu-zweit-2", "👥", "voice", user_limit=2),
+                ch("zu-dritt-1", "👨‍👩‍👦", "voice", user_limit=3),
+                ch("zu-dritt-2", "👨‍👩‍👦", "voice", user_limit=3),
                 ch("squad-1", "🛡️", "voice", user_limit=5),
                 ch("squad-2", "🛡️", "voice", user_limit=5),
                 ch("squad-3", "🛡️", "voice", user_limit=5),
-                ch("full-stack-1", "⚔️", "voice", user_limit=10),
-                ch("full-stack-2", "⚔️", "voice", user_limit=10),
+                ch("grossgruppe-1", "⚔️", "voice", user_limit=10),
+                ch("grossgruppe-2", "⚔️", "voice", user_limit=10),
                 ch("scrim-a", "🅰️", "voice", user_limit=6),
                 ch("scrim-b", "🅱️", "voice", user_limit=6),
-                ch("tournament-1", "🏆", "voice", user_limit=12),
-                ch("tournament-2", "🏆", "voice", user_limit=12),
-                ch("casting", "🎙️", "stage"),
-                ch("chill", "☕", "voice", user_limit=10),
-                ch("music", "🎶", "voice", user_limit=0),
-                ch("afk", "💤", "voice", user_limit=0),
+                ch("turnier-1", "🏆", "voice", user_limit=12),
+                ch("turnier-2", "🏆", "voice", user_limit=12),
+                ch("kommentar-buehne", "🎙️", "stage"),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("musik", "🎶", "voice"),
+                ch("abwesend", "💤", "voice"),
             ]),
-            *language_category(20, 10),
-            social_category(),
-            vip_category(),
-            cat("support", "🛟", "public", [
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("hilfe", "🛟", "public", [
                 ch("support", "🎫", "forum", topic="Hilfe vom Team"),
-                ch("tech-help", "🛠️", topic="Technische Probleme"),
-                ch("bug-reports", "🐛", topic="Fehler melden"),
-                ch("suggestions", "💡", topic="Vorschläge"),
+                ch("technik-hilfe", "🛠️", topic="Technische Probleme"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Vorschläge"),
             ]),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -686,76 +748,152 @@ def anime() -> dict[str, Any]:
         "description": (
             "Ein Zuhause für Anime-Communities: getrennte Bereiche für laufende "
             "Seasonals, Manga, Fanart und Cosplay, klar markierte Spoiler-Kanäle "
-            "und Watch-Party-Räume mit Stage-Support."
+            "und Watch-Party-Räume mit Bühne."
         ),
         "highlights": [
             "Getrennte Spoiler-Kanäle pro Bereich",
             "Seasonal-, Manga-, Fanart- und Cosplay-Zonen",
-            "Watch-Party-Voice mit Stage für Events",
-            "Japanisch-, Koreanisch- und Chinesisch-Lernkanäle",
+            "Watch-Party-Räume mit Bühne für Events",
+            "Bereich für japanische Sprache und Kultur",
         ],
         "roles": [
             role("otaku", "Otaku", "🌸", "#F472B6", "member", hoist=False),
-            role("manga_reader", "Manga Reader", "📚", "#A78BFA", "trusted", hoist=False),
-            role("fanartist", "Fan Artist", "🖌️", "#FB7185", "trusted"),
+            role("manga_reader", "Manga Leser", "📚", "#A78BFA", "trusted", hoist=False),
+            role("fanartist", "Fan Kuenstler", "🖌️", "#FB7185", "trusted"),
             role("cosplayer", "Cosplayer", "🎀", "#F0ABFC", "trusted"),
             role("watch_host", "Watch Party Host", "🍿", "#F59E0B", "helper"),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("seasonal-chart", "📅", topic="Die aktuelle Season")]),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("season-uebersicht", "📅", topic="Die aktuelle Season"),
+            ]),
             cat("anime", "📺", "public", [
-                ch("anime-general", "💬", topic="Allgemeiner Anime-Chat"),
-                ch("currently-watching", "👀", topic="Was schaust du gerade?"),
-                ch("seasonals", "🌱", topic="Die laufende Season"),
-                ch("recommendations", "⭐", topic="Empfehlungen"),
-                ch("spoilers", "🚨", topic="Achtung: Spoiler erlaubt"),
-                ch("reviews", "📝", topic="Deine Bewertungen"),
-                ch("news", "📰", "news", topic="Anime-News", visibility="readonly"),
+                ch("anime-allgemein", "💬", topic="Allgemeiner Anime-Chat"),
+                ch("aktuell-geschaut", "👀", topic="Was schaust du gerade?"),
+                ch("season-anime", "🌱", topic="Die laufende Season"),
+                ch("empfehlungen", "⭐", topic="Empfehlungen"),
+                ch("spoiler", "🚨", topic="Achtung: Spoiler erlaubt"),
+                ch("bewertungen", "📝", topic="Deine Bewertungen"),
+                ch("anime-news", "📰", "news", topic="Anime-Neuigkeiten", visibility="readonly"),
             ]),
             cat("manga", "📚", "public", [
-                ch("manga-general", "💬", topic="Manga-Chat"),
-                ch("new-chapters", "🆕", topic="Neue Kapitel"),
-                ch("manga-spoilers", "🚨", topic="Spoiler erlaubt"),
+                ch("manga-allgemein", "💬", topic="Manga-Chat"),
+                ch("neue-kapitel", "🆕", topic="Neue Kapitel"),
+                ch("manga-spoiler", "🚨", topic="Spoiler erlaubt"),
                 ch("light-novels", "📖", topic="Light Novels"),
                 ch("webtoons", "📱", topic="Webtoons und Manhwa"),
             ]),
             cat("kreativ", "🎨", "public", [
                 ch("fanart", "🖌️", topic="Eigene Fanart", slowmode=120),
-                ch("art-help", "💡", topic="Feedback und Tipps"),
+                ch("kunst-hilfe", "💡", topic="Rückmeldungen und Tipps"),
                 ch("cosplay", "🎀", topic="Cosplay zeigen"),
-                ch("edits", "✂️", topic="Edits und AMVs"),
-                ch("writing", "✍️", topic="Fanfiction"),
-                ch("commissions", "💰", topic="Auftragsarbeiten", slowmode=600),
+                ch("edits", "✂️", topic="Edits und Musikvideos"),
+                ch("fanfiction", "✍️", topic="Eigene Geschichten"),
+                ch("auftraege", "💰", topic="Auftragsarbeiten", slowmode=600),
             ]),
             cat("watch party", "🍿", "public", [
-                ch("watch-planning", "📅", topic="Nächste Watch-Party planen"),
+                ch("watch-planung", "📅", topic="Nächste Watch-Party planen"),
                 ch("watch-chat", "💬", topic="Live-Chat zur Party"),
-                ch("watch-room-1", "🎬", "voice", user_limit=25),
-                ch("watch-room-2", "🎬", "voice", user_limit=25),
-                ch("watch-stage", "🎤", "stage"),
+                ch("watch-raum-1", "🎬", "voice", user_limit=25),
+                ch("watch-raum-2", "🎬", "voice", user_limit=25),
+                ch("watch-buehne", "🎤", "stage"),
             ]),
             cat("japan", "🗾", "public", [
-                ch("nihongo", "🇯🇵", topic="Japanisch lernen"),
-                ch("korean", "🇰🇷", topic="Koreanisch lernen"),
-                ch("chinese", "🇨🇳", topic="Chinesisch lernen"),
-                ch("culture", "⛩️", topic="Kultur und Reisen"),
-                ch("food", "🍜", topic="Japanische Küche"),
+                ch("japanisch-lernen", "🇯🇵", topic="Japanisch lernen"),
+                ch("kultur", "⛩️", topic="Kultur und Reisen"),
+                ch("kueche", "🍜", topic="Japanische Küche"),
+                ch("musik", "🎵", topic="J-Pop, Openings und Soundtracks"),
             ]),
-            cat("games", "🎮", "public", [
+            cat("spiele", "🎮", "public", [
                 ch("gacha", "🎰", topic="Gacha-Spiele"),
-                ch("jrpg", "🗡️", topic="JRPGs"),
-                ch("rhythm-games", "🎵", topic="Rhythmusspiele"),
+                ch("rollenspiele", "🗡️", topic="JRPGs"),
+                ch("rhythmus-spiele", "🎵", topic="Rhythmusspiele"),
                 ch("visual-novels", "📗", topic="Visual Novels"),
-                ch("gaming-voice", "🕹️", "voice", user_limit=10),
+                ch("gaming-talk", "🕹️", "voice", user_limit=10),
             ]),
-            voice_lounge(8, prefix="voice lounge"),
-            *language_category(20, 8),
-            social_category(),
-            vip_category(),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("sprachkanaele", "🔊", "public", [
+                ch("allgemeiner-talk", "🎙️", "voice"),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("musik", "🎶", "voice"),
+                ch("zu-zweit", "👥", "voice", user_limit=2),
+                ch("zu-dritt", "👨‍👩‍👦", "voice", user_limit=3),
+                ch("gruppe", "🛡️", "voice", user_limit=5),
+                ch("lernen", "📚", "voice"),
+                ch("stream-raum", "📺", "voice", user_limit=20),
+                ch("nachtschicht", "🌙", "voice", user_limit=12),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -770,81 +908,126 @@ def business() -> dict[str, Any]:
         "accent": "#0F766E",
         "description": (
             "Ein Discord als Arbeitsplatz: getrennte Abteilungen, Projekträume, "
-            "ein abgeschirmter Kundenbereich und Meeting-Räume. Berechtigungen sind "
-            "so gesetzt, dass interne Themen intern bleiben."
+            "ein abgeschirmter Kundenbereich und Besprechungsräume. Die Rechte "
+            "sind so gesetzt, dass interne Themen intern bleiben."
         ),
         "highlights": [
-            "Abteilungen für Entwicklung, Design, Marketing, Sales und HR",
+            "Abteilungen für Entwicklung, Design, Marketing, Vertrieb und Personal",
             "Kundenbereich getrennt vom internen Bereich",
-            "Meeting-Räume, Stand-up-Voice und Fokus-Räume",
-            "Vollständige Audit-Logs für Nachvollziehbarkeit",
+            "Besprechungsräume, tägliche Abstimmung und Fokus-Räume",
+            "Vollständige Logs für Nachvollziehbarkeit",
         ],
         "roles": [
             role("employee", "Mitarbeiter", "💼", "#0F766E", "member"),
             role("client", "Kunde", "🤝", "#059669", "guest"),
-            role("freelancer", "Freelancer", "🧑‍💻", "#14B8A6", "member", hoist=False),
+            role("freelancer", "Freiberufler", "🧑‍💻", "#14B8A6", "member", hoist=False),
             role("project_lead", "Projektleitung", "📊", "#0369A1", "helper"),
             role("dept_lead", "Abteilungsleitung", "👔", "#1D4ED8", "moderator"),
-            role("hr", "HR", "🧑‍💼", "#7C3AED", "moderator"),
-            role("management", "Management", "🏛️", "#DC2626", "admin"),
+            role("hr", "Personalwesen", "🧑‍💼", "#7C3AED", "moderator"),
+            role("management", "Geschaeftsleitung", "🏛️", "#DC2626", "admin"),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("company-news", "🏢", topic="Unternehmensnews")]),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("unternehmens-news", "🏢", topic="Unternehmensnachrichten"),
+            ]),
             cat("allgemein", "💬", "public", [
-                ch("general", "💭", topic="Allgemeiner Austausch"),
-                ch("random", "🎲", topic="Kaffeeküche"),
-                ch("wins", "🎉", topic="Erfolge feiern"),
-                ch("questions", "❓", topic="Kurze Fragen"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle"),
+                ch("allgemein", "💭", topic="Allgemeiner Austausch"),
+                ch("kaffeekueche", "🎲", topic="Lockerer Austausch"),
+                ch("erfolge", "🎉", topic="Erfolge feiern"),
+                ch("kurze-fragen", "❓", topic="Kurze Fragen"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle"),
             ]),
             cat("abteilungen", "🏗️", "member", [
-                ch("development", "💻", topic="Entwicklung"),
-                ch("design", "🎨", topic="Design und UX"),
+                ch("entwicklung", "💻", topic="Entwicklung"),
+                ch("gestaltung", "🎨", topic="Design und Nutzererlebnis"),
                 ch("marketing", "📣", topic="Marketing"),
-                ch("sales", "💰", topic="Vertrieb"),
-                ch("support-team", "🛟", topic="Kundensupport intern"),
-                ch("finance", "📈", topic="Finanzen"),
-                ch("hr", "🧑‍💼", topic="Personal"),
-                ch("legal", "⚖️", topic="Recht und Compliance"),
+                ch("vertrieb", "💰", topic="Vertrieb"),
+                ch("kundenbetreuung", "🛟", topic="Kundensupport intern"),
+                ch("finanzen", "📈", topic="Finanzen"),
+                ch("personal", "🧑‍💼", topic="Personalwesen"),
+                ch("recht", "⚖️", topic="Recht und Richtlinien"),
             ]),
             cat("projekte", "📊", "member", [
-                ch("project-board", "🗂️", topic="Übersicht aller Projekte", visibility="readonly"),
-                ch("project-alpha", "🅰️", topic="Projekt Alpha"),
-                ch("project-beta", "🅱️", topic="Projekt Beta"),
-                ch("project-gamma", "🇬", topic="Projekt Gamma"),
-                ch("backlog", "📋", "forum", topic="Aufgaben und Ideen"),
-                ch("releases", "🚀", topic="Release-Ankündigungen", visibility="readonly"),
+                ch("projekt-uebersicht", "🗂️", topic="Übersicht aller Projekte", visibility="readonly"),
+                ch("projekt-alpha", "🅰️", topic="Projekt Alpha"),
+                ch("projekt-beta", "🅱️", topic="Projekt Beta"),
+                ch("projekt-gamma", "🇬", topic="Projekt Gamma"),
+                ch("aufgabenspeicher", "📋", "forum", topic="Aufgaben und Ideen"),
+                ch("veroeffentlichungen", "🚀", topic="Release-Ankündigungen", visibility="readonly"),
             ]),
             cat("kunden", "🤝", "public", [
-                ch("client-welcome", "👋", topic="Willkommen, Kunden", visibility="readonly"),
-                ch("client-requests", "📥", "forum", topic="Anfragen einreichen"),
-                ch("client-updates", "📢", topic="Statusmeldungen", visibility="readonly"),
-                ch("client-feedback", "💬", topic="Feedback"),
-                ch("client-call", "📞", "voice", user_limit=10),
+                ch("kunden-willkommen", "👋", topic="Willkommen, Kunden", visibility="readonly"),
+                ch("kunden-anfragen", "📥", "forum", topic="Anfragen einreichen"),
+                ch("kunden-updates", "📢", topic="Statusmeldungen", visibility="readonly"),
+                ch("kunden-rueckmeldung", "💬", topic="Rückmeldungen"),
+                ch("kunden-gespraech", "📞", "voice", user_limit=10),
             ]),
-            cat("meetings", "🗓️", "member", [
-                ch("meeting-notes", "📝", topic="Protokolle"),
-                ch("agenda", "📌", topic="Tagesordnung"),
-                ch("standup", "☀️", "voice", user_limit=20),
-                ch("meeting-room-1", "🪑", "voice", user_limit=15),
-                ch("meeting-room-2", "🪑", "voice", user_limit=15),
-                ch("focus-1", "🎧", "voice", user_limit=1),
-                ch("focus-2", "🎧", "voice", user_limit=1),
-                ch("all-hands", "🏛️", "stage"),
-                ch("break-room", "☕", "voice", user_limit=0),
+            cat("besprechungen", "🗓️", "member", [
+                ch("protokolle", "📝", topic="Besprechungsprotokolle"),
+                ch("tagesordnung", "📌", topic="Tagesordnung"),
+                ch("tages-abstimmung", "☀️", "voice", user_limit=20),
+                ch("besprechung-1", "🪑", "voice", user_limit=15),
+                ch("besprechung-2", "🪑", "voice", user_limit=15),
+                ch("fokus-1", "🎧", "voice", user_limit=1),
+                ch("fokus-2", "🎧", "voice", user_limit=1),
+                ch("vollversammlung", "🏛️", "stage"),
+                ch("pausenraum", "☕", "voice"),
             ]),
             cat("wissen", "📚", "member", [
-                ch("handbook", "📖", topic="Das Unternehmenshandbuch", visibility="readonly"),
-                ch("onboarding", "🚀", topic="Einstieg für Neue"),
-                ch("templates", "🗂️", topic="Vorlagen und Assets"),
-                ch("tools", "🛠️", topic="Werkzeuge und Zugänge"),
-                ch("archive", "🗄️", topic="Abgeschlossenes", visibility="archive"),
+                ch("handbuch", "📖", topic="Das Unternehmenshandbuch", visibility="readonly"),
+                ch("einarbeitung", "🚀", topic="Einstieg für Neue"),
+                ch("vorlagen", "🗂️", topic="Vorlagen und Materialien"),
+                ch("werkzeuge", "🛠️", topic="Werkzeuge und Zugänge"),
+                ch("archiv", "🗄️", topic="Abgeschlossenes", visibility="archive"),
             ]),
-            *language_category(12, 4),
-            staff_category("leitung intern"),
-            leadership_category(),
-            logs_category(),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+            ]),
+            cat("interne leitung", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -858,34 +1041,47 @@ def study() -> dict[str, Any]:
         "premium": True,
         "accent": "#0284C7",
         "description": (
-            "Für Lerngruppen, Fachschaften und Uni-Communities: ein Kanal pro Fach, "
-            "Lerngruppen, Prüfungsvorbereitung, ein Ressourcen-Archiv und stille "
-            "Pomodoro-Räume, in denen wirklich gearbeitet wird."
+            "Für Lerngruppen, Fachschaften und Uni-Communities: ein Kanal pro "
+            "Fach, Lerngruppen, Prüfungsvorbereitung, ein Materialarchiv und "
+            "stille Arbeitsräume, in denen wirklich gearbeitet wird."
         ),
         "highlights": [
             "Eigene Kanäle für 10 Fachbereiche",
-            "Stille Study-Rooms mit Pomodoro-Timer-Kanälen",
+            "Stille Lernräume mit Pomodoro-Kanälen",
             "Prüfungs-, Hausarbeits- und Abgabe-Bereiche",
-            "Tutor-Rollen mit eigenem Sprechstunden-Voice",
+            "Tutor-Rollen mit eigenem Sprechstundenraum",
         ],
         "roles": [
             role("student", "Student", "🎓", "#0284C7", "member", hoist=False),
             role("freshman", "Ersti", "🐣", "#38BDF8", "member", hoist=False),
             role("tutor", "Tutor", "🧑‍🏫", "#16A34A", "helper"),
             role("lecturer", "Lehrkraft", "🏫", "#2563EB", "moderator"),
-            role("study_lead", "Study Leitung", "📚", "#7C3AED", "admin"),
-            role("alumni", "Alumni", "🎖️", "#A16207", "trusted", hoist=False),
+            role("study_lead", "Studienleitung", "📚", "#7C3AED", "admin"),
+            role("alumni", "Ehemalige", "🎖️", "#A16207", "trusted", hoist=False),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("semester-plan", "📅", topic="Termine und Fristen")]),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("semesterplan", "📅", topic="Termine und Fristen"),
+            ]),
             cat("campus", "🏫", "public", [
-                ch("general", "💬", topic="Allgemeiner Campus-Chat"),
-                ch("introductions", "🙋", topic="Stell dich vor"),
-                ch("questions", "❓", topic="Kurze Fragen"),
+                ch("allgemein", "💬", topic="Allgemeiner Campus-Chat"),
+                ch("vorstellungen", "🙋", topic="Stell dich vor"),
+                ch("kurze-fragen", "❓", topic="Kurze Fragen"),
                 ch("motivation", "🔥", topic="Motivation und Erfolge"),
                 ch("memes", "😂", topic="Uni-Memes"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle"),
             ]),
             cat("faecher", "📗", "public", [
                 ch("mathematik", "➗", topic="Mathematik"),
@@ -897,7 +1093,7 @@ def study() -> dict[str, Any]:
                 ch("jura", "⚖️", topic="Rechtswissenschaften"),
                 ch("medizin", "🩺", topic="Medizin"),
                 ch("sprachen", "🗣️", topic="Sprachwissenschaften"),
-                ch("geistes", "🏛️", topic="Geisteswissenschaften"),
+                ch("geisteswissenschaften", "🏛️", topic="Geisteswissenschaften"),
             ]),
             cat("lerngruppen", "👥", "public", [
                 ch("gruppensuche", "🔎", topic="Lerngruppe finden"),
@@ -912,40 +1108,86 @@ def study() -> dict[str, Any]:
                 ch("altklausuren", "🗂️", topic="Altklausuren und Übungen"),
                 ch("lernplaene", "🗺️", topic="Lernpläne teilen"),
                 ch("hausarbeiten", "📄", topic="Hausarbeiten und Abgaben"),
-                ch("panik-raum", "😰", topic="Für den Tag vor der Prüfung"),
+                ch("panikraum", "😰", topic="Für den Tag vor der Prüfung"),
             ]),
-            cat("study rooms", "🔇", "public", [
-                ch("silent-1", "🤫", "voice", user_limit=0),
-                ch("silent-2", "🤫", "voice", user_limit=0),
-                ch("pomodoro-25", "🍅", "voice", user_limit=0),
-                ch("pomodoro-50", "🍅", "voice", user_limit=0),
-                ch("group-study-1", "👥", "voice", user_limit=6),
-                ch("group-study-2", "👥", "voice", user_limit=6),
+            cat("lernraeume", "🔇", "public", [
+                ch("stillarbeit-1", "🤫", "voice"),
+                ch("stillarbeit-2", "🤫", "voice"),
+                ch("pomodoro-25", "🍅", "voice"),
+                ch("pomodoro-50", "🍅", "voice"),
+                ch("lerngruppe-1", "👥", "voice", user_limit=6),
+                ch("lerngruppe-2", "👥", "voice", user_limit=6),
                 ch("sprechstunde", "🧑‍🏫", "voice", user_limit=8),
                 ch("praesentation", "📊", "stage"),
-                ch("pause", "☕", "voice", user_limit=0),
-                ch("afk", "💤", "voice", user_limit=0),
+                ch("pause", "☕", "voice"),
+                ch("abwesend", "💤", "voice"),
             ]),
-            cat("ressourcen", "📚", "public", [
+            cat("materialien", "📚", "public", [
                 ch("skripte", "📑", topic="Skripte und Folien"),
                 ch("buecher", "📖", topic="Literaturempfehlungen"),
-                ch("tools", "🛠️", topic="Nützliche Werkzeuge"),
+                ch("werkzeuge", "🛠️", topic="Nützliche Werkzeuge"),
                 ch("stipendien", "💰", topic="Förderung und Stipendien"),
-                ch("jobs", "💼", topic="Werkstudentenstellen"),
+                ch("stellenangebote", "💼", topic="Werkstudentenstellen"),
                 ch("archiv", "🗄️", topic="Vergangene Semester", visibility="archive"),
             ]),
             cat("campusleben", "🎉", "public", [
-                ch("events", "📅", topic="Partys und Veranstaltungen"),
-                ch("sport", "⚽", topic="Hochschulsport"),
+                ch("veranstaltungen", "📅", topic="Partys und Veranstaltungen"),
+                ch("hochschulsport", "⚽", topic="Hochschulsport"),
                 ch("wohnen", "🏠", topic="WG- und Zimmersuche"),
                 ch("mensa", "🍽️", topic="Essen auf dem Campus"),
-                ch("freizeit-voice", "🎪", "voice", user_limit=20),
+                ch("freizeit-talk", "🎪", "voice", user_limit=20),
             ]),
-            *language_category(16, 6),
-            vip_category(),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -955,81 +1197,142 @@ def creator() -> dict[str, Any]:
         "key": "creator",
         "name": "Creator Studio",
         "emoji": "🎬",
-        "tagline": "Content planen, produzieren und vermarkten",
+        "tagline": "Inhalte planen, produzieren und vermarkten",
         "premium": True,
         "accent": "#F97316",
         "description": (
             "Für Content Creator und ihre Communities: getrennte Bereiche für "
-            "Planung, Produktion, Feedback und Kooperationen, dazu ein "
-            "abgeschirmter Business-Bereich für Deals und Rechnungen."
+            "Planung, Produktion, Rückmeldungen und Kooperationen, dazu ein "
+            "abgeschirmter Geschäftsbereich für Verträge und Rechnungen."
         ),
         "highlights": [
-            "Produktions-Pipeline von Idee bis Upload",
-            "Feedback-Kanäle mit Slowmode für Qualität",
-            "Kooperations- und Sponsoring-Bereich, nur für Creator sichtbar",
-            "Aufnahme-Voice mit getrennten Räumen pro Format",
+            "Produktionsablauf von der Idee bis zum Upload",
+            "Rückmelde-Kanäle mit Slowmode für Qualität",
+            "Kooperationsbereich, nur für Creator sichtbar",
+            "Aufnahmeräume getrennt nach Format",
         ],
         "roles": [
             role("creator_pro", "Creator", "🎬", "#F97316", "trusted"),
-            role("editor", "Editor", "✂️", "#EA580C", "trusted"),
-            role("thumbnail", "Thumbnail Artist", "🖼️", "#FB923C", "trusted", hoist=False),
-            role("collab", "Collab Team", "🤝", "#DB2777", "helper"),
+            role("editor", "Cutter", "✂️", "#EA580C", "trusted"),
+            role("thumbnail", "Thumbnail Designer", "🖼️", "#FB923C", "trusted", hoist=False),
+            role("collab", "Kooperations Team", "🤝", "#DB2777", "helper"),
             role("sponsor", "Sponsor", "💰", "#CA8A04", "guest", hoist=False),
-            role("moderator_chat", "Chat Mod", "💬", "#3B82F6", "moderator"),
+            role("moderator_chat", "Chat Moderator", "💬", "#3B82F6", "moderator"),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("upload-plan", "📅", topic="Wann kommt was?")]),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("upload-plan", "📅", topic="Wann kommt was?"),
+            ]),
             cat("community", "💬", "public", [
-                ch("general", "💭", topic="Allgemeiner Chat"),
-                ch("suggestions", "💡", topic="Themenwünsche"),
-                ch("questions", "❓", topic="Fragen an den Creator"),
+                ch("allgemein", "💭", topic="Allgemeiner Chat"),
+                ch("themenwuensche", "💡", topic="Themenwünsche"),
+                ch("fragen", "❓", topic="Fragen an den Creator"),
                 ch("clips", "🎞️", topic="Clips aus Videos und Streams"),
                 ch("memes", "😂", topic="Memes"),
-                ch("bot-commands", "🤖", topic="Bot-Befehle"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle"),
             ]),
             cat("produktion", "🎬", "staff", [
-                ch("ideas", "💡", "forum", topic="Ideensammlung"),
-                ch("scripts", "📝", topic="Skripte und Konzepte"),
-                ch("recording", "🎥", topic="Aufnahmeplanung"),
-                ch("editing", "✂️", topic="Schnitt und Postproduktion"),
+                ch("ideen", "💡", "forum", topic="Ideensammlung"),
+                ch("skripte", "📝", topic="Skripte und Konzepte"),
+                ch("aufnahme", "🎥", topic="Aufnahmeplanung"),
+                ch("schnitt", "✂️", topic="Schnitt und Nachbearbeitung"),
                 ch("thumbnails", "🖼️", topic="Thumbnail-Entwürfe"),
-                ch("review", "🔍", topic="Letzter Check vor Upload"),
-                ch("published", "✅", topic="Veröffentlicht", visibility="archive"),
+                ch("endkontrolle", "🔍", topic="Letzter Check vor Upload"),
+                ch("veroeffentlicht", "✅", topic="Veröffentlicht", visibility="archive"),
             ]),
-            cat("feedback", "🔍", "public", [
-                ch("video-feedback", "🎬", topic="Feedback zu Videos", slowmode=60),
-                ch("stream-feedback", "🟣", topic="Feedback zu Streams", slowmode=60),
-                ch("design-feedback", "🎨", topic="Feedback zu Grafiken", slowmode=60),
-                ch("analytics", "📊", topic="Zahlen und Reichweite", visibility="staff"),
+            cat("rueckmeldungen", "🔍", "public", [
+                ch("video-feedback", "🎬", topic="Rückmeldung zu Videos", slowmode=60),
+                ch("stream-feedback", "🟣", topic="Rückmeldung zu Streams", slowmode=60),
+                ch("design-feedback", "🎨", topic="Rückmeldung zu Grafiken", slowmode=60),
+                ch("statistiken", "📊", topic="Zahlen und Reichweite", visibility="staff"),
             ]),
-            cat("business", "💼", "leadership", [
-                ch("deals", "🤝", topic="Kooperationsanfragen"),
+            cat("geschaeftlich", "💼", "leadership", [
+                ch("kooperationen", "🤝", topic="Kooperationsanfragen"),
                 ch("sponsoring", "💰", topic="Sponsoring"),
-                ch("contracts", "📄", topic="Verträge"),
-                ch("invoices", "🧾", topic="Rechnungen"),
-                ch("business-voice", "🔐", "voice", user_limit=8),
+                ch("vertraege", "📄", topic="Verträge"),
+                ch("rechnungen", "🧾", topic="Rechnungen"),
+                ch("geschaefts-talk", "🔐", "voice", user_limit=8),
             ]),
-            cat("collabs", "🤝", "member", [
-                ch("collab-board", "📌", topic="Offene Kooperationen"),
+            cat("zusammenarbeit", "🤝", "member", [
+                ch("kooperations-boerse", "📌", topic="Offene Kooperationen"),
                 ch("creator-lounge", "☕", topic="Austausch unter Creators"),
-                ch("cross-promo", "🔁", topic="Gegenseitige Promo"),
-                ch("collab-voice", "🎙️", "voice", user_limit=10),
+                ch("gegenseitige-werbung", "🔁", topic="Gegenseitige Promo"),
+                ch("kooperations-talk", "🎙️", "voice", user_limit=10),
             ]),
-            cat("studio voice", "🔊", "public", [
-                ch("recording-1", "🔴", "voice", user_limit=4),
-                ch("recording-2", "🔴", "voice", user_limit=4),
+            cat("studio", "🔊", "public", [
+                ch("aufnahme-1", "🔴", "voice", user_limit=4),
+                ch("aufnahme-2", "🔴", "voice", user_limit=4),
                 ch("podcast", "🎙️", "voice", user_limit=6),
-                ch("watch-together", "📺", "voice", user_limit=20),
-                ch("community-hangout", "☕", "voice", user_limit=0),
-                ch("q-and-a", "❔", "stage"),
-                ch("afk", "💤", "voice", user_limit=0),
+                ch("gemeinsam-schauen", "📺", "voice", user_limit=20),
+                ch("community-treff", "☕", "voice"),
+                ch("fragerunde", "❔", "stage"),
+                ch("abwesend", "💤", "voice"),
             ]),
-            social_category(),
-            *language_category(16, 6),
-            vip_category(),
-            staff_category(),
-            logs_category(),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -1044,69 +1347,117 @@ def support() -> dict[str, Any]:
         "accent": "#0EA5E9",
         "description": (
             "Ein Server, der auf Hilfe ausgelegt ist: Ticket-Forum, gepflegte "
-            "Wissensdatenbank, klare Eskalationsstufen und ein Auswertungsbereich, "
-            "in dem Qualität und Reaktionszeiten sichtbar werden."
+            "Wissensdatenbank, klare Eskalationsstufen und ein "
+            "Auswertungsbereich, in dem Qualität und Reaktionszeiten sichtbar "
+            "werden."
         ),
         "highlights": [
             "Ticket-Forum mit getrennten Eskalationsstufen",
-            "Öffentliche Wissensdatenbank und FAQ",
+            "Oeffentliche Wissensdatenbank und häufige Fragen",
             "Interner Qualitäts- und Auswertungsbereich",
-            "Sprechstunden-Voice mit Warteschlange",
+            "Sprechstundenräume mit Warteschlange",
         ],
         "roles": [
             role("ticket_team", "Ticket Team", "🎫", "#0EA5E9", "helper"),
             role("specialist", "Fachberater", "🧠", "#0891B2", "helper"),
             role("escalation", "Eskalation", "🚨", "#DC2626", "moderator"),
-            role("quality", "Quality Team", "📈", "#7C3AED", "moderator"),
+            role("quality", "Qualitaetsteam", "📈", "#7C3AED", "moderator"),
             role("knowledge", "Wissensredaktion", "📚", "#16A34A", "helper"),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("status", "🟢", topic="Systemstatus und Störungen")]),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("systemstatus", "🟢", topic="Systemstatus und Störungen"),
+            ]),
             cat("hilfe", "🛟", "public", [
-                ch("start-here", "👋", topic="So bekommst du Hilfe", visibility="readonly"),
+                ch("so-gehts", "👋", topic="So bekommst du Hilfe", visibility="readonly"),
                 ch("tickets", "🎫", "forum", topic="Erstelle hier dein Ticket"),
-                ch("quick-questions", "⚡", topic="Kurze Fragen ohne Ticket"),
-                ch("community-help", "🤝", topic="Nutzer helfen Nutzern"),
-                ch("bug-reports", "🐛", "forum", topic="Fehler melden"),
-                ch("feature-requests", "💡", "forum", topic="Wünsche einreichen"),
+                ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
+                ch("community-hilfe", "🤝", topic="Nutzer helfen Nutzern"),
+                ch("fehler-melden", "🐛", "forum", topic="Fehler melden"),
+                ch("funktionswuensche", "💡", "forum", topic="Wünsche einreichen"),
             ]),
             cat("wissen", "📚", "readonly", [
-                ch("faq", "❔", topic="Häufige Fragen"),
-                ch("guides", "📖", topic="Schritt-für-Schritt-Anleitungen"),
-                ch("troubleshooting", "🔧", topic="Problemlösungen"),
-                ch("changelog", "🔄", topic="Was hat sich geändert?"),
-                ch("known-issues", "⚠️", topic="Bekannte Probleme"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen"),
+                ch("anleitungen", "📖", topic="Schritt-für-Schritt-Anleitungen"),
+                ch("problemloesungen", "🔧", topic="Problemlösungen"),
+                ch("aenderungen", "🔄", topic="Was hat sich geändert?"),
+                ch("bekannte-probleme", "⚠️", topic="Bekannte Probleme"),
             ]),
             cat("sprechstunde", "🎙️", "public", [
-                ch("warteschlange", "⏳", "voice", user_limit=0),
+                ch("warteschlange", "⏳", "voice"),
                 ch("support-raum-1", "🧑‍💻", "voice", user_limit=3),
                 ch("support-raum-2", "🧑‍💻", "voice", user_limit=3),
                 ch("support-raum-3", "🧑‍💻", "voice", user_limit=3),
-                ch("screenshare", "🖥️", "voice", user_limit=5),
+                ch("bildschirm-teilen", "🖥️", "voice", user_limit=5),
             ]),
             cat("support intern", "🔧", "staff", [
-                ch("team-briefing", "📋", topic="Tagesbriefing"),
+                ch("tagesbriefing", "📋", topic="Tagesbriefing"),
                 ch("eskalation", "🚨", topic="Eskalierte Fälle"),
                 ch("wissensredaktion", "✍️", topic="Artikel schreiben und pflegen"),
                 ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
-                ch("interne-voice", "🎧", "voice", user_limit=10),
+                ch("interner-talk", "🎧", "voice", user_limit=10),
             ]),
             cat("auswertung", "📈", "leadership", [
                 ch("statistiken", "📊", topic="Zahlen und Trends"),
                 ch("qualitaet", "🏅", topic="Qualitätssicherung"),
-                ch("feedback-auswertung", "💬", topic="Was sagen die Nutzer?"),
+                ch("rueckmeldungen", "💬", topic="Was sagen die Nutzer?"),
                 ch("verbesserungen", "🚀", topic="Maßnahmen"),
             ]),
-            *language_category(24, 8),
-            cat("community", "💬", "public", [
-                ch("general", "💭", topic="Allgemeiner Chat"),
-                ch("offtopic", "🌙", topic="Abseits vom Support"),
-                ch("lounge-voice", "☕", "voice", user_limit=0),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
             ]),
-            staff_category(),
-            leadership_category(),
-            logs_category(),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("community", "💬", "public", [
+                ch("allgemein", "💭", topic="Allgemeiner Chat"),
+                ch("sonstiges", "🌙", topic="Abseits vom Support"),
+                ch("plauder-talk", "☕", "voice"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 
@@ -1116,79 +1467,141 @@ def esports() -> dict[str, Any]:
         "key": "esports",
         "name": "Esports Organisation",
         "emoji": "🏆",
-        "tagline": "Roster, Scrims und Matchday-Betrieb",
+        "tagline": "Kader, Scrims und Spieltagsbetrieb",
         "premium": True,
         "accent": "#E11D48",
         "description": (
-            "Für Esports-Organisationen mit mehreren Teams: getrennte Roster-Bereiche, "
-            "Matchday-Betrieb, Analyse und ein Bereich für Sponsoren und Presse — "
-            "sauber abgeschirmt von der öffentlichen Fan-Community."
+            "Für Esports-Organisationen mit mehreren Teams: getrennte "
+            "Kaderbereiche, Spieltagsbetrieb, Analyse und ein Bereich für "
+            "Sponsoren und Presse — sauber abgeschirmt von der öffentlichen "
+            "Fan-Community."
         ),
         "highlights": [
-            "Eigene, private Bereiche für vier Roster",
-            "Matchday-Kanäle mit Vorbereitung, Live und Nachbesprechung",
-            "Analyse- und VOD-Review-Struktur",
+            "Eigene, private Bereiche für vier Kader",
+            "Spieltags-Kanäle mit Vorbereitung, Live und Nachbesprechung",
+            "Analyse- und Aufzeichnungsstruktur",
             "Getrennte Zonen für Fans, Presse und Sponsoren",
         ],
         "roles": [
-            role("player", "Player", "🎮", "#E11D48", "trusted"),
-            role("captain", "Captain", "🎖️", "#BE123C", "helper"),
+            role("player", "Spieler", "🎮", "#E11D48", "trusted"),
+            role("captain", "Kapitaen", "🎖️", "#BE123C", "helper"),
             role("coach_es", "Coach", "🧠", "#8B5CF6", "helper"),
             role("analyst", "Analyst", "📊", "#0EA5E9", "helper"),
-            role("manager", "Team Manager", "📋", "#F59E0B", "moderator"),
+            role("manager", "Teammanager", "📋", "#F59E0B", "moderator"),
             role("press", "Presse", "📰", "#64748B", "guest", hoist=False),
             role("fan", "Fan", "💛", "#FACC15", "member", hoist=False),
         ],
         "categories": [
-            gate_category(),
-            info_category([ch("match-schedule", "📅", topic="Kommende Spiele")]),
-            cat("fanzone", "💛", "public", [
-                ch("general", "💬", topic="Fan-Chat"),
-                ch("match-talk", "🔥", topic="Live mitfiebern"),
-                ch("predictions", "🔮", topic="Tippspiel"),
-                ch("fanart", "🎨", topic="Fanart und Support"),
-                ch("merch", "👕", topic="Merchandise"),
-                ch("watchparty", "📺", "voice", user_limit=50),
-                ch("fan-stage", "📣", "stage"),
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly"),
+                ch("verifizieren", "✅", topic="Hier verifizieren"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly"),
             ]),
-            cat("roster", "🎯", "staff", [
-                ch("roster-main", "🥇", topic="Hauptteam"),
-                ch("roster-academy", "🥈", topic="Academy"),
-                ch("roster-female", "🥉", topic="Female Roster"),
-                ch("roster-content", "🎬", topic="Content-Team"),
-                ch("tryouts", "📝", topic="Sichtungen"),
-                ch("roster-voice-1", "🎙️", "voice", user_limit=8),
-                ch("roster-voice-2", "🎙️", "voice", user_limit=8),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben"),
+                ch("partner", "🤝", topic="Unsere Partner"),
+                ch("gewinnspiele", "🎁", topic="Aktuelle Gewinnspiele"),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?"),
+                ch("spielplan", "📅", topic="Kommende Spiele"),
             ]),
-            cat("matchday", "⚔️", "staff", [
-                ch("preparation", "📋", topic="Vorbereitung"),
-                ch("lineups", "🧩", topic="Aufstellungen"),
-                ch("live", "🔴", topic="Während des Matches"),
-                ch("debrief", "🗣️", topic="Nachbesprechung"),
-                ch("results", "📊", topic="Ergebnisse"),
-                ch("matchroom-1", "🅰️", "voice", user_limit=6),
-                ch("matchroom-2", "🅱️", "voice", user_limit=6),
+            cat("fanbereich", "💛", "public", [
+                ch("allgemein", "💬", topic="Fan-Chat"),
+                ch("spieltag-chat", "🔥", topic="Live mitfiebern"),
+                ch("tippspiel", "🔮", topic="Tippspiel"),
+                ch("fanart", "🎨", topic="Fanart und Unterstützung"),
+                ch("fanartikel", "👕", topic="Merchandise"),
+                ch("gemeinsam-schauen", "📺", "voice", user_limit=50),
+                ch("fan-buehne", "📣", "stage"),
+            ]),
+            cat("kader", "🎯", "staff", [
+                ch("hauptteam", "🥇", topic="Hauptteam"),
+                ch("nachwuchs", "🥈", topic="Academy"),
+                ch("frauen-team", "🥉", topic="Female Roster"),
+                ch("content-team", "🎬", topic="Content-Team"),
+                ch("sichtungen", "📝", topic="Probetrainings"),
+                ch("kader-talk-1", "🎙️", "voice", user_limit=8),
+                ch("kader-talk-2", "🎙️", "voice", user_limit=8),
+            ]),
+            cat("spieltag", "⚔️", "staff", [
+                ch("vorbereitung", "📋", topic="Vorbereitung"),
+                ch("aufstellungen", "🧩", topic="Aufstellungen"),
+                ch("live", "🔴", topic="Während des Spiels"),
+                ch("nachbesprechung", "🗣️", topic="Nachbesprechung"),
+                ch("ergebnisse", "📊", topic="Ergebnisse"),
+                ch("spielraum-1", "🅰️", "voice", user_limit=6),
+                ch("spielraum-2", "🅱️", "voice", user_limit=6),
             ]),
             cat("analyse", "📊", "staff", [
-                ch("vod-review", "🎞️", topic="VOD-Analysen"),
-                ch("scouting", "🔭", topic="Gegner beobachten"),
-                ch("stats", "📈", topic="Statistiken"),
-                ch("strategy", "🗺️", topic="Strategien"),
-                ch("review-voice", "🖥️", "voice", user_limit=10),
+                ch("spielanalyse", "🎞️", topic="Aufzeichnungen analysieren"),
+                ch("gegner-beobachtung", "🔭", topic="Gegner beobachten"),
+                ch("statistiken", "📈", topic="Statistiken"),
+                ch("strategie", "🗺️", topic="Strategien"),
+                ch("analyse-talk", "🖥️", "voice", user_limit=10),
             ]),
             cat("organisation", "🏢", "leadership", [
-                ch("management", "🏛️", topic="Orga-Leitung"),
+                ch("geschaeftsleitung", "🏛️", topic="Orga-Leitung"),
                 ch("sponsoren", "💰", topic="Sponsoring"),
                 ch("presse", "📰", topic="Presseanfragen"),
                 ch("vertraege", "📄", topic="Verträge"),
                 ch("budget", "🧾", topic="Budget"),
-                ch("orga-voice", "🔐", "voice", user_limit=10),
+                ch("orga-talk", "🔐", "voice", user_limit=10),
             ]),
-            social_category(),
-            *language_category(16, 6),
-            vip_category(),
-            staff_category(),
-            logs_category(),
+            cat("social media", "📱", "public", [
+                ch("instagram", "📸", topic="Instagram-Beiträge"),
+                ch("tiktok", "🎵", topic="TikTok-Clips"),
+                ch("youtube", "▶️", topic="YouTube-Uploads"),
+                ch("twitch", "🟣", topic="Twitch-Streams"),
+                ch("x-twitter", "🐦", topic="Beiträge von X"),
+                ch("eigenwerbung", "📣", topic="Eigene Projekte vorstellen", slowmode=300),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("vip bereich", "💎", "vip", [
+                ch("vip-chat", "💬", topic="Exklusiv für VIPs und Booster"),
+                ch("vip-vorteile", "🎁", topic="Deine Vorteile", visibility="readonly"),
+                ch("vip-wuensche", "🌠", topic="Wünsche und Rückmeldungen"),
+                ch("vip-talk", "🥂", "voice", user_limit=15),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
+                ch("fehler-melden", "🐛", topic="Fehler melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server"),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking"),
+                ch("server-logs", "🗃️", topic="Alles Übrige"),
+            ]),
         ],
     }
 

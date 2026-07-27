@@ -174,19 +174,94 @@ class TestTemplates:
 
     def test_every_template_is_substantial(self, registry):
         for template in registry:
-            assert template.channel_count >= 80, f"{template.key} zu klein"
+            assert template.channel_count >= 65, f"{template.key} zu klein"
             assert template.voice_count >= 12, f"{template.key} zu wenig Voice"
 
-    def test_every_template_has_language_channels(self, registry):
-        """The 'Social Logs' request: many language channels everywhere."""
+    def test_language_area_is_german_and_english_only(self, registry):
+        """Der Sprachbereich enthält bewusst nur Deutsch und English."""
 
         for template in registry:
-            language_categories = [
-                c for c in template.categories if "language" in c.label.lower()
-            ]
-            assert language_categories, f"{template.key} hat keine Sprachkanäle"
-            count = sum(len(c.channels) for c in language_categories)
-            assert count >= 12, f"{template.key} hat nur {count} Sprachkanäle"
+            categories = [c for c in template.categories if c.label == "sprachen"]
+            assert categories, f"{template.key} hat keinen Sprachbereich"
+
+            labels = {ch.label for c in categories for ch in c.channels}
+            assert labels == {"deutsch", "english"}, (
+                f"{template.key}: Sprachbereich enthält {sorted(labels)}, "
+                "erwartet wurden genau deutsch und english"
+            )
+
+    def test_no_foreign_language_channels_remain(self, registry):
+        """Keine Reste der früheren 37-Sprachen-Struktur."""
+
+        removed = {
+            "francais", "espanol", "italiano", "portugues", "brasil", "nederlands",
+            "polski", "русский", "українська", "turkce", "svenska", "norsk",
+            "dansk", "suomi", "cestina", "slovencina", "magyar", "romana",
+            "български", "ελληνικά", "srpski", "hrvatski", "lietuviu", "日本語",
+            "한국어", "中文", "ไทย", "tieng-viet", "indonesia", "filipino",
+            "हिन्दी", "العربية", "עברית", "فارسی", "other-languages",
+        }
+        for template in registry:
+            for _, channel in template.iter_channels():
+                assert channel.label not in removed, (
+                    f"{template.key}: '{channel.label}' ist ein Rest der alten Struktur"
+                )
+
+    def test_language_voice_rooms_are_german_and_english(self, registry):
+        for template in registry:
+            for category in template.categories:
+                if category.label != "sprach-talks":
+                    continue
+                for channel in category.channels:
+                    assert channel.label.startswith(("deutsch", "english")), (
+                        f"{template.key}: Sprach-Talk '{channel.label}' ist weder DE noch EN"
+                    )
+
+    def test_channel_labels_are_german(self, registry):
+        """Stichprobe: typisch englische Kanalnamen dürfen nicht mehr vorkommen.
+
+        Bewusst erlaubt bleiben Lehnwörter, die im deutschen Discord- und
+        Arbeitsalltag etabliert sind und deren Eindeutschung gestelzt wirken
+        würde: Memes, Clips, Highlights, Streams, Squad, Lobby, Tickets,
+        Podcast, Marketing, Budget, Pomodoro, Watch-Party.
+        """
+
+        forbidden = {
+            "general", "rules", "welcome", "announcements", "updates", "roles",
+            "partners", "giveaways", "media", "food", "pets", "questions",
+            "suggestions", "reports", "tasks", "applications", "resources",
+            "feedback", "showcase", "collabs", "introductions", "birthdays",
+            "polls", "books", "art", "photos", "advice", "compliments",
+            "confessions", "vent", "good-news", "daily-question", "challenges",
+            "watch-planning", "recording", "editing", "review", "published",
+            "ideas", "scripts", "deals", "contracts", "invoices", "results",
+            "brackets", "duo-1", "trio-1", "chill", "music", "study", "afk",
+            "silent-1", "group-study-1", "tools", "guides",
+            "faq", "changelog", "known-issues", "troubleshooting", "status",
+            "quick-questions", "community-help", "bug-reports",
+            "feature-requests", "handbook", "onboarding", "templates",
+            "archive", "backlog", "releases", "agenda", "standup", "legal",
+            "finance", "sales", "development", "hr",
+        }
+        for template in registry:
+            for _, channel in template.iter_channels():
+                assert channel.label not in forbidden, (
+                    f"{template.key}: Kanal '{channel.label}' ist noch englisch"
+                )
+
+    def test_category_labels_are_german(self, registry):
+        forbidden = {
+            "multi language", "language voice", "voice lounge", "events",
+            "creative", "knowledge", "meetings", "departments", "projects",
+            "clients", "roster", "matchday", "production", "business",
+            "collabs", "competitive", "squad voice",
+            "study rooms", "campus life", "subjects", "study groups", "exams",
+        }
+        for template in registry:
+            for category in template.categories:
+                assert category.label not in forbidden, (
+                    f"{template.key}: Kategorie '{category.label}' ist noch englisch"
+                )
 
     def test_every_template_has_full_log_suite(self, registry):
         for template in registry:

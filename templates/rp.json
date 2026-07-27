@@ -2,14 +2,14 @@
   "key": "rp",
   "name": "RP Server",
   "emoji": "🎭",
-  "tagline": "Roleplay mit Fraktionen, Ämtern und Immersion",
+  "tagline": "Roleplay mit Fraktionen, Behörden und Wirtschaft",
   "premium": false,
   "accent": "#9333EA",
-  "description": "Ein durchgeplanter Roleplay-Server. Die Reihenfolge ist bewusst gewählt: Flughafen und Verify zuerst, dann Regelwerke, RP-Start, Fraktionen, Behörden und Wirtschaft. Dazu abgeschirmte Team-, Büro- und Log-Bereiche.",
+  "description": "Ein durchgeplanter Roleplay-Server auf Deutsch. Die Reihenfolge ist bewusst gewählt: Flughafen und Verify zuerst, dann Regelwerke, RP-Start, Fraktionen, Behörden und Wirtschaft. Dazu abgeschirmte Team-, Büro- und Log-Bereiche.",
   "highlights": [
-    "Bewusste Kategorie-Reihenfolge: Flughafen → Verify → Regelwerk → RP",
+    "Bewusste Reihenfolge: Flughafen → Verify → Regelwerk → RP",
     "Eigene Bereiche für Fraktionen, Behörden und Wirtschaft",
-    "18 RP-Voice-Räume inklusive Funk- und Gerichtssaal",
+    "Viele RP-Talks inklusive Funk- und Gerichtssaal",
     "Getrennte Büro- und Aktenbereiche für das High-Team"
   ],
   "roles": [
@@ -42,7 +42,7 @@
     },
     {
       "key": "gov",
-      "label": "Behörde",
+      "label": "Behoerde",
       "emoji": "🏛️",
       "colour": "#0EA5E9",
       "tier": "helper",
@@ -122,7 +122,7 @@
       ]
     },
     {
-      "label": "verify",
+      "label": "verifizierung",
       "emoji": "✅",
       "visibility": "gate",
       "channels": [
@@ -175,7 +175,7 @@
           "topic": "Welche Strafe folgt worauf"
         },
         {
-          "label": "changelog",
+          "label": "regel-aenderungen",
           "emoji": "🔄",
           "topic": "Änderungen am Regelwerk"
         }
@@ -194,7 +194,7 @@
           "visibility": "readonly"
         },
         {
-          "label": "rp-news",
+          "label": "stadt-nachrichten",
           "emoji": "📰",
           "topic": "Was passiert in der Stadt?"
         },
@@ -210,14 +210,14 @@
           "topic": "Charakter-Steckbriefe"
         },
         {
-          "label": "suche-rp",
+          "label": "rp-suche",
           "emoji": "🔍",
           "topic": "Mitspieler für Szenen finden"
         },
         {
           "label": "ooc-chat",
           "emoji": "💬",
-          "topic": "Out of character"
+          "topic": "Ausserhalb des Rollenspiels"
         }
       ]
     },
@@ -238,12 +238,12 @@
           "topic": "Fraktion gesucht?"
         },
         {
-          "label": "bewerbungen",
+          "label": "fraktions-bewerbung",
           "emoji": "📨",
           "topic": "Fraktionsbewerbungen"
         },
         {
-          "label": "allianzen",
+          "label": "buendnisse",
           "emoji": "🤝",
           "topic": "Bündnisse und Konflikte"
         },
@@ -253,7 +253,7 @@
           "topic": "Übergreifender Austausch"
         },
         {
-          "label": "fraktions-voice",
+          "label": "fraktions-talk",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 20
@@ -326,9 +326,9 @@
           "topic": "Häuser und Grundstücke"
         },
         {
-          "label": "jobs",
+          "label": "stellenangebote",
           "emoji": "💼",
-          "topic": "Stellenangebote"
+          "topic": "Jobs in der Stadt"
         },
         {
           "label": "werbung",
@@ -400,21 +400,21 @@
           "kind": "voice"
         },
         {
-          "label": "afk",
+          "label": "abwesend",
           "emoji": "💤",
           "kind": "voice"
         }
       ]
     },
     {
-      "label": "multi language",
+      "label": "sprachen",
       "emoji": "🌍",
       "visibility": "public",
       "channels": [
         {
           "label": "deutsch",
           "emoji": "🇩🇪",
-          "topic": "Deutschsprachiger Chat",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
           "slowmode": 3
         },
         {
@@ -422,174 +422,35 @@
           "emoji": "🇬🇧",
           "topic": "English speaking chat",
           "slowmode": 3
-        },
-        {
-          "label": "francais",
-          "emoji": "🇫🇷",
-          "topic": "Discussion en français",
-          "slowmode": 3
-        },
-        {
-          "label": "espanol",
-          "emoji": "🇪🇸",
-          "topic": "Chat en español",
-          "slowmode": 3
-        },
-        {
-          "label": "italiano",
-          "emoji": "🇮🇹",
-          "topic": "Chat in italiano",
-          "slowmode": 3
-        },
-        {
-          "label": "portugues",
-          "emoji": "🇵🇹",
-          "topic": "Conversa em português",
-          "slowmode": 3
-        },
-        {
-          "label": "brasil",
-          "emoji": "🇧🇷",
-          "topic": "Bate-papo brasileiro",
-          "slowmode": 3
-        },
-        {
-          "label": "nederlands",
-          "emoji": "🇳🇱",
-          "topic": "Nederlandse chat",
-          "slowmode": 3
-        },
-        {
-          "label": "polski",
-          "emoji": "🇵🇱",
-          "topic": "Czat po polsku",
-          "slowmode": 3
-        },
-        {
-          "label": "русский",
-          "emoji": "🇷🇺",
-          "topic": "Русскоязычный чат",
-          "slowmode": 3
-        },
-        {
-          "label": "українська",
-          "emoji": "🇺🇦",
-          "topic": "Українськомовний чат",
-          "slowmode": 3
-        },
-        {
-          "label": "turkce",
-          "emoji": "🇹🇷",
-          "topic": "Türkçe sohbet",
-          "slowmode": 3
-        },
-        {
-          "label": "svenska",
-          "emoji": "🇸🇪",
-          "topic": "Svensk chatt",
-          "slowmode": 3
-        },
-        {
-          "label": "norsk",
-          "emoji": "🇳🇴",
-          "topic": "Norsk chat",
-          "slowmode": 3
-        },
-        {
-          "label": "dansk",
-          "emoji": "🇩🇰",
-          "topic": "Dansk chat",
-          "slowmode": 3
-        },
-        {
-          "label": "suomi",
-          "emoji": "🇫🇮",
-          "topic": "Suomenkielinen chat",
-          "slowmode": 3
-        },
-        {
-          "label": "cestina",
-          "emoji": "🇨🇿",
-          "topic": "Český chat",
-          "slowmode": 3
-        },
-        {
-          "label": "slovencina",
-          "emoji": "🇸🇰",
-          "topic": "Slovenský chat",
-          "slowmode": 3
-        },
-        {
-          "label": "magyar",
-          "emoji": "🇭🇺",
-          "topic": "Magyar csevegés",
-          "slowmode": 3
-        },
-        {
-          "label": "romana",
-          "emoji": "🇷🇴",
-          "topic": "Chat în română",
-          "slowmode": 3
-        },
-        {
-          "label": "other-languages",
-          "emoji": "🌐",
-          "topic": "Every other language is welcome here"
         }
       ]
     },
     {
-      "label": "language voice",
+      "label": "sprach-talks",
       "emoji": "🗣️",
       "visibility": "public",
       "channels": [
         {
-          "label": "deutsch-voice",
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
           "emoji": "🇩🇪",
           "kind": "voice",
-          "user_limit": 12
+          "user_limit": 10
         },
         {
-          "label": "english-voice",
+          "label": "english-talk-2",
           "emoji": "🇬🇧",
           "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "francais-voice",
-          "emoji": "🇫🇷",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "espanol-voice",
-          "emoji": "🇪🇸",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "italiano-voice",
-          "emoji": "🇮🇹",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "portugues-voice",
-          "emoji": "🇵🇹",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "brasil-voice",
-          "emoji": "🇧🇷",
-          "kind": "voice",
-          "user_limit": 12
-        },
-        {
-          "label": "nederlands-voice",
-          "emoji": "🇳🇱",
-          "kind": "voice",
-          "user_limit": 12
+          "user_limit": 10
         }
       ]
     },
@@ -599,9 +460,9 @@
       "visibility": "public",
       "channels": [
         {
-          "label": "offtopic",
+          "label": "sonstiges",
           "emoji": "🌙",
-          "topic": "Alles außerhalb des RP"
+          "topic": "Alles ausserhalb des RP"
         },
         {
           "label": "memes",
@@ -614,24 +475,24 @@
           "topic": "Deine besten Szenen"
         },
         {
-          "label": "screenshots",
+          "label": "bildschirmfotos",
           "emoji": "📸",
           "topic": "Bilder aus dem RP"
         },
         {
-          "label": "bot-commands",
+          "label": "bot-befehle",
           "emoji": "🤖",
           "topic": "Bot-Befehle"
         },
         {
-          "label": "lounge-voice",
+          "label": "freizeit-talk",
           "emoji": "☕",
           "kind": "voice"
         }
       ]
     },
     {
-      "label": "support",
+      "label": "hilfe",
       "emoji": "🛟",
       "visibility": "public",
       "channels": [
@@ -642,7 +503,7 @@
           "topic": "Tickets und Hilfe"
         },
         {
-          "label": "bug-reports",
+          "label": "fehler-melden",
           "emoji": "🐛",
           "topic": "Fehler melden"
         },
@@ -652,7 +513,7 @@
           "topic": "Beschwerden über Spieler"
         },
         {
-          "label": "entbannung",
+          "label": "entbannungsantrag",
           "emoji": "⚖️",
           "topic": "Entbannungsanträge"
         },
@@ -681,7 +542,7 @@
       ]
     },
     {
-      "label": "vip lounge",
+      "label": "vip bereich",
       "emoji": "💎",
       "visibility": "vip",
       "channels": [
@@ -691,18 +552,18 @@
           "topic": "Exklusiv für VIPs und Booster"
         },
         {
-          "label": "vip-perks",
+          "label": "vip-vorteile",
           "emoji": "🎁",
           "topic": "Deine Vorteile",
           "visibility": "readonly"
         },
         {
-          "label": "vip-wishes",
+          "label": "vip-wuensche",
           "emoji": "🌠",
-          "topic": "Wünsche und Feedback"
+          "topic": "Wünsche und Rückmeldungen"
         },
         {
-          "label": "vip-voice",
+          "label": "vip-talk",
           "emoji": "🥂",
           "kind": "voice",
           "user_limit": 15
@@ -720,33 +581,38 @@
           "topic": "Interner Teamchat"
         },
         {
-          "label": "team-announcements",
+          "label": "team-ankuendigungen",
           "emoji": "📣",
           "topic": "Ankündigungen fürs Team"
         },
         {
-          "label": "tasks",
+          "label": "aufgaben",
           "emoji": "📋",
           "topic": "Aufgaben und Zuständigkeiten"
         },
         {
-          "label": "applications",
+          "label": "bewerbungen",
           "emoji": "🧾",
           "topic": "Eingehende Bewerbungen"
         },
         {
-          "label": "reports",
+          "label": "meldungen",
           "emoji": "🚨",
           "topic": "Gemeldete Vorfälle"
         },
         {
-          "label": "team-voice",
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 15
         },
         {
-          "label": "meeting-room",
+          "label": "besprechungsraum",
           "emoji": "🪑",
           "kind": "voice",
           "user_limit": 25
@@ -793,22 +659,22 @@
       "visibility": "leadership",
       "channels": [
         {
-          "label": "leadership-chat",
+          "label": "leitungs-chat",
           "emoji": "🏛️",
           "topic": "Nur für die Serverleitung"
         },
         {
-          "label": "strategy",
+          "label": "planung",
           "emoji": "🗺️",
           "topic": "Planung und Ausrichtung"
         },
         {
-          "label": "personnel",
+          "label": "personal",
           "emoji": "🧑‍💼",
           "topic": "Personalthemen"
         },
         {
-          "label": "leadership-voice",
+          "label": "leitungs-talk",
           "emoji": "🔐",
           "kind": "voice",
           "user_limit": 10
@@ -826,27 +692,27 @@
           "topic": "Moderationsaktionen"
         },
         {
-          "label": "member-logs",
+          "label": "mitglieder-logs",
           "emoji": "👥",
           "topic": "Beitritte und Austritte"
         },
         {
-          "label": "message-logs",
+          "label": "nachrichten-logs",
           "emoji": "✏️",
           "topic": "Bearbeitete und gelöschte Nachrichten"
         },
         {
-          "label": "voice-logs",
+          "label": "sprach-logs",
           "emoji": "🔊",
           "topic": "Voice-Aktivität"
         },
         {
-          "label": "role-logs",
+          "label": "rollen-logs",
           "emoji": "🏷️",
           "topic": "Rollenänderungen"
         },
         {
-          "label": "channel-logs",
+          "label": "kanal-logs",
           "emoji": "🗂️",
           "topic": "Kanaländerungen"
         },
@@ -861,7 +727,7 @@
           "topic": "Bot-Ereignisse"
         },
         {
-          "label": "invite-logs",
+          "label": "einladungs-logs",
           "emoji": "🔗",
           "topic": "Einladungs-Tracking"
         },
