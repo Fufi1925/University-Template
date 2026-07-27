@@ -34,7 +34,7 @@ erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
 
 ---
 
-## Die fünf Kernpunkte
+## Die sechs Kernpunkte
 
 ### 1 · Deutsch als Hauptsprache, in Small Caps
 
@@ -167,7 +167,43 @@ eigenen Nachrichten an einer unsichtbaren Signatur. Der Kanal-Modus überlebt
 einen Neustart, weil er als unsichtbare Marke im Kanal-Topic steht — ganz ohne
 Datenbank.
 
-### 5 · Berechtigungen, die halten
+### 5 · Regelwerk-Assistent
+
+Nach dem Bau bietet der Bot an, den Regelkanal zu füllen — oder später
+jederzeit mit `!regeln`. Zur Auswahl stehen **20 fertige Regelwerke**:
+
+| Länge | Vorlagen |
+|---|---|
+| **Kurz** (4–8 Regeln) | Minimal, Freundeskreis, Kurz & Streng, Gaming kompakt, Voice-Knigge, Lerngruppe, Kreativ-Community |
+| **Mittel** (10–15) | Standard, Community, Gaming ausführlich, Roleplay, Creator, Support, Business, Anime & Manga, Social, Esports |
+| **Ausführlich** (25–33) | Ausführlich (§1–§9), Rechtlich abgesichert, Großer Server |
+
+Die Auswahl zeigt vor dem Anwenden eine Vorschau. Danach dieselben Optionen
+wie bei den Templates, plus eine vierte:
+
+- **Ergänzen** — Regelwerk anhängen, nichts wird gelöscht
+- **Neu aufsetzen** — leert **nur diesen Kanal**, und darin ausschließlich
+  Nachrichten des Bots; Beiträge von Mitgliedern bleiben unangetastet
+- **Abbrechen** — nichts passiert
+- **Eigenes Regelwerk** — Formular mit Überschrift, Text und zwei Bildern
+
+Beim eigenen Regelwerk sitzt das erste Bild als Thumbnail **oben rechts**
+neben der Überschrift, das zweite als Banner **unter dem Text**:
+
+```
+## Serverregeln                          ┌────────┐
+──────────────────────────────────────   │  Logo  │
+> 1. Sei freundlich                      └────────┘
+> 2. Kein Spam
+> 3. Kein NSFW
+──────────────────────────────────────
+[         Banner unten, volle Breite         ]
+```
+
+Bildlinks werden geprüft — nur direkte Links auf `png`, `jpg`, `gif` oder
+`webp` werden angenommen.
+
+### 6 · Berechtigungen, die halten
 
 Rollen bekommen keine handverlesenen Flags, sondern gehören zu einer von zehn
 **Stufen** (`guest` → `member` → `helper` → `moderator` → `admin` → `owner`).
@@ -288,6 +324,7 @@ health.py               HTTP-Health-Endpunkt für Railway
 
 core/
   small_caps.py         Typografie + Namensvergleich
+  rulesets.py           Die 20 Regelwerke
   content.py            Texte der Startnachrichten
   enforcement.py        Durchsetzung der Kanal-Modi
   schema.py             Typisiertes Template-Modell mit Validierung
@@ -301,13 +338,14 @@ ui/
   views.py              Startmenü, Premium-Modal, Vorschau, Fortschritt
   widgets.py            Verify, Regeln, Rollen, Ticket, Checkliste
   channel_intro.py      Die angeheftete Startnachricht
+  rules.py              Regelwerk-Assistent und Baukasten
 
 templates/*.json        Die 10 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  172 Tests
+tests/                  218 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -323,7 +361,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 172 Tests
+python -m pytest tests/ -v          # 218 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -349,6 +387,9 @@ Die Testsuite prüft unter anderem:
 - **Kanalinhalte** — dass ein zweiter Durchlauf keine doppelten Nachrichten
   erzeugt, Sprachkanäle leer bleiben, das Team nie von der Löschregel
   getroffen wird und die Widget-Buttons einen Neustart überstehen
+- **Regelwerke** — dass alle 20 vollständig gerendert werden ohne eine Regel
+  zu verlieren, kurze wirklich kürzer sind als lange, und dass „Neu aufsetzen"
+  nur Bot-Nachrichten entfernt und keine Beiträge von Mitgliedern
 
 ---
 

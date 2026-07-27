@@ -183,6 +183,35 @@ async def start_slash(interaction: discord.Interaction) -> None:
     )
 
 
+@bot.command(name="regeln", aliases=["rules", "regelwerk"])
+@commands.guild_only()
+async def rules_prefix(ctx: commands.Context) -> None:
+    """Öffnet den Regelwerk-Assistenten."""
+
+    from ui.rules import RulesetPicker, find_rules_channel
+
+    channel = find_rules_channel(ctx.guild)
+    if channel is None:
+        await ctx.send(
+            view=notice(
+                "Kein Regelkanal gefunden",
+                "Auf diesem Server gibt es keinen Kanal für Regeln.",
+                tone="error",
+                hint=f"Wende zuerst eine Vorlage mit {config.COMMAND_PREFIX}start an.",
+            )
+        )
+        return
+    await ctx.send(view=RulesetPicker(bot, channel))
+
+
+@bot.tree.command(name="regeln", description="Regelwerk für den Regelkanal einrichten")
+@discord.app_commands.guild_only()
+async def rules_slash(interaction: discord.Interaction) -> None:
+    from ui.rules import open_rules_assistant
+
+    await open_rules_assistant(interaction, bot)
+
+
 @bot.command(name="ping")
 async def ping(ctx: commands.Context) -> None:
     await ctx.send(

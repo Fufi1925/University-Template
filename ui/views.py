@@ -21,6 +21,7 @@ from config import (
 )
 from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
 from core.permissions import BASE_ROLES
+from core.rulesets import RULESETS
 from core.schema import Template
 from .components import (
     RULE,
@@ -41,6 +42,7 @@ LOGGER = logging.getLogger("architect.ui")
 
 # Jede Vorlage erbt diese Rollenleiter; die Zahl darf nicht hartcodiert werden.
 BASE_ROLE_COUNT = len(BASE_ROLES)
+RULESET_COUNT = len(RULESETS)
 
 __all__ = ["StartView", "build_start_view"]
 
@@ -350,7 +352,12 @@ def _progress_view(template: Template, label: str, step: int, total: int) -> ui.
     return view
 
 
-def _report_view(template: Template, report: BuildReport) -> ui.LayoutView:
+def _report_view(
+    template: Template,
+    report: BuildReport,
+    bot: "ArchitectBot | None" = None,
+    guild: discord.Guild | None = None,
+) -> ui.LayoutView:
     rebuilt = report.mode is BuildMode.REBUILD
     container = ui.Container(accent_colour=discord.Colour(COLOR_SUCCESS))
     container.add_item(
@@ -423,11 +430,53 @@ def _report_view(template: Template, report: BuildReport) -> ui.LayoutView:
             "In die Kanäle wurden keine Nachrichten geschrieben."
         )
     container.add_item(ui.TextDisplay(closing))
+
+    # Direkt weiter zum Regelwerk — der Kanal steht jetzt, ist aber leer.
+    if bot is not None and guild is not None:
+        from .rules import find_rules_channel
+
+        rules_channel = find_rules_channel(guild)
+        if rules_channel is not None:
+            container.add_item(RULE())
+            container.add_item(
+                ui.TextDisplay(
+                    quote(
+                        "**Nächster Schritt**",
+                        f"{rules_channel.mention} wartet noch auf ein Regelwerk. "
+                        f"Es stehen {RULESET_COUNT} Vorlagen bereit — "
+                        "oder du schreibst dein eigenes.",
+                    )
+                )
+            )
+            row = ui.ActionRow()
+            row.add_item(_OpenRulesButton(bot, rules_channel))
+            container.add_item(row)
+
     container.add_item(footer())
 
     view = ui.LayoutView(timeout=None)
     view.add_item(container)
     return view
+
+
+class _OpenRulesButton(ui.Button["ui.LayoutView"]):
+    """Fuehrt vom fertigen Server direkt zum Regelwerk-Assistenten."""
+
+    def __init__(self, bot: "ArchitectBot", channel: discord.TextChannel) -> None:
+        super().__init__(
+            label="Regelwerk einrichten",
+            style=discord.ButtonStyle.primary,
+            emoji="📜",
+        )
+        self.bot = bot
+        self.channel = channel
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        from .rules import RulesetPicker
+
+        await interaction.response.send_message(
+            view=RulesetPicker(self.bot, self.channel), ephemeral=True
+        )
 
 
 async def _run_build(
@@ -508,7 +557,9 @@ async def _run_build(
         report = await builder.apply(
             mode, progress=on_progress, write_intros=write_intros
         )
-        await interaction.edit_original_response(view=_report_view(template, report))
+        await interaction.edit_original_response(
+            view=_report_view(template, report, bot, guild)
+        )
         LOGGER.info(
             "Build fertig guild=%s template=%s mode=%s created=%d",
             guild.id,
