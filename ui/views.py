@@ -44,7 +44,7 @@ LOGGER = logging.getLogger("architect.ui")
 BASE_ROLE_COUNT = len(BASE_ROLES)
 RULESET_COUNT = len(RULESETS)
 
-__all__ = ["StartView", "build_start_view"]
+__all__ = ["StartView", "build_start_view", "partner_summary_view"]
 
 _MANAGE_HINT = "Dafür brauchst du die Berechtigung **Server verwalten**."
 _MANAGE_REASON = "So kann niemand den Server ungefragt umbauen."
@@ -890,3 +890,69 @@ class StartView(ui.LayoutView):
 
 def build_start_view(bot: "ArchitectBot", *, premium: bool) -> StartView:
     return StartView(bot, premium=premium)
+
+
+# --------------------------------------------------------------------------- #
+# Automatische Einrichtung ueber einen Partner-Bot
+# --------------------------------------------------------------------------- #
+
+def partner_summary_view(template: Template, report: BuildReport) -> ui.LayoutView:
+    """Zusammenfassung nach der automatischen Einrichtung.
+
+    Sie muss ohne Vorgeschichte verstaendlich sein: die Leser haben den Bot
+    nicht selbst gestartet und sehen ihn hier zum ersten Mal.
+    """
+
+    container = ui.Container(accent_colour=discord.Colour(COLOR_SUCCESS))
+    container.add_item(
+        ui.TextDisplay(
+            f"### Server eingerichtet\n-# Vorlage: {template.emoji}  {template.name}"
+        )
+    )
+    container.add_item(RULE())
+
+    lines = [
+        "**Angelegt**",
+        stat_line(
+            [
+                ("Kategorien", report.categories_created),
+                ("Kanäle", report.channels_created),
+                ("Rollen", report.roles_created),
+            ]
+        ),
+    ]
+    if report.messages_posted:
+        lines += [
+            "",
+            f"In {report.messages_posted} Kanälen steht eine angeheftete "
+            "Nachricht, die den Zweck des Kanals erklärt.",
+        ]
+    container.add_item(ui.TextDisplay(quote(*lines)))
+
+    # Was nicht geklappt hat, gehoert genauso in den Bericht wie der Erfolg.
+    if report.warnings:
+        container.add_item(RULE())
+        container.add_item(ui.TextDisplay("**Nicht vollständig übernommen**"))
+        container.add_item(ui.TextDisplay(quote(*report.warnings[:4])))
+
+    container.add_item(RULE())
+    container.add_item(
+        ui.TextDisplay(
+            quote(
+                "**Nächste Schritte**",
+                f"Weitere Vorlagen ansehen: `{COMMAND_PREFIX}start`",
+                f"Regelwerk einrichten: `{COMMAND_PREFIX}regeln`",
+            )
+        )
+    )
+    container.add_item(
+        ui.TextDisplay(
+            "-# Bestehende Kanäle und Rollen wurden nicht verändert — "
+            "es wurde nur ergänzt."
+        )
+    )
+    container.add_item(footer())
+
+    view = ui.LayoutView(timeout=None)
+    view.add_item(container)
+    return view

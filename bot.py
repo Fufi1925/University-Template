@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import time
 import logging
 import sys
 
@@ -15,6 +16,9 @@ import discord
 from discord.ext import commands
 
 import config
+from core.autosetup import AutoSetup
+from core.handoff_store import PendingHandoffs, SetupLedger
+from core.handshake import Handoff, is_enabled as handshake_enabled
 from core.premium import PremiumStore
 from core.registry import TemplateRegistry
 from core.schema import TemplateError
@@ -57,6 +61,13 @@ class ArchitectBot(commands.Bot):
         self.active_builds: set[int] = set()
         self._health_runner = None
 
+        # Partner-Handshake: kurzlebige Vormerkungen und dauerhafter Vermerk,
+        # wo das Template schon lief.
+        self.pending_handoffs = PendingHandoffs()
+        self.setup_ledger = SetupLedger(config.SETUP_LEDGER)
+        self.partner_template_key = config.PARTNER_TEMPLATE
+        self.autosetup = AutoSetup(self)
+
     # ------------------------------------------------------------ lifecycle --
     async def setup_hook(self) -> None:
         # Angeheftete Verify-/Rollen-/Ticket-Nachrichten muessen einen
@@ -67,9 +78,9 @@ class ArchitectBot(commands.Bot):
             self.add_view(view_cls())
 
         if config.HEALTH_SERVER:
-            from health import start_health_server
+            from web import start_web_server
 
-            self._health_runner = await start_health_server(self)
+            self._health_runner = await start_web_server(self)
 
         try:
             if config.DISCORD_GUILD_ID:
@@ -127,6 +138,40 @@ class ArchitectBot(commands.Bot):
             return
         with contextlib.suppress(discord.HTTPException):
             await member.add_roles(role, reason="Neues Mitglied")
+
+    @property
+    def command_prefix_display(self) -> str:
+        """Der Prefix, wie er in Meldungen erscheinen soll."""
+
+        return config.COMMAND_PREFIX
+
+    async def on_guild_join(self, guild: discord.Guild) -> None:
+        """Automatische Einrichtung, wenn der Server von einem Partner kam."""
+
+        LOGGER.info("Server beigetreten: %s (%s)", guild.name, guild.id)
+        try:
+            await self.autosetup.on_guild_join(guild)
+        except Exception:  # pragma: no cover - darf den Bot nie mitreissen
+            LOGGER.exception("Automatische Einrichtung fehlgeschlagen")
+
+    def schedule_partner_setup(self, guild: discord.Guild) -> None:
+        """Einrichtung anstossen, wenn der Callback nach dem Join kam.
+
+        Wird aus dem Webserver aufgerufen, der nicht warten kann — deshalb
+        eine Hintergrundaufgabe statt eines await.
+        """
+
+        handoff = self.pending_handoffs.pop(guild.id)
+        if handoff is None:
+            return
+
+        async def runner() -> None:
+            try:
+                await self.autosetup.run(guild, handoff)
+            except Exception:  # pragma: no cover
+                LOGGER.exception("Nachgezogene Einrichtung fehlgeschlagen")
+
+        self.loop.create_task(runner())
 
     async def on_message(self, message: discord.Message) -> None:
         """Setzt Kanal-Modi durch und vergibt Auto-Reaktionen."""
@@ -210,6 +255,49 @@ async def rules_slash(interaction: discord.Interaction) -> None:
     from ui.rules import open_rules_assistant
 
     await open_rules_assistant(interaction, bot)
+
+
+@bot.command(name="partner-setup", aliases=["autosetup"])
+@commands.guild_only()
+@commands.has_guild_permissions(manage_guild=True)
+async def partner_setup(ctx: commands.Context) -> None:
+    """Die Partner-Vorlage bewusst erneut anwenden."""
+
+    guild = ctx.guild
+    previous = bot.setup_ledger.details(guild.id)
+
+    if previous is not None:
+        await ctx.send(
+            view=notice(
+                "Wird erneut aufgebaut",
+                f"Die Vorlage lief hier bereits (**{previous.get('template', '?')}**). "
+                "Bestehende Kanäle und Rollen bleiben erhalten, es wird nur ergänzt.",
+                tone="neutral",
+            )
+        )
+
+    handoff = Handoff(
+        guild_id=guild.id,
+        user_id=ctx.author.id,
+        issued_at=int(time.time()),
+        source="manual",
+        guild_name=guild.name,
+    )
+    await bot.autosetup.run(guild, handoff, force=True)
+
+
+@partner_setup.error
+async def partner_setup_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send(
+            view=notice(
+                "Keine Berechtigung",
+                "Dafür brauchst du **Server verwalten**.",
+                tone="error",
+            )
+        )
+        return
+    raise error
 
 
 @bot.command(name="ping")

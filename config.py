@@ -78,6 +78,29 @@ HEALTH_SERVER: bool = _flag("HEALTH_SERVER", default=True)
 TEMPLATE_DIR: Path = BASE_DIR / "templates"
 
 # --------------------------------------------------------------------------- #
+# Partner-Handshake (automatische Einrichtung ueber einen Partner-Bot)
+# --------------------------------------------------------------------------- #
+
+# Gemeinsames Secret mit dem Partner-Bot. Ohne diesen Wert ist die
+# Automatik komplett aus — ein ungesicherter Handoff waere manipulierbar.
+PARTNER_HANDSHAKE_SECRET: str = os.getenv("PARTNER_HANDSHAKE_SECRET", "")
+
+# Muss im Developer Portal unter OAuth2 -> Redirects exakt so eingetragen
+# sein, sonst lehnt Discord die Autorisierung ab.
+OAUTH_REDIRECT_URI: str = os.getenv("OAUTH_REDIRECT_URI", "")
+
+DISCORD_CLIENT_ID: str = os.getenv("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET: str = os.getenv("DISCORD_CLIENT_SECRET", "")
+
+# Welche Vorlage ein Partner-Server automatisch bekommt.
+PARTNER_TEMPLATE: str = os.getenv("PARTNER_TEMPLATE", "community")
+
+# Dauerhafter Vermerk, wo das Template schon lief (Volume-Pfad auf Railway).
+SETUP_LEDGER: Path = Path(
+    os.getenv("SETUP_LEDGER", str(BASE_DIR / "data" / "setup_ledger.json"))
+).expanduser()
+
+# --------------------------------------------------------------------------- #
 # Branding
 # --------------------------------------------------------------------------- #
 

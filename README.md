@@ -34,7 +34,7 @@ erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
 
 ---
 
-## Die sechs Kernpunkte
+## Die sieben Kernpunkte
 
 ### 1 · Deutsch als Hauptsprache, in Small Caps
 
@@ -229,7 +229,51 @@ Lange Regelwerke werden automatisch auf zwei Nachrichten verteilt — immer am
 Paragraphenrand, nie mitten in einer Regel. Die Nummerierung läuft dabei
 durch: §17 bleibt §17, auch auf der zweiten Nachricht.
 
-### 6 · Berechtigungen, die halten
+### 6 · Automatische Einrichtung über einen Partner-Bot
+
+Ein Partner (*University Bot*) kann Server direkt an diesen Bot übergeben.
+Kommt ein Server auf diesem Weg, richtet er sich **von selbst** ein — ohne
+dass jemand einen Befehl tippt. Ein normaler Beitritt bleibt unverändert.
+
+Der Partner hängt an den Einladungslink einen signierten `state`-Wert.
+Discord reicht ihn an unsere Redirect-URI weiter — **nicht** an
+`on_guild_join`, deshalb hat der Bot einen `/oauth/callback`-Endpunkt.
+
+Der Token wird in dieser Reihenfolge geprüft:
+
+1. Form: genau ein Punkt, beide Teile nicht leer
+2. Signatur per `hmac.compare_digest` — **niemals** mit `==`, sonst ließe
+   sich die richtige Signatur über Laufzeitunterschiede Zeichen für Zeichen
+   erraten
+3. erst danach JSON dekodieren
+4. `src == "university-bot"`
+5. Alter: `t > 0` und höchstens eine Stunde alt
+
+Scheitert ein Schritt, wird der Token verworfen und der Server als ganz
+normaler Beitritt behandelt. **Ohne `PARTNER_HANDSHAKE_SECRET` gilt kein
+Token** — lieber keine Automatik als eine manipulierbare. Ohne Signatur
+könnte sonst jeder `?state=university-bot` an seinen eigenen Link hängen.
+
+Zusätzlich wird geprüft, ob die von Discord gemeldete `guild_id` zu der im
+Token passt. Sonst ließe sich ein echtes Token an eine fremde Einladung
+kleben.
+
+**Das Wettrennen.** Der Callback kann vor *oder* nach `on_guild_join`
+eintreffen — beides kommt vor. Kommt der Join zuerst, sieht er zweimal im
+Abstand von zwei Sekunden erneut nach. Kommt der Callback zuerst und der Bot
+ist schon auf dem Server, zieht der Endpunkt die Einrichtung nach.
+
+**Kein zweites Mal.** Erfolgreiche Einrichtungen stehen in
+`data/setup_ledger.json`. Wird der Bot entfernt und neu hinzugefügt, baut er
+nicht alles erneut auf. Der Vermerk entsteht **erst nach dem Erfolg** —
+bricht der Aufbau ab, ist ein zweiter Versuch nicht blockiert. Bewusst
+wiederholen lässt es sich mit `!partner-setup`.
+
+Vor dem Aufbau prüft der Bot Rechte (`manage_channels`, `manage_roles`) und
+beide Discord-Limits (**500 Kanäle**, **250 Rollen**) — und meldet ein
+Problem verständlich, statt mitten im Aufbau abzubrechen.
+
+### 7 · Berechtigungen, die halten
 
 Rollen bekommen keine handverlesenen Flags, sondern gehören zu einer von zehn
 **Stufen** (`guest` → `member` → `helper` → `moderator` → `admin` → `owner`).
@@ -276,11 +320,14 @@ Ohne aktivierte Intents startet der Bot trotzdem — setze
 `Dockerfile`, `Procfile` und `railway.toml` liegen bereit.
 
 1. **New Project → Deploy from GitHub Repo**
-2. Unter **Variables**: `DISCORD_TOKEN` und `ENABLE_PRIVILEGED_INTENTS=true`
+2. Unter **Variables**: `DISCORD_TOKEN` und `ENABLE_PRIVILEGED_INTENTS=true`.
+   Für die Partner-Automatik zusätzlich `PARTNER_HANDSHAKE_SECRET`,
+   `OAUTH_REDIRECT_URI`, `DISCORD_CLIENT_ID` und `DISCORD_CLIENT_SECRET`
 3. Unter **Settings → Volumes**: **Add Volume**, Mount path `/app/data`
 
-> Ohne Volume gehen die Premium-Freischaltungen bei jedem Redeploy verloren,
-> weil der Container-Speicher flüchtig ist.
+> Ohne Volume gehen die Premium-Freischaltungen **und** das Register bereits
+> eingerichteter Server bei jedem Redeploy verloren. Letzteres hätte zur
+> Folge, dass ein Partner-Server nach einem Deploy erneut aufgebaut wird.
 
 > **Warum kein `VOLUME` im Dockerfile?** Railway lehnt das ab
 > (`docker VOLUME ... is not supported, use Railway Volumes`) und bricht den
@@ -346,10 +393,13 @@ Beide Modi kann nur starten, wer **Server verwalten** darf.
 ```
 bot.py                  Einstiegspunkt, Commands, Fehlerbehandlung
 config.py               Konfiguration aus Umgebungsvariablen
-health.py               HTTP-Health-Endpunkt für Railway
+web.py                  Health-Endpunkt + OAuth-Callback
 
 core/
   small_caps.py         Typografie + Namensvergleich
+  handshake.py          Signierte Partner-Token prüfen
+  handoff_store.py      Vormerkungen + Register bereits eingerichteter Server
+  autosetup.py          Automatische Einrichtung nach einem Handoff
   rulesets.py           Die 22 Regelwerke (inkl. RP · IC/OOC)
   content.py            Texte der Startnachrichten
   enforcement.py        Durchsetzung der Kanal-Modi
@@ -371,7 +421,7 @@ tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  241 Tests
+tests/                  308 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -387,7 +437,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 241 Tests
+python -m pytest tests/ -v          # 308 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
@@ -402,6 +452,10 @@ Die Testsuite prüft unter anderem:
   Kategorien für `@everyone` unsichtbar sind
 - **Berechtigungen** — dass jede Stufe eine Obermenge der vorherigen ist und
   nur der Inhaber `Administrator` bekommt
+- **Partner-Handshake** — dass gefälschte Signaturen, vertauschte Bodies,
+  fremde `src`-Werte und abgelaufene Token abgelehnt werden, dass ohne Secret
+  **jedes** Token scheitert, und dass beide Reihenfolgen des Wettrennens den
+  Server genau einmal einrichten
 - **Deployment** — dass kein `VOLUME` im Dockerfile steht (Railway bricht sonst
   den Build ab) und jeder `COPY`-Pfad die `.dockerignore` überlebt
 - **Premium** — dass der Key nie auf der Festplatte landet, **nirgends in der

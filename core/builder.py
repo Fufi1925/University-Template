@@ -172,6 +172,15 @@ class ServerBuilder:
                 "Nutze den Modus **Neu aufsetzen** oder räume vorher auf."
             )
 
+        # Discord erlaubt 250 Rollen. Vorher rechnen statt mitten im Aufbau
+        # zu scheitern und einen halb fertigen Server zu hinterlassen.
+        projected_roles = len(self.guild.roles) + len(self._specs)
+        if projected_roles > 250:
+            raise BuildError(
+                f"Der Server hätte danach bis zu {projected_roles} Rollen — Discord "
+                "erlaubt maximal 250. Lösche zuerst nicht mehr benötigte Rollen."
+            )
+
     # ------------------------------------------------------------- lookup ---
     def _find_role(self, spec: RoleSpec) -> discord.Role | None:
         target = strip_decoration(spec.display_name)

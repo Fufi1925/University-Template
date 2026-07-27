@@ -131,7 +131,7 @@ class TestDockerfile:
         assert "mkdir -p /app/data" in dockerfile
 
     def test_copies_every_runtime_module(self, dockerfile):
-        for required in ("bot.py", "config.py", "health.py", "core/", "ui/", "templates/"):
+        for required in ("bot.py", "config.py", "web.py", "core/", "ui/", "templates/"):
             assert required in dockerfile, f"{required} fehlt im Image"
 
     def test_copy_sources_exist(self, instructions):
@@ -185,11 +185,11 @@ class TestRailwayConfig:
         assert (BASE_DIR / railway["build"]["dockerfilePath"]).exists()
 
     def test_healthcheck_matches_health_module(self, railway):
-        """healthcheckPath muss einer Route in health.py entsprechen."""
+        """healthcheckPath muss einer Route in web.py entsprechen."""
 
         path = railway["deploy"]["healthcheckPath"]
-        source = (BASE_DIR / "health.py").read_text(encoding="utf-8")
-        assert f'add_get("{path}"' in source, f"Keine Route fuer {path} in health.py"
+        source = (BASE_DIR / "web.py").read_text(encoding="utf-8")
+        assert f'add_get("{path}"' in source, f"Keine Route fuer {path} in web.py"
 
     def test_health_server_enabled_by_default(self):
         """Ein deaktivierter Health-Server laesst den Railway-Healthcheck scheitern."""

@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY config.py health.py bot.py ./
+COPY config.py web.py bot.py ./
 COPY core/ ./core/
 COPY ui/ ./ui/
 COPY templates/ ./templates/
