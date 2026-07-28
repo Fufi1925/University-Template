@@ -877,3 +877,130 @@ class TestBuilder:
             staff_keys=frozenset(), leadership_keys=frozenset(),
         )
         assert result == {}
+
+
+class TestExpiredInteraction:
+    """404 Unknown Message nach einem langen Build.
+
+    Ein großes Template braucht Minuten. Interaktionen leben 15 Minuten, und
+    die ursprüngliche Nachricht kann gelöscht sein. Vorher endete das in
+    einem Traceback — der Server war fertig, sagte es aber niemandem.
+    """
+
+    def test_helpers_exist(self):
+        from ui.views import _fallback_notify, _report, _safe_edit
+
+        assert callable(_safe_edit)
+        assert callable(_fallback_notify)
+        assert callable(_report)
+
+    def test_no_unguarded_edit_calls(self):
+        """edit_original_response darf nur in _safe_edit stehen."""
+
+        source = (BASE_DIR / "ui" / "views.py").read_text(encoding="utf-8")
+        assert source.count("edit_original_response") == 1
+
+    def test_safe_edit_swallows_not_found(self):
+        import asyncio
+
+        import discord
+
+        from ui.components import notice
+        from ui.views import _safe_edit
+
+        class Expired:
+            async def edit_original_response(self, **kwargs):
+                raise discord.NotFound(
+                    type("R", (), {"status": 404, "reason": "Not Found"})(),
+                    "Unknown Message",
+                )
+
+        result = asyncio.run(_safe_edit(Expired(), notice("T", "B")))
+        assert result is False, "Ein abgelaufener Callback ist kein Fehler"
+
+    def test_safe_edit_reports_success(self):
+        import asyncio
+
+        from ui.components import notice
+        from ui.views import _safe_edit
+
+        class Fine:
+            def __init__(self):
+                self.calls = 0
+
+            async def edit_original_response(self, **kwargs):
+                self.calls += 1
+
+        target = Fine()
+        assert asyncio.run(_safe_edit(target, notice("T", "B"))) is True
+        assert target.calls == 1
+
+    def test_result_falls_back_to_the_channel(self):
+        """Ist die Interaktion tot, geht das Ergebnis in den Kanal."""
+
+        import asyncio
+
+        import discord
+
+        from ui.components import notice
+        from ui.views import _report
+
+        posted: list[object] = []
+
+        class Channel:
+            def permissions_for(self, _member):
+                return type("P", (), {"send_messages": True})()
+
+            async def send(self, view=None, **kwargs):
+                posted.append(view)
+
+        class Member:
+            pass
+
+        class Guild:
+            me = Member()
+
+        class Expired:
+            channel = Channel()
+            guild = Guild()
+
+            async def edit_original_response(self, **kwargs):
+                raise discord.NotFound(
+                    type("R", (), {"status": 404, "reason": "Not Found"})(),
+                    "Unknown Message",
+                )
+
+        asyncio.run(_report(Expired(), notice("Fertig", "Server steht")))
+        assert posted, "Der Nutzer bekommt gar keine Rückmeldung"
+
+    def test_no_fallback_without_write_permission(self):
+        """Ohne Schreibrecht darf der Versuch keine Ausnahme werfen."""
+
+        import asyncio
+
+        import discord
+
+        from ui.components import notice
+        from ui.views import _report
+
+        class Channel:
+            def permissions_for(self, _member):
+                return type("P", (), {"send_messages": False})()
+
+            async def send(self, **kwargs):
+                raise AssertionError("Es hätte nicht gesendet werden dürfen")
+
+        class Guild:
+            me = object()
+
+        class Expired:
+            channel = Channel()
+            guild = Guild()
+
+            async def edit_original_response(self, **kwargs):
+                raise discord.NotFound(
+                    type("R", (), {"status": 404, "reason": "Not Found"})(),
+                    "Unknown Message",
+                )
+
+        asyncio.run(_report(Expired(), notice("T", "B")))

@@ -204,3 +204,80 @@ class TestRailwayConfig:
 
     def test_procfile_agrees(self):
         assert "bot.py" in (BASE_DIR / "Procfile").read_text(encoding="utf-8")
+
+
+class TestBotModuleIntegrity:
+    """bot.py muss importierbar bleiben.
+
+    Ein Syntaxfehler oder eine falsch eingerückte Methode fällt sonst erst
+    beim Deploy auf — der Container startet dann gar nicht erst.
+    """
+
+    def test_bot_module_parses(self):
+        import ast
+
+        source = (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+        ast.parse(source)  # wirft bei Einrückungsfehlern
+
+    def test_event_handlers_live_in_the_class(self):
+        """Ein Handler auf Modulebene wird von discord.py nie aufgerufen."""
+
+        import ast
+
+        tree = ast.parse((BASE_DIR / "bot.py").read_text(encoding="utf-8"))
+        bot_class = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "ArchitectBot"
+        )
+        methods = {
+            node.name
+            for node in bot_class.body
+            if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
+        }
+
+        for handler in (
+            "on_ready",
+            "on_guild_join",
+            "on_member_join",
+            "on_message",
+            "close",
+        ):
+            assert handler in methods, f"{handler} liegt nicht in ArchitectBot"
+
+        module_level = {
+            node.name
+            for node in tree.body
+            if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
+        }
+        stray = module_level & {"on_ready", "on_guild_join", "rotate_status"}
+        assert not stray, f"Auf Modulebene gestrandet: {stray}"
+
+    def test_status_rotation_recomputes_counts(self):
+        """Server- und Userzahl müssen pro Durchlauf neu ermittelt werden."""
+
+        import ast
+
+        tree = ast.parse((BASE_DIR / "bot.py").read_text(encoding="utf-8"))
+        bot_class = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "ArchitectBot"
+        )
+        rotate = next(
+            node
+            for node in bot_class.body
+            if isinstance(node, ast.AsyncFunctionDef) and node.name == "_rotate_status"
+        )
+
+        loop = next(node for node in ast.walk(rotate) if isinstance(node, ast.While))
+        inside = ast.dump(loop)
+        assert "guilds" in inside, "Serverzahl wird nicht in der Schleife gelesen"
+        assert "member_count" in inside, "Userzahl wird nicht aktualisiert"
+
+    def test_status_task_is_guarded_against_reconnects(self):
+        """on_ready feuert nach jedem Reconnect — sonst laufen viele Tasks."""
+
+        source = (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+        assert "_status_task" in source
+        assert "self._status_task.done()" in source or "is None" in source

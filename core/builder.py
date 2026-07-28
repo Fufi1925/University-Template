@@ -191,6 +191,22 @@ class ServerBuilder:
                 return role
         return None
 
+    def _forget_channel(self, channel: discord.abc.GuildChannel) -> None:
+        """Einen geloeschten Kanal sofort aus dem Guild-Cache nehmen.
+
+        Discord meldet Loeschungen ueber das Gateway, aber das kann Sekunden
+        dauern. Bis dahin liefert ``guild.categories`` Karteileichen — und ein
+        ``create_text_channel`` unter deren ``parent_id`` scheitert mit
+        *400 Invalid Form Body — In parent_id: Category does not exist*.
+
+        Genau dieser Fehler trat auf einem echten Server auf. Wir raeumen
+        deshalb selbst auf, statt auf das Gateway zu warten.
+        """
+
+        cache = getattr(self.guild, "_channels", None)
+        if isinstance(cache, dict):
+            cache.pop(channel.id, None)
+
     def _find_category(self, spec: CategorySpec) -> discord.CategoryChannel | None:
         target = strip_decoration(spec.display_name)
         for category in self.guild.categories:
@@ -220,9 +236,12 @@ class ServerBuilder:
         for channel in channels:
             try:
                 await channel.delete(reason=SETUP_REASON)
+                self._forget_channel(channel)
                 report.deleted_channels += 1
                 await asyncio.sleep(_THROTTLE)
             except discord.NotFound:
+                # Schon weg — trotzdem aus dem Cache nehmen.
+                self._forget_channel(channel)
                 continue
             except (discord.Forbidden, discord.HTTPException):
                 report.undeletable += 1
@@ -623,8 +642,39 @@ class ServerBuilder:
                     except discord.Forbidden:
                         report.warn(f"Kanal '{spec.display_name}' konnte nicht erstellt werden.")
                     except discord.HTTPException as exc:
-                        LOGGER.warning("Kanal '%s': %s", spec.display_name, exc)
-                        report.warn(f"Kanal '{spec.display_name}': {exc.text or exc}")
+                        # Ein einzelner Fehlschlag darf keinen dauerhaft
+                        # fehlenden Kanal bedeuten. Haeufigste Ursache ist eine
+                        # Kategorie, die zwischenzeitlich verschwunden ist
+                        # ("In parent_id: Category does not exist") — etwa weil
+                        # ein anderer Bot aufgeraeumt hat. Dann wird die
+                        # Kategorie neu angelegt und der Kanal erneut versucht.
+                        recovered = await self._recover_category(
+                            category, category_spec, report, exc
+                        )
+                        if recovered is None:
+                            # Anderer Fehler: melden, aber die bestehende
+                            # Kategorie behalten — die folgenden Kanaele
+                            # sollen weiterhin dort landen.
+                            LOGGER.warning("Kanal '%s': %s", spec.display_name, exc)
+                            report.warn(
+                                f"Kanal '{spec.display_name}': {exc.text or exc}"
+                            )
+                            continue
+                        category = recovered
+                        try:
+                            await self._create_channel(category, category_spec, spec)
+                            report.channels_created += 1
+                            await asyncio.sleep(_THROTTLE)
+                        except discord.HTTPException as retry_exc:
+                            LOGGER.warning(
+                                "Kanal '%s' auch im zweiten Versuch: %s",
+                                spec.display_name,
+                                retry_exc,
+                            )
+                            report.warn(
+                                f"Kanal '{spec.display_name}': "
+                                f"{retry_exc.text or retry_exc}"
+                            )
                 elif rebuild and await self._update_channel(existing, category_spec, spec):
                     report.channels_updated += 1
 
@@ -639,14 +689,76 @@ class ServerBuilder:
 
         return report
 
+    async def _recover_category(
+        self,
+        category: discord.CategoryChannel,
+        spec: CategorySpec,
+        report: BuildReport,
+        error: discord.HTTPException,
+    ) -> discord.CategoryChannel | None:
+        """Eine verschwundene Kategorie neu anlegen.
+
+        Discord meldet ``In parent_id: Category does not exist``, wenn die
+        Kategorie zwischen Cache und Request weggefallen ist. Ohne diesen
+        Schritt fehlen alle noch folgenden Kanaele dieser Kategorie dauerhaft
+        — genau das ist auf einem echten Server passiert.
+        """
+
+        text = (error.text or str(error)).lower()
+        if "parent_id" not in text and "category does not exist" not in text:
+            return None
+
+        LOGGER.info(
+            "Kategorie '%s' war verschwunden — wird neu angelegt", spec.display_name
+        )
+        self._forget_channel(category)
+
+        try:
+            fresh = await self.guild.create_category(
+                spec.display_name,
+                overwrites=category_overwrites(
+                    self.guild,
+                    spec.visibility,
+                    self._roles,
+                    staff_keys=self._staff_keys,
+                    leadership_keys=self._leadership_keys,
+                ),
+                reason=SETUP_REASON,
+            )
+            report.categories_created += 1
+            await asyncio.sleep(_THROTTLE)
+            return fresh
+        except discord.HTTPException:
+            LOGGER.warning("Kategorie '%s' nicht wiederherstellbar", spec.display_name)
+            return None
+
     async def _order_categories(self, report: BuildReport) -> None:
+        """Kategorien in die Reihenfolge der Vorlage bringen.
+
+        Ein ``category.edit(position=...)`` pro Kategorie sind bei 15
+        Kategorien 15 PATCH-Requests auf denselben Endpunkt — Discord
+        antwortet darauf zuverlaessig mit 429 und laesst den Bot minutenlang
+        warten. Discord bietet fuer genau diesen Fall einen Sammel-Endpunkt,
+        der alle Positionen in **einem** Request setzt.
+        """
+
+        payload = []
         for position, spec in enumerate(self.template.categories):
             category = self._find_category(spec)
-            if category is None or category.position == position:
+            if category is None:
                 continue
-            try:
-                await category.edit(position=position, reason=SETUP_REASON)
-                await asyncio.sleep(0.2)
-            except (discord.Forbidden, discord.HTTPException):
-                report.warn("Die Kategorie-Reihenfolge konnte nicht vollständig gesetzt werden.")
-                return
+            payload.append({"id": category.id, "position": position})
+
+        if not payload:
+            return
+
+        try:
+            await self.guild._state.http.bulk_channel_update(
+                self.guild.id, payload, reason=SETUP_REASON
+            )
+        except (discord.Forbidden, discord.HTTPException) as exc:
+            LOGGER.info("Kategorie-Reihenfolge nicht gesetzt: %s", exc)
+            report.warn(
+                "Die Kategorie-Reihenfolge konnte nicht gesetzt werden. "
+                "Die Kanäle sind trotzdem vollständig angelegt."
+            )

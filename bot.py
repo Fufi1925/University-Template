@@ -32,6 +32,9 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger("architect")
 
+#: Wie lange jede Präsenz-Variante angezeigt wird (Discord drosselt darunter).
+STATUS_INTERVAL = 15
+
 __all__ = ["ArchitectBot"]
 
 
@@ -60,6 +63,7 @@ class ArchitectBot(commands.Bot):
         )
         self.active_builds: set[int] = set()
         self._health_runner = None
+        self._status_task: asyncio.Task | None = None
 
         # Partner-Handshake: kurzlebige Vormerkungen und dauerhafter Vermerk,
         # wo das Template schon lief.
@@ -102,55 +106,64 @@ class ArchitectBot(commands.Bot):
             )
 
     async def close(self) -> None:
+        if self._status_task is not None:
+            self._status_task.cancel()
+            self._status_task = None
         if self._health_runner is not None:
             with contextlib.suppress(Exception):
                 await self._health_runner.cleanup()
             self._health_runner = None
         await super().close()
 
- async def on_ready(self) -> None:
-    totals = self.registry.totals
+    async def on_ready(self) -> None:
+        totals = self.registry.totals
 
-    LOGGER.info("Online als %s (%d Server)", self.user, len(self.guilds))
-    LOGGER.info(
-        "%d Templates · %d Kategorien · %d Kanäle",
-        totals["templates"],
-        totals["categories"],
-        totals["channels"],
-    )
-
-    if not hasattr(self, "_status_task"):
-        self._status_task = self.loop.create_task(
-            self.rotate_status(totals)
+        LOGGER.info("Online als %s (%d Server)", self.user, len(self.guilds))
+        LOGGER.info(
+            "%d Templates · %d Kategorien · %d Kanäle",
+            totals["templates"],
+            totals["categories"],
+            totals["channels"],
         )
 
+        # on_ready feuert auch nach jedem Reconnect. Ohne diese Sperre liefe
+        # nach ein paar Stunden ein Dutzend Rotationen parallel.
+        if self._status_task is None or self._status_task.done():
+            self._status_task = self.loop.create_task(self._rotate_status())
 
-async def rotate_status(self, totals):
-    statuses = [
-        discord.Activity(
-            type=discord.ActivityType.watching,
-            name=f"{config.COMMAND_PREFIX}start · {totals['templates']} Templates",
-        ),
-        discord.Activity(
-            type=discord.ActivityType.playing,
-            name=f"Auf {server_count} Servern",
-        ),
-        discord.Activity(
-            type=discord.ActivityType.listening,
-            name=f"{member_count} User Weltweit",
-        ),
-        
-    ]
+    async def _rotate_status(self) -> None:
+        """Wechselt die Präsenz alle 15 Sekunden."""
 
-    while True:
-        for activity in statuses:
-            with contextlib.suppress(discord.HTTPException):
-                await self.change_presence(
-                    status=discord.Status.online,
-                    activity=activity,
-                )
+        await self.wait_until_ready()
+        templates = self.registry.totals["templates"]
 
-            await asyncio.sleep(15)
+        while not self.is_closed():
+            # Zahlen bei jedem Durchlauf neu ermitteln — sonst zeigt der Bot
+            # nach dem ersten Serverbeitritt dauerhaft veraltete Werte.
+            servers = len(self.guilds)
+            members = sum(guild.member_count or 0 for guild in self.guilds)
+
+            activities = (
+                discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name=f"{config.COMMAND_PREFIX}start · {templates} Templates",
+                ),
+                discord.Activity(
+                    type=discord.ActivityType.playing,
+                    name=f"Auf {servers} Servern",
+                ),
+                discord.Activity(
+                    type=discord.ActivityType.listening,
+                    name=f"{members} User weltweit",
+                ),
+            )
+
+            for activity in activities:
+                with contextlib.suppress(discord.HTTPException):
+                    await self.change_presence(
+                        status=discord.Status.online, activity=activity
+                    )
+                await asyncio.sleep(STATUS_INTERVAL)
 
     async def on_member_join(self, member: discord.Member) -> None:
         """Give newcomers the Unverified role so the gate actually gates."""

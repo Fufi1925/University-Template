@@ -23,7 +23,7 @@ sys.path.insert(0, str(BASE_DIR))
 import discord  # noqa: E402
 
 import config  # noqa: E402
-from core.builder import BuildError, BuildMode, ServerBuilder  # noqa: E402
+from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder  # noqa: E402
 from core.registry import TemplateRegistry  # noqa: E402
 from core.schema import Visibility  # noqa: E402
 
@@ -81,8 +81,17 @@ class FakeRole:
 
 
 class _FakeResponse:
-    status = 403
-    reason = "Forbidden"
+    status = 400
+    reason = "Bad Request"
+
+
+async def _bulk_noop(self, guild_id, data, reason=None):  # noqa: ARG001
+    """Sammel-Endpunkt fuer Kanalpositionen — hier nur mitgezaehlt."""
+
+    _BULK_CALLS.append(list(data))
+
+
+_BULK_CALLS: list[list[dict]] = []
 
 
 def _components_from_view(view):
@@ -96,7 +105,11 @@ def _components_from_view(view):
 
 
 class FakeChannel:
+    _next_id = 700_000_000_000_000_000
+
     def __init__(self, guild, name, kind, category=None, **kwargs):
+        FakeChannel._next_id += 1
+        self.id = FakeChannel._next_id
         self.guild = guild
         self.name = name
         self.kind = kind
@@ -107,6 +120,7 @@ class FakeChannel:
         self.user_limit = kwargs.get("user_limit", 0)
         self.nsfw = kwargs.get("nsfw", False)
         self.position = kwargs.get("position", 0)
+        self.deleted = False
         self.edits = 0
         self.sent: list["FakeMessage"] = []
         self.pinned: list["FakeMessage"] = []
@@ -135,9 +149,10 @@ class FakeChannel:
             setattr(self, key, value)
 
     async def delete(self, reason=None):
-        self.guild.channels.remove(self)
-        if self in self.guild._categories:
-            self.guild._categories.remove(self)
+        # Das Objekt bleibt im Cache stehen — genau so verhaelt sich
+        # discord.py, bis das Gateway-Event eintrifft. Der Builder muss
+        # selbst aufraeumen, sonst baut er auf Karteileichen.
+        self.deleted = True
 
     def __hash__(self):
         return id(self)
@@ -180,7 +195,7 @@ class FakeCategory(FakeChannel):
 
     @property
     def channels(self):
-        return self._children
+        return [c for c in self._children if not getattr(c, "deleted", False)]
 
 
 class FakeMember:
@@ -196,8 +211,7 @@ class FakeGuild:
     """Minimal guild good enough for the builder."""
 
     def __init__(self, *, bot_top=1000, undeletable_roles=None):
-        self.channels: list[FakeChannel] = []
-        self._categories: list[FakeCategory] = []
+        self.id = 555_000_000_000_000_001
         self.roles: list[FakeRole] = []
         self.features: list[str] = []
         self.bot_top = bot_top
@@ -214,9 +228,23 @@ class FakeGuild:
         self.created_roles = 0
         self.created_categories = 0
 
+        # Wie discord.py: der Cache haelt Kanaele, bis das Gateway die
+        # Loeschung meldet. Der Builder raeumt ihn selbst auf.
+        self._channels: dict[int, object] = {}
+        self._state = type(
+            "S", (), {"http": type("H", (), {"bulk_channel_update": _bulk_noop})()}
+        )()
+        self.bulk_updates: list[list[dict]] = []
+
+    @property
+    def channels(self):
+        """Wie discord.py: die Liste kommt aus dem Cache."""
+
+        return list(self._channels.values())
+
     @property
     def categories(self):
-        return list(self._categories)
+        return [c for c in self._channels.values() if isinstance(c, FakeCategory)]
 
     def _next(self):
         self._position += 1
@@ -233,15 +261,20 @@ class FakeGuild:
     async def create_category(self, name, **kwargs):
         kwargs.pop("reason", None)
         category = FakeCategory(self, name, **kwargs)
-        self.channels.append(category)
-        self._categories.append(category)
+        self._channels[category.id] = category
         self.created_categories += 1
         return category
 
     async def _make(self, name, kind, category=None, **kwargs):
         kwargs.pop("reason", None)
+        # Wie Discord: ein Kanal unter einer nicht mehr existierenden
+        # Kategorie wird abgelehnt.
+        if category is not None and category.id not in self._channels:
+            raise discord.HTTPException(
+                _FakeResponse(), "In parent_id: Category does not exist"
+            )
         channel = FakeChannel(self, name, kind, category=category, **kwargs)
-        self.channels.append(channel)
+        self._channels[channel.id] = channel
         if category is not None:
             category._children.append(channel)
         self.created_channels += 1
@@ -623,3 +656,183 @@ class TestChannelIntros:
             report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
             assert report.messages_posted > 0, template.key
             assert not report.warnings, f"{template.key}: {report.warnings}"
+
+
+# --------------------------------------------------------------------------- #
+# Regressionen aus dem Produktivbetrieb
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+class TestProductionRegressions:
+    """Fehler, die auf einem echten Server aufgetreten sind."""
+
+    async def test_rebuild_does_not_use_deleted_categories(
+        self, registry, text_channel_patch
+    ):
+        """400 Invalid Form Body — In parent_id: Category does not exist.
+
+        Nach dem Wipe standen die gelöschten Kategorien noch im Cache. Der
+        Builder fand sie über ``guild.categories``, hielt sie für vorhanden
+        und legte Kanäle unter einer parent_id an, die es nicht mehr gab.
+        Vier Kanäle fehlten dadurch auf dem Server.
+        """
+
+        template = registry.get("community")
+        guild = FakeGuild()
+
+        # Erst befüllen, dann neu aufsetzen — so entstehen Karteileichen.
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert report.channels_created == template.channel_count, (
+            "Es fehlen Kanäle — vermutlich wieder eine tote Kategorie im Cache"
+        )
+        assert not any(
+            "parent_id" in warning or "Category does not exist" in warning
+            for warning in report.warnings
+        ), report.warnings
+
+    async def test_deleted_channels_leave_the_cache(self, registry, text_channel_patch):
+        """Der Cache darf nach dem Wipe keine gelöschten Kanäle mehr führen."""
+
+        template = registry.get("business")
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        before = len(guild._channels)
+        builder = ServerBuilder(guild, template)
+        await builder._wipe(BuildReport(mode=BuildMode.REBUILD, template_key="x"))
+
+        assert len(guild._channels) < before, "Der Cache wurde nicht aufgeräumt"
+        for category in guild.categories:
+            assert category.id in guild._channels
+
+    async def test_category_order_uses_one_bulk_request(
+        self, registry, text_channel_patch
+    ):
+        """429 Too Many Requests beim Sortieren.
+
+        Vorher: ein PATCH pro Kategorie auf denselben Endpunkt. Bei 15
+        Kategorien antwortete Discord mit 429 und ließ den Bot minutenlang
+        warten. Jetzt setzt ein einziger Request alle Positionen.
+        """
+
+        template = registry.get("community")
+        guild = FakeGuild()
+        _BULK_CALLS.clear()
+
+        await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert len(_BULK_CALLS) == 1, (
+            f"{len(_BULK_CALLS)} Sortier-Requests statt einem — "
+            "das provoziert wieder 429er"
+        )
+        assert len(_BULK_CALLS[0]) == template.category_count
+
+    async def test_bulk_order_carries_correct_positions(
+        self, registry, text_channel_patch
+    ):
+        template = registry.get("rp")
+        guild = FakeGuild()
+        _BULK_CALLS.clear()
+
+        await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        positions = [entry["position"] for entry in _BULK_CALLS[0]]
+        assert positions == sorted(positions), "Positionen sind nicht aufsteigend"
+        assert positions == list(range(len(positions)))
+
+    async def test_failed_ordering_does_not_break_the_build(
+        self, registry, text_channel_patch, monkeypatch
+    ):
+        """Die Reihenfolge ist Kosmetik — der Aufbau zählt."""
+
+        async def refuse(self, guild_id, data, reason=None):  # noqa: ARG001
+            raise discord.HTTPException(_FakeResponse(), "nope")
+
+        template = registry.get("support")
+        guild = FakeGuild()
+        monkeypatch.setattr(guild._state.http.__class__, "bulk_channel_update", refuse)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert report.channels_created == template.channel_count
+        assert any("Reihenfolge" in warning for warning in report.warnings)
+
+    async def test_all_templates_survive_a_rebuild(self, registry, text_channel_patch):
+        """Der Fall aus dem Log: bestehender Server wird neu aufgesetzt."""
+
+        for template in registry:
+            guild = FakeGuild()
+            await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+            report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+            assert report.channels_created == template.channel_count, (
+                f"{template.key}: {report.channels_created} statt "
+                f"{template.channel_count} Kanälen"
+            )
+            assert not report.warnings, f"{template.key}: {report.warnings}"
+
+    async def test_vanishing_category_is_recovered(self, registry, text_channel_patch):
+        """Das exakte Szenario aus dem Log.
+
+        Eine Kategorie verschwindet mitten im Aufbau — etwa weil ein anderer
+        Bot aufräumt. Discord antwortet mit *In parent_id: Category does not
+        exist*. Vorher fehlten dadurch alle folgenden Kanäle dieser Kategorie
+        dauerhaft (im Log waren es vier). Jetzt wird die Kategorie neu
+        angelegt und der Kanal erneut versucht.
+        """
+
+        template = registry.get("community")
+        guild = FakeGuild()
+        state = {"sabotaged": False}
+
+        original = FakeGuild._make
+
+        async def vanish_once(self, name, kind, category=None, **kwargs):
+            # Beim vierten Kanal die Kategorie unter den Füßen wegziehen.
+            if (
+                not state["sabotaged"]
+                and category is not None
+                and len(category._children) == 3
+            ):
+                state["sabotaged"] = True
+                self._channels.pop(category.id, None)
+            return await original(self, name, kind, category=category, **kwargs)
+
+        FakeGuild._make = vanish_once
+        try:
+            report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        finally:
+            FakeGuild._make = original
+
+        assert state["sabotaged"], "Die Sabotage hat nie gegriffen"
+        assert report.channels_created == template.channel_count, (
+            f"{template.channel_count - report.channels_created} Kanäle fehlen — "
+            "die Kategorie wurde nicht wiederhergestellt"
+        )
+
+    async def test_unrecoverable_error_is_reported_not_swallowed(
+        self, registry, text_channel_patch
+    ):
+        """Andere Fehler dürfen nicht als Kategorie-Problem gedeutet werden."""
+
+        template = registry.get("support")
+        guild = FakeGuild()
+        original = FakeGuild._make
+        state = {"done": False}
+
+        async def fail_once(self, name, kind, category=None, **kwargs):
+            if not state["done"] and kind == "text":
+                state["done"] = True
+                raise discord.HTTPException(_FakeResponse(), "Something else broke")
+            return await original(self, name, kind, category=category, **kwargs)
+
+        FakeGuild._make = fail_once
+        try:
+            report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        finally:
+            FakeGuild._make = original
+
+        assert report.warnings, "Der Fehler wurde stillschweigend verschluckt"
+        assert report.channels_created == template.channel_count - 1

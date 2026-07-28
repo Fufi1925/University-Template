@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -479,6 +480,60 @@ class _OpenRulesButton(ui.Button["ui.LayoutView"]):
         )
 
 
+async def _safe_edit(interaction: discord.Interaction, view: ui.LayoutView) -> bool:
+    """Antwort aktualisieren, ohne am Ablaufdatum zu scheitern.
+
+    Ein grosses Template braucht Minuten. Discord-Interaktionen leben aber nur
+    15 Minuten, und die urspruengliche Nachricht kann inzwischen geloescht
+    sein. Beides endet in ``404 Unknown Message`` — bislang mitten im
+    Ergebnis-Handling, sodass der Build zwar durchlief, der Nutzer aber nur
+    einen Traceback im Log bekam.
+
+    Gibt ``True`` zurueck, wenn die Nachricht aktualisiert werden konnte.
+    """
+
+    try:
+        await interaction.edit_original_response(view=view)
+        return True
+    except discord.NotFound:
+        # Interaktion abgelaufen oder Nachricht geloescht — kein Fehler.
+        LOGGER.info("Ergebnis nicht zustellbar: Interaktion abgelaufen")
+        return False
+    except discord.HTTPException:
+        LOGGER.debug("Ergebnis konnte nicht gesendet werden", exc_info=True)
+        return False
+
+
+async def _fallback_notify(
+    interaction: discord.Interaction, view: ui.LayoutView
+) -> None:
+    """Ergebnis in den Kanal posten, wenn die Interaktion tot ist.
+
+    Sonst haette der Nutzer nach einem mehrminuetigen Umbau keinerlei
+    Rueckmeldung — der Server ist fertig, sagt es aber niemandem.
+    """
+
+    channel = interaction.channel
+    if channel is None or not hasattr(channel, "send"):
+        return
+
+    me = interaction.guild.me if interaction.guild else None
+    if me is not None and not channel.permissions_for(me).send_messages:
+        return
+
+    with contextlib.suppress(discord.HTTPException):
+        await channel.send(view=view)
+
+
+async def _report(
+    interaction: discord.Interaction, view: ui.LayoutView
+) -> None:
+    """Ergebnis zustellen — notfalls als normale Nachricht."""
+
+    if not await _safe_edit(interaction, view):
+        await _fallback_notify(interaction, view)
+
+
 async def _run_build(
     interaction: discord.Interaction,
     bot: "ArchitectBot",
@@ -527,9 +582,10 @@ async def _run_build(
         builder.preflight()
     except BuildError as exc:
         bot.active_builds.discard(guild.id)
-        await interaction.response.edit_message(
-            view=notice("Einrichtung nicht möglich", str(exc), tone="error")
-        )
+        with contextlib.suppress(discord.HTTPException):
+            await interaction.response.edit_message(
+                view=notice("Einrichtung nicht möglich", str(exc), tone="error")
+            )
         return
 
     await interaction.response.edit_message(
@@ -546,20 +602,13 @@ async def _run_build(
         if now - last_edit < 1.6 and step < total:
             return
         last_edit = now
-        try:
-            await interaction.edit_original_response(
-                view=_progress_view(template, label, step, total)
-            )
-        except discord.HTTPException:
-            pass
+        await _safe_edit(interaction, _progress_view(template, label, step, total))
 
     try:
         report = await builder.apply(
             mode, progress=on_progress, write_intros=write_intros
         )
-        await interaction.edit_original_response(
-            view=_report_view(template, report, bot, guild)
-        )
+        await _report(interaction, _report_view(template, report, bot, guild))
         LOGGER.info(
             "Build fertig guild=%s template=%s mode=%s created=%d",
             guild.id,
@@ -568,28 +617,30 @@ async def _run_build(
             report.total_created,
         )
     except BuildError as exc:
-        await interaction.edit_original_response(
-            view=notice("Einrichtung abgebrochen", str(exc), tone="error")
+        await _report(
+            interaction, notice("Einrichtung abgebrochen", str(exc), tone="error")
         )
     except discord.Forbidden:
         LOGGER.exception("Forbidden während Build guild=%s", guild.id)
-        await interaction.edit_original_response(
-            view=notice(
+        await _report(
+            interaction,
+            notice(
                 "Discord hat die Aktion abgelehnt",
                 "Dem Bot fehlen Berechtigungen.",
                 tone="error",
                 hint="Die Bot-Rolle muss über den zu verwaltenden Rollen stehen. "
                 "Benötigt werden Rollen verwalten und Kanäle verwalten.",
-            )
+            ),
         )
     except discord.HTTPException as exc:
         LOGGER.exception("HTTP-Fehler während Build guild=%s", guild.id)
-        await interaction.edit_original_response(
-            view=notice(
+        await _report(
+            interaction,
+            notice(
                 "Discord meldet einen Fehler",
                 f"```{exc.text or exc}```",
                 tone="error",
-            )
+            ),
         )
     finally:
         bot.active_builds.discard(guild.id)

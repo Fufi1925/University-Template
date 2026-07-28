@@ -421,7 +421,7 @@ tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  308 Tests
+tests/                  329 Tests
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -437,7 +437,7 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 308 Tests
+python -m pytest tests/ -v          # 329 Tests
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
