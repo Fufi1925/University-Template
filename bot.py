@@ -133,16 +133,13 @@ async def rotate_status(self, totals):
         ),
         discord.Activity(
             type=discord.ActivityType.playing,
-            name="",
+            name=f"Auf {server_count} Servern",
         ),
         discord.Activity(
             type=discord.ActivityType.listening,
-            name="",
+            name=f"{member_count} User Weltweit",
         ),
-        discord.Activity(
-            type=discord.ActivityType.competing,
-            name="",
-        ),
+        
     ]
 
     while True:
