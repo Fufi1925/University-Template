@@ -108,23 +108,52 @@ class ArchitectBot(commands.Bot):
             self._health_runner = None
         await super().close()
 
-    async def on_ready(self) -> None:
-        totals = self.registry.totals
-        LOGGER.info("Online als %s (%d Server)", self.user, len(self.guilds))
-        LOGGER.info(
-            "%d Templates · %d Kategorien · %d Kanäle",
-            totals["templates"],
-            totals["categories"],
-            totals["channels"],
+ async def on_ready(self) -> None:
+    totals = self.registry.totals
+
+    LOGGER.info("Online als %s (%d Server)", self.user, len(self.guilds))
+    LOGGER.info(
+        "%d Templates · %d Kategorien · %d Kanäle",
+        totals["templates"],
+        totals["categories"],
+        totals["channels"],
+    )
+
+    if not hasattr(self, "_status_task"):
+        self._status_task = self.loop.create_task(
+            self.rotate_status(totals)
         )
-        with contextlib.suppress(discord.HTTPException):
-            await self.change_presence(
-                status=discord.Status.online,
-                activity=discord.Activity(
-                    type=discord.ActivityType.watching,
-                    name=f"{config.COMMAND_PREFIX}start · {totals['templates']} Templates",
-                ),
-            )
+
+
+async def rotate_status(self, totals):
+    statuses = [
+        discord.Activity(
+            type=discord.ActivityType.watching,
+            name=f"{config.COMMAND_PREFIX}start · {totals['templates']} Templates",
+        ),
+        discord.Activity(
+            type=discord.ActivityType.playing,
+            name="",
+        ),
+        discord.Activity(
+            type=discord.ActivityType.listening,
+            name="",
+        ),
+        discord.Activity(
+            type=discord.ActivityType.competing,
+            name="",
+        ),
+    ]
+
+    while True:
+        for activity in statuses:
+            with contextlib.suppress(discord.HTTPException):
+                await self.change_presence(
+                    status=discord.Status.online,
+                    activity=activity,
+                )
+
+            await asyncio.sleep(15)
 
     async def on_member_join(self, member: discord.Member) -> None:
         """Give newcomers the Unverified role so the gate actually gates."""
