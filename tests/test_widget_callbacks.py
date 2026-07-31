@@ -130,6 +130,47 @@ class FakeFollowup:
         self.messages.append(view)
 
 
+class FakeThread:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.mention = f"<#{name}>"
+        self.members: list[object] = []
+        self.posted: list[object] = []
+        self.send_error: Exception | None = None
+
+    async def add_user(self, user) -> None:
+        self.members.append(user)
+
+    async def send(self, *, view=None, **kw) -> None:
+        if self.send_error is not None:
+            raise self.send_error
+        self.posted.append(view)
+
+
+class FakeTextChannel:
+    """Ein Textkanal, der Thread-Erstellung mitschreibt.
+
+    Der Ticket-Button prueft per ``isinstance`` auf ``discord.TextChannel`` —
+    zu Recht, denn in einem Sprachkanal gibt es keine Threads. Von der echten
+    Klasse zu erben scheitert an deren Properties ohne Setter, deshalb biegt
+    die Fixture unten nur diese eine Pruefung um.
+    """
+
+    def __init__(self, *, private_error=None, public_error=None) -> None:
+        self.created_threads: list[FakeThread] = []
+        self.private_error = private_error
+        self.public_error = public_error
+
+    async def create_thread(self, *, name, type=None, invitable=None, reason=None):
+        is_private = type is not None
+        error = self.private_error if is_private else self.public_error
+        if error is not None:
+            raise error
+        thread = FakeThread(name)
+        self.created_threads.append(thread)
+        return thread
+
+
 class FakeInteraction:
     def __init__(self, guild: FakeGuild | None, user: object, channel: object = None) -> None:
         self.guild = guild
@@ -171,6 +212,8 @@ def members_pass_isinstance(monkeypatch):
         if classinfo is discord.Member and type(obj) is FakeMember:
             return True
         if classinfo is discord.Guild and type(obj) is FakeGuild:
+            return True
+        if classinfo is discord.TextChannel and type(obj) is FakeTextChannel:
             return True
         return real_isinstance(obj, classinfo)
 
@@ -404,6 +447,64 @@ class TestSelfRoles:
 
         assert interaction.response.deferred
 
+    async def test_ignores_direct_messages(self):
+        """Ohne Guild gibt es keine Rollen — und keinen Absturz."""
+
+        select = select_of(SelfRoleView(), ["Events"])
+        interaction = FakeInteraction(None, FakeMember())
+
+        await select.callback(interaction)
+
+        assert not interaction.replies
+
+    async def test_failed_assignment_is_reported(self):
+        """Die Rolle existiert, aber der Bot darf sie nicht vergeben."""
+
+        events = FakeRole("🎉・Events")
+        member = FakeMember()
+        member.reject.add(events.name)
+        select = select_of(SelfRoleView(), ["Events"])
+
+        interaction = FakeInteraction(FakeGuild([events]), member)
+        await select.callback(interaction)
+
+        assert "nicht gesetzt werden" in rendered(interaction.followup.messages[0])
+
+    async def test_failed_removal_is_reported(self):
+        events = FakeRole("🎉・Events")
+        member = FakeMember([events])
+        member.reject.add(events.name)
+        select = select_of(SelfRoleView(), [])
+
+        interaction = FakeInteraction(FakeGuild([events]), member)
+        await select.callback(interaction)
+
+        assert "nicht gesetzt werden" in rendered(interaction.followup.messages[0])
+
+    async def test_unassignable_role_is_skipped_quietly(self):
+        """Steht die Rolle ueber dem Bot, wird sie gar nicht erst versucht."""
+
+        events = FakeRole("🎉・Events", assignable=False)
+        member = FakeMember()
+        select = select_of(SelfRoleView(), ["Events"])
+
+        interaction = FakeInteraction(FakeGuild([events]), member)
+        await select.callback(interaction)
+
+        assert not member.added
+        assert "nichts geändert" in rendered(interaction.followup.messages[0])
+
+    async def test_already_held_role_is_not_added_twice(self):
+        events = FakeRole("🎉・Events")
+        member = FakeMember([events])
+        select = select_of(SelfRoleView(), ["Events"])
+
+        interaction = FakeInteraction(FakeGuild([events]), member)
+        await select.callback(interaction)
+
+        assert not member.added
+        assert "nichts geändert" in rendered(interaction.followup.messages[0])
+
     def test_every_option_is_selectable(self):
         """max_values muss zur Anzahl der Optionen passen."""
 
@@ -422,6 +523,125 @@ class TestTicketButton:
         await button_of(TicketView()).callback(interaction)
 
         assert "Nicht möglich" in rendered(interaction.replies[0])
+
+    async def test_creates_a_private_thread_and_adds_the_user(self):
+        """Der Normalfall: nur der Fragende und das Team sehen das Ticket."""
+
+        channel = FakeTextChannel()
+        interaction = FakeInteraction(FakeGuild(), FakeMember(), channel=channel)
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert channel.created_threads, "Es wurde kein Thread angelegt"
+        assert channel.created_threads[0].members, "Der Fragende wurde nicht hinzugefuegt"
+        assert channel.created_threads[0].posted, "Im Ticket steht keine Startnachricht"
+
+    async def test_defers_before_creating(self):
+        """Threads anzulegen dauert — ohne defer laeuft die Interaktion ab."""
+
+        interaction = FakeInteraction(
+            FakeGuild(), FakeMember(), channel=FakeTextChannel()
+        )
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert interaction.response.deferred
+
+    async def test_falls_back_to_a_public_thread(self):
+        """Private Threads brauchen ein Boost-Level, das viele Server nicht haben."""
+
+        channel = FakeTextChannel(private_error=discord.HTTPException(_Response(), "boost"))
+        interaction = FakeInteraction(FakeGuild(), FakeMember(), channel=channel)
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert channel.created_threads, "Ohne Boost gibt es gar kein Ticket"
+        assert interaction.followup.messages
+
+    async def test_missing_thread_permission_is_explained(self):
+        channel = FakeTextChannel(private_error=discord.Forbidden(_Response(), "nein"))
+        interaction = FakeInteraction(FakeGuild(), FakeMember(), channel=channel)
+
+        await button_of(TicketView()).callback(interaction)
+
+        text = rendered(interaction.followup.messages[0])
+        assert "Keine Berechtigung" in text
+        assert not channel.created_threads
+
+    async def test_total_failure_is_reported(self):
+        """Weder privat noch oeffentlich — der Nutzer darf nicht ins Leere klicken."""
+
+        channel = FakeTextChannel(
+            private_error=discord.HTTPException(_Response(), "boost"),
+            public_error=discord.HTTPException(_Response(), "auch nicht"),
+        )
+        interaction = FakeInteraction(FakeGuild(), FakeMember(), channel=channel)
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert "Fehlgeschlagen" in rendered(interaction.followup.messages[0])
+
+    async def test_unwritable_thread_still_reports_success(self):
+        """Das Ticket existiert — daran aendert eine stumme Startnachricht nichts."""
+
+        channel = FakeTextChannel()
+        interaction = FakeInteraction(FakeGuild(), FakeMember(), channel=channel)
+
+        original = channel.create_thread
+
+        async def with_mute(**kwargs):
+            thread = await original(**kwargs)
+            thread.send_error = discord.HTTPException(_Response(), "stumm")
+            return thread
+
+        channel.create_thread = with_mute
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert "Ticket erstellt" in rendered(interaction.followup.messages[0])
+
+    async def test_thread_name_stays_within_the_limit(self):
+        """Discord erlaubt 100 Zeichen; lange Namen kommen wirklich vor."""
+
+        channel = FakeTextChannel()
+        member = FakeMember(name="x" * 200)
+        interaction = FakeInteraction(FakeGuild(), member, channel=channel)
+
+        await button_of(TicketView()).callback(interaction)
+
+        assert len(channel.created_threads[0].name) <= 100
+
+
+class TestWidgetFactory:
+    """``build_widget_view`` bildet Template-Werte auf Views ab."""
+
+    @pytest.mark.parametrize(
+        "value", ["verify", "rules", "roles", "ticket", "checklist"]
+    )
+    def test_every_known_widget_builds(self, value):
+        from ui.widgets import build_widget_view
+
+        assert build_widget_view(value, "Titel", ["Zeile"]) is not None
+
+    def test_unknown_widget_returns_none(self):
+        """``none`` und Tippfehler duerfen keine leere Nachricht erzeugen."""
+
+        from ui.widgets import build_widget_view
+
+        assert build_widget_view("none", "T", []) is None
+        assert build_widget_view("gibt-es-nicht", "T", []) is None
+
+    def test_every_persistent_view_is_reachable(self):
+        """Was der Bot beim Start registriert, muss auch baubar sein."""
+
+        from ui.widgets import PERSISTENT_VIEWS, build_widget_view
+
+        built = {
+            type(build_widget_view(value, "T", ["Z"]))
+            for value in ("verify", "rules", "roles", "ticket", "checklist")
+        }
+        for view_cls in PERSISTENT_VIEWS:
+            assert view_cls in built, f"{view_cls.__name__} ist nicht erreichbar"
 
 
 # --------------------------------------------------------------------------- #
