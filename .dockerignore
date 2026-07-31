@@ -20,8 +20,11 @@ __pycache__
 tests
 tools
 requirements-dev.txt
-pytest.ini
+pyproject.toml
 README.md
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
 
 # Secrets und lokaler Zustand
 .env

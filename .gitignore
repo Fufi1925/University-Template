@@ -17,6 +17,10 @@ venv/
 .ruff_cache/
 *.egg-info/
 
+# Coverage
+.coverage
+htmlcov/
+
 # IDE / OS
 .vscode/
 .idea/
