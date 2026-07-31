@@ -121,7 +121,7 @@ class TestDockerfile:
         assert not unknown, f"Unbekannte Anweisungen: {unknown}"
 
     def test_exactly_one_cmd(self, instructions):
-        cmds = [l for l in instructions if l.split(None, 1)[0].upper() == "CMD"]
+        cmds = [line for line in instructions if line.split(None, 1)[0].upper() == "CMD"]
         assert len(cmds) == 1
         assert "bot.py" in cmds[0]
 
@@ -129,6 +129,39 @@ class TestDockerfile:
         """Ohne das Verzeichnis schlaegt der erste Premium-Unlock fehl."""
 
         assert "mkdir -p /app/data" in dockerfile
+
+    def test_runs_as_unprivileged_user(self, instructions):
+        """Ein Bot braucht kein root.
+
+        Laeuft der Prozess als root, hat ein Fehler in einer Abhaengigkeit
+        vollen Zugriff auf den Container.
+        """
+
+        users = [
+            line.split(None, 1)[1].strip()
+            for line in instructions
+            if line.split(None, 1)[0].upper() == "USER"
+        ]
+        assert users, "Kein USER gesetzt — der Container laeuft als root"
+        assert users[-1] != "root", "Der letzte USER darf nicht root sein"
+
+    def test_user_comes_after_installation(self, instructions):
+        """Erst installieren, dann Rechte abgeben — sonst scheitert pip."""
+
+        kinds = [line.split(None, 1)[0].upper() for line in instructions]
+        assert kinds.index("USER") > kinds.index("COPY")
+
+    def test_data_directory_belongs_to_the_runtime_user(self, dockerfile):
+        """Ohne chown kann der unprivilegierte Prozess dort nicht schreiben."""
+
+        assert "chown" in dockerfile, "/app/data gehoert weiterhin root"
+
+    def test_healthcheck_hits_the_health_route(self, dockerfile, railway):
+        """Der Container soll sich auch ohne Plattform selbst pruefen."""
+
+        assert "HEALTHCHECK" in dockerfile
+        path = railway["deploy"]["healthcheckPath"]
+        assert path in dockerfile, f"HEALTHCHECK prueft nicht {path}"
 
     def test_copies_every_runtime_module(self, dockerfile):
         for required in ("bot.py", "config.py", "web.py", "core/", "ui/", "templates/"):
