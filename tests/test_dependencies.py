@@ -215,3 +215,33 @@ class TestPythonVersionsAgree:
             "erzeugt und laesst sich auf Python 3.13 nicht installieren."
         )
         assert "python_full_version" in raw, "Keine Umgebungsmarker im Lockfile"
+
+
+class TestVersionIsConsistent:
+    """Die Version steht an zwei Stellen — sie duerfen nicht auseinanderlaufen."""
+
+    @staticmethod
+    def _project_version() -> str:
+        data = tomllib.loads((BASE_DIR / "pyproject.toml").read_text(encoding="utf-8"))
+        return data["project"]["version"]
+
+    def test_changelog_documents_the_current_version(self):
+        changelog = (BASE_DIR / "CHANGELOG.md").read_text(encoding="utf-8")
+        version = self._project_version()
+        assert f"[{version}]" in changelog, (
+            f"Version {version} aus pyproject.toml fehlt im CHANGELOG"
+        )
+
+    def test_version_looks_like_semver(self):
+        assert re.fullmatch(r"\d+\.\d+\.\d+", self._project_version())
+
+    def test_changelog_starts_with_the_current_version(self):
+        """Der neueste Eintrag gehoert nach oben."""
+
+        changelog = (BASE_DIR / "CHANGELOG.md").read_text(encoding="utf-8")
+        headings = re.findall(r"^## \[([^\]]+)\]", changelog, re.MULTILINE)
+        assert headings, "Der CHANGELOG hat keine Versionsueberschriften"
+        assert headings[0] == self._project_version(), (
+            f"Oberster CHANGELOG-Eintrag ist {headings[0]}, "
+            f"pyproject nennt {self._project_version()}"
+        )

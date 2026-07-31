@@ -39,7 +39,7 @@ auch automatisch überprüft wird.
   auf 60 s gedeckelt. Ein `403` wird bewusst **nicht** wiederholt.
 - **`HEALTHCHECK`** im Dockerfile — prüft denselben Endpunkt wie Railway, aber
   auch bei einem einfachen `docker run`.
-- **116 neue Tests** (329 → 445):
+- **193 neue Tests** (329 → 522):
   - `test_widget_callbacks.py` — was passiert, wenn jemand tatsächlich klickt:
     Rollenvergabe, Eingangssperre, fehlende und zu hoch stehende Rollen,
     Selbstrollen, Rückmeldung in jedem Fehlerfall.
@@ -55,6 +55,14 @@ auch automatisch überprüft wird.
   - `test_ci_config.py` — dass die Pipeline-Datei gültig ist und alle vier
     Prüfungen enthält. Ein Workflow, aus dem still eine Prüfung verschwindet,
     meldet sonst weiter grün.
+  - `test_premium_flow.py` — der Weg vom Button über das Key-Fenster bis ins
+    Auswahlmenü, plus die Zustellung des Ergebnisses, wenn die Interaktion
+    während eines minutenlangen Baus abgelaufen ist.
+  - `test_rules_posting.py` — das Veröffentlichen eines Regelwerks inklusive
+    des Löschpfads: „Neu aufsetzen" darf nur eigene Nachrichten entfernen.
+  - `test_builder_resilience.py` — die Fehlerpfade des Builders: Preflight-
+    Grenzen, abgelehnte Rollen, Stage→Voice- und Forum→Text-Rückfälle, und
+    was der Wipe **nicht** anfassen darf.
 
 ### Geändert
 
@@ -72,7 +80,7 @@ auch automatisch überprüft wird.
 - **`ui/components.field_value()`** — das Auslesen von Modal-Eingaben steht an
   einer Stelle statt fünfmal verstreut.
 - `__import__("contextlib")` mitten im Code durch einen normalen Import ersetzt.
-- Testabdeckung 81 % → 85 %; `ui/widgets.py` von 50 % auf 88 %.
+- Testabdeckung 81 % → 88 %; `ui/widgets.py` von 50 % auf 88 %, `ui/views.py` von 67 % auf 86 %, `core/builder.py` von 78 % auf 84 %.
 
 ### Dokumentation
 
