@@ -533,6 +533,11 @@ Die Testsuite prüft unter anderem:
 - **Startverhalten** — dass eine fehlerhafte Vorlage den Bot beim Start
   abbricht und die Meldung die betroffene Datei nennt, statt mitten im Umbau
   eines fremden Servers aufzufallen
+- **Ereignisse und Befehle** — dass die Eingangsschleuse Neulingen wirklich die
+  Unverified-Rolle gibt, ein gelöschter Beitrag keinen Befehl mehr auslöst und
+  jeder Startfehler als Klartext statt als Stacktrace erscheint
+- **Messumfang** — dass jedes Laufzeitmodul in der Abdeckungsmessung steht.
+  `bot.py` fehlte dort lange, und niemand hat es bemerkt
 - **Regelwerke** — dass alle 22 vollständig gerendert werden ohne einen
   Paragraphen zu verlieren, die Nummerierung lückenlos durchläuft, kein
   Paragraph beim Aufteilen zerrissen wird, das IC-Regelwerk die klassischen

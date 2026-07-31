@@ -173,3 +173,59 @@ class TestPythonVersionMatchesTheImage:
         assert f'"{match.group(1)}"' in raw_workflow, (
             f"Die CI testet nicht gegen Python {match.group(1)}"
         )
+
+
+class TestCoverageScope:
+    """Die Messung muss alles erfassen, was im Betrieb laeuft.
+
+    Diese Klasse entstand aus einem konkreten Versaeumnis: ``bot.py`` stand
+    monatelang nicht in ``source`` und wurde von keinem Test importiert. Die
+    gemeldete Abdeckung galt fuer alles ausser dem Einstiegspunkt — 450
+    ungetestete Zeilen, die in keiner Zahl auftauchten.
+    """
+
+    @staticmethod
+    def _configured_sources() -> set[str]:
+        import tomllib
+
+        data = tomllib.loads((BASE_DIR / "pyproject.toml").read_text(encoding="utf-8"))
+        return set(data["tool"]["coverage"]["run"]["source"])
+
+    def test_every_runtime_module_is_measured(self):
+        """Neue Module am Projektrand duerfen nicht still durchrutschen."""
+
+        sources = self._configured_sources()
+
+        runtime = {
+            path.stem if path.parent == BASE_DIR else path.parent.name
+            for path in BASE_DIR.glob("*.py")
+        }
+        runtime |= {
+            package.name
+            for package in BASE_DIR.iterdir()
+            if package.is_dir() and (package / "__init__.py").exists()
+        }
+        # tools/ sind Entwickler-Skripte, kein Teil des Laufzeit-Images
+        # (siehe .dockerignore). test_generator_sync.py fuehrt sie trotzdem aus.
+        runtime -= {"tools", "tests"}
+
+        missing = sorted(runtime - sources)
+        assert not missing, (
+            f"Diese Module werden nicht gemessen: {missing}. "
+            "In pyproject.toml unter [tool.coverage.run] source ergaenzen."
+        )
+
+    def test_the_entry_point_is_measured(self):
+        """Ausdruecklich, weil genau das einmal gefehlt hat."""
+
+        assert "bot" in self._configured_sources()
+
+    def test_tools_are_excluded_but_exercised(self):
+        """Nicht gemessen heisst nicht ungeprueft.
+
+        Der Generator laeuft in test_generator_sync.py real durch; dort wird
+        sein Ergebnis mit den eingecheckten Vorlagen verglichen.
+        """
+
+        assert "tools" not in self._configured_sources()
+        assert (BASE_DIR / "tests" / "test_generator_sync.py").exists()

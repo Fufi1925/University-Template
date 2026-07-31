@@ -9,6 +9,17 @@ Diese Version ändert nichts an dem, was der Bot *tut*. Sie schließt die Lücke
 zwischen einem sorgfältig geschriebenen Projekt und einem, dessen Qualität
 auch automatisch überprüft wird.
 
+### Behoben
+
+- **`!ping` stürzte vor dem ersten Heartbeat ab.** `round(bot.latency * 1000)`
+  bekommt in diesem Fenster `NaN` und wirft einen `ValueError`. Ausgerechnet
+  direkt nach dem Start greift man am ehesten zu `!ping`; jetzt steht dort ein
+  Gedankenstrich statt eines Tracebacks.
+- **`bot.py` wurde nie gemessen.** Die Coverage-Konfiguration nannte nur
+  `core`, `ui` und `web` — 450 Zeilen Einstiegspunkt tauchten in keiner Zahl
+  auf, kein Test hatte das Modul importiert. Jetzt bei 92 %, mit einem
+  Wächter-Test gegen einen Rückfall.
+
 ### Sicherheit
 
 - **Kein Standard-Premium-Key mehr.** `PREMIUM_KEY` hatte den Wert
@@ -43,7 +54,7 @@ auch automatisch überprüft wird.
   auf 60 s gedeckelt. Ein `403` wird bewusst **nicht** wiederholt.
 - **`HEALTHCHECK`** im Dockerfile — prüft denselben Endpunkt wie Railway, aber
   auch bei einem einfachen `docker run`.
-- **500 neue Tests** (329 → 829):
+- **566 neue Tests** (329 → 895):
   - `test_widget_callbacks.py` — was passiert, wenn jemand tatsächlich klickt:
     Rollenvergabe, Eingangssperre, fehlende und zu hoch stehende Rollen,
     Selbstrollen, Rückmeldung in jedem Fehlerfall.
@@ -84,6 +95,9 @@ auch automatisch überprüft wird.
     Token-Details.
   - `test_views_flow.py` — Bestätigungsdialog, Abschlussbericht, Vorschau und
     die Weiterleitung zum Regelwerk-Assistenten.
+  - `test_bot_events.py` — der Einstiegspunkt: Eingangsschleuse, Modi-
+    Durchsetzung, alle vier Befehle, Statusrotation, Abschaltung und die
+    Startfehler-Meldungen von `main()`.
 
 ### Geändert
 
@@ -101,7 +115,9 @@ auch automatisch überprüft wird.
 - **`ui/components.field_value()`** — das Auslesen von Modal-Eingaben steht an
   einer Stelle statt fünfmal verstreut.
 - `__import__("contextlib")` mitten im Code durch einen normalen Import ersetzt.
-- **Testabdeckung 81 % → 96 %**, per `fail_under = 95` in der CI abgesichert.
+- **Testabdeckung 81 % → 96 %**, per `fail_under = 95` in der CI abgesichert —
+  und auf einer um 264 Zeilen größeren Grundlage als vorher, weil `bot.py` und
+  `config.py` jetzt mitgemessen werden.
   Sieben Module stehen bei 100 %: `permissions`, `registry`, `rulesets`,
   `handshake`, `channel_intro`, `components`, `widgets`. Im Einzelnen:
   `ui/widgets.py` 50 → 100 %, `ui/rules.py` 77 → 99 %, `ui/views.py` 67 → 96 %,
