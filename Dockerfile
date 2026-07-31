@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
 
 WORKDIR /app
 
@@ -24,6 +25,18 @@ COPY templates/ ./templates/
 #
 # Ohne gemountetes Volume laeuft der Bot normal weiter, die Freischaltungen
 # sind dann aber nach jedem Redeploy weg.
-RUN mkdir -p /app/data
+#
+# Der Bot braucht keinerlei Root-Rechte. Laeuft der Prozess trotzdem als root,
+# hat ein Fehler in einer Abhaengigkeit vollen Zugriff auf den Container —
+# deshalb ein eigener Benutzer, dem nur /app/data gehoert.
+RUN useradd --create-home --uid 10001 app \
+ && mkdir -p /app/data \
+ && chown -R app:app /app
+USER app
+
+# Prueft denselben Endpunkt wie Railway, aber von innen: damit faellt ein
+# haengender Bot auch bei "docker run" ohne Plattform auf.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT','8080') + '/health', timeout=4)"
 
 CMD ["python", "bot.py"]
