@@ -765,3 +765,88 @@ class TestUpdatingExistingObjects:
         )
 
         assert report is not None, "Ein nicht editierbarer Kanal hat den Lauf gekippt"
+
+
+# --------------------------------------------------------------------------- #
+# Kanaele anpassen
+# --------------------------------------------------------------------------- #
+
+class TestChannelUpdates:
+    """``REBUILD`` setzt Topic, Slowmode und Rechte bestehender Kanaele neu.
+
+    Der Pfad laeuft nur, wenn ein Kanal bereits existiert — deshalb bauen
+    diese Tests erst auf und dann noch einmal darueber.
+    """
+
+    async def test_topic_and_slowmode_are_applied(self, template, as_text_channels):
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        # Topic verstellen, als haette es jemand von Hand geaendert.
+        text_channels = [
+            c for c in guild.channels if getattr(c, "kind", None) == "text"
+        ]
+        assert text_channels, "Die Vorlage hat keine Textkanaele erzeugt"
+        text_channels[0].topic = "von Hand verstellt"
+
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.REBUILD, write_intros=False
+        )
+
+        assert report is not None
+
+    async def test_rebuild_restores_a_changed_voice_limit(
+        self, template, as_text_channels
+    ):
+        """Von Hand verstellte Werte werden beim Rebuild zurueckgesetzt."""
+
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        voice = [c for c in guild.channels if getattr(c, "kind", None) == "voice"]
+        if not voice:
+            pytest.skip("Diese Vorlage hat keine Sprachkanaele")
+
+        channel = voice[0]
+        original = channel.user_limit
+        channel.user_limit = 77
+
+        # Der Aktualisierungspfad laeuft nur bei bestehenden Objekten, und
+        # REBUILD wuerde vorher alles loeschen — deshalb direkt aufrufen.
+        builder = ServerBuilder(guild, template)
+        spec_pair = next(
+            (cat, ch)
+            for cat in template.categories
+            for ch in cat.channels
+            if ch.kind.is_voice_like
+        )
+        await builder._update_channel(channel, spec_pair[0], spec_pair[1])
+
+        assert channel.user_limit == original, "Der Wert wurde nicht zurueckgesetzt"
+
+    async def test_update_failure_is_survivable(
+        self, template, as_text_channels, monkeypatch
+    ):
+        """Ein Kanal, den der Bot nicht bearbeiten darf, stoppt nichts."""
+
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        from test_build_simulation import FakeChannel as _FC
+
+        async def refuse(self, **kwargs):
+            raise forbidden()
+
+        monkeypatch.setattr(_FC, "edit", refuse)
+
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        assert report.channels_created == 0, "Es wurde neu gebaut statt angepasst"

@@ -449,3 +449,86 @@ class TestSuccessfulBuild:
 
         # 20 Schritte, aber deutlich weniger Bearbeitungen.
         assert len(interaction.originals) < 20, "Jeder Schritt wurde einzeln gesendet"
+
+
+# --------------------------------------------------------------------------- #
+# Weiterleitung zum Regelwerk
+# --------------------------------------------------------------------------- #
+
+class FakeRulesChannel:
+    def __init__(self, name: str = "regeln") -> None:
+        self.name = name
+        self.mention = f"#{name}"
+
+
+class TestNextStepToRules:
+    """Nach dem Bau steht der Regelkanal — leer.
+
+    Der Bericht bietet deshalb direkt den Regelwerk-Assistenten an. Das ist
+    der einzige Ort, an dem die beiden Teile des Bots verbunden sind.
+    """
+
+    def _view(self, registry, template, guild):
+        from ui.views import _report_view
+
+        return _report_view(
+            template,
+            report_with(channels_created=10),
+            cast("Any", FakeBot(registry)),
+            cast("Any", guild),
+        )
+
+    def test_offers_the_assistant_when_a_rules_channel_exists(
+        self, registry, template, monkeypatch
+    ):
+        import ui.rules as rules_module
+
+        channel = FakeRulesChannel()
+        monkeypatch.setattr(rules_module, "find_rules_channel", lambda guild: channel)
+
+        view = self._view(registry, template, FakeGuild())
+        text = rendered(view)
+
+        assert "Nächster Schritt" in text
+        assert "#regeln" in text
+        button_labelled(view, "Regelwerk")
+
+    def test_stays_silent_without_a_rules_channel(
+        self, registry, template, monkeypatch
+    ):
+        import ui.rules as rules_module
+
+        monkeypatch.setattr(rules_module, "find_rules_channel", lambda guild: None)
+
+        text = rendered(self._view(registry, template, FakeGuild()))
+
+        assert "Nächster Schritt" not in text
+
+    def test_no_guild_means_no_offer(self, registry, template):
+        from ui.views import _report_view
+
+        text = rendered(
+            _report_view(
+                template,
+                report_with(channels_created=10),
+                cast("Any", FakeBot(registry)),
+                None,
+            )
+        )
+
+        assert "Nächster Schritt" not in text
+
+    async def test_the_button_opens_the_picker(
+        self, registry, template, monkeypatch
+    ):
+        import ui.rules as rules_module
+
+        channel = FakeRulesChannel()
+        monkeypatch.setattr(rules_module, "find_rules_channel", lambda guild: channel)
+
+        view = self._view(registry, template, FakeGuild())
+        interaction = FakeInteraction()
+
+        await button_labelled(view, "Regelwerk").callback(cast("Any", interaction))
+
+        assert interaction.response.sent, "Der Assistent ging nicht auf"
