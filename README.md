@@ -351,7 +351,14 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 
 ## Premium
 
-Standard-Key: `Vexo x Fufi KEY 2354` — änderbar über `PREMIUM_KEY`.
+Der Key wird über `PREMIUM_KEY` gesetzt. Es gibt **keinen Standardwert**: ohne
+gesetzte Variable lässt sich Premium schlicht nicht freischalten, und der Bot
+weist beim Start darauf hin. Ein im Quelltext hinterlegter Key wäre keiner —
+er stünde in jedem Klon dieses Repositories.
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+```
 
 Der Key wird **nie gespeichert**. Abgelegt wird nur das Paar aus Server- und
 Benutzer-ID, und der Vergleich läuft über `hmac.compare_digest`, damit die
@@ -362,7 +369,8 @@ Der Key erscheint außerdem **nirgends in der Oberfläche**. Das Eingabefeld
 zeigt nur „Key hier eingeben" — ein Platzhalter mit Beispiel-Key wäre für
 jeden lesbar, der den Button anklickt, und würde Premium wertlos machen. Vier
 Tests halten das fest, unter anderem ein Abgleich des gesamten UI-Quelltexts
-gegen den konfigurierten Key.
+gegen den konfigurierten Key und eine Prüfung, dass `config.py` keinen
+einsatzbereiten Standard-Key mitliefert.
 
 > Vor dem öffentlichen Einsatz den Standard-Key ersetzen — er steht hier im
 > Klartext in der Dokumentation.
@@ -421,7 +429,7 @@ tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
   preview.py            Templates im Terminal ansehen
-tests/                  329 Tests
+tests/                  Testsuite (siehe unten)
 ```
 
 **Templates sind Daten, kein Code.** Eine neue Vorlage ist eine JSON-Datei —
@@ -437,11 +445,22 @@ echten Servers aufzufallen.
 ```bash
 pip install -r requirements-dev.txt
 
-python -m pytest tests/ -v          # 329 Tests
+pytest                              # gesamte Testsuite
+pytest --cov=core --cov=ui          # mit Abdeckungsbericht
+ruff check .                        # Linting
+mypy .                              # Typprüfung
+
 python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
 ```
+
+Alle vier Prüfungen laufen bei jedem Push automatisch
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) — zusätzlich wird dort
+das Docker-Image gebaut und geprüft, dass der Container nicht als `root` läuft
+und ohne Token mit einer verständlichen Meldung abbricht.
+
+Konfiguration für Ruff, Mypy und Pytest steht gesammelt in `pyproject.toml`.
 
 Die Testsuite prüft unter anderem:
 
@@ -467,6 +486,20 @@ Die Testsuite prüft unter anderem:
 - **Kanalinhalte** — dass ein zweiter Durchlauf keine doppelten Nachrichten
   erzeugt, Sprachkanäle leer bleiben, das Team nie von der Löschregel
   getroffen wird und die Widget-Buttons einen Neustart überstehen
+- **Widget-Klicks** — dass der Verify-Button die Rolle wirklich vergibt und die
+  Eingangssperre entfernt, dass eine fehlende oder zu hoch stehende Rolle
+  erklärt statt verschluckt wird, und dass der Nutzer in **jedem** Fehlerfall
+  eine Rückmeldung bekommt
+- **Bau-Wächter** — dass ohne `Server verwalten` nichts angefasst wird, zwei
+  Läufe sich nicht überschneiden und die Sperre nach jedem Abbruch wieder
+  freigegeben wird (sonst bliebe der Server bis zum Neustart blockiert)
+- **Rate-Limits** — dass ein 429 wiederholt wird, Discords `Retry-After` dabei
+  Vorrang hat und ein `403` **nicht** wiederholt wird
+- **Generator-Synchronität** — dass `tools/generate_templates.py` exakt die
+  eingecheckten JSONs erzeugt. Ohne diese Prüfung geht eine Handänderung am
+  JSON beim nächsten Generator-Lauf still verloren
+- **Deployment-Härtung** — dass der Container einen eigenen Benutzer hat, einen
+  `HEALTHCHECK` mitbringt und `/app/data` dem Laufzeitbenutzer gehört
 - **Regelwerke** — dass alle 22 vollständig gerendert werden ohne einen
   Paragraphen zu verlieren, die Nummerierung lückenlos durchläuft, kein
   Paragraph beim Aufteilen zerrissen wird, das IC-Regelwerk die klassischen
@@ -487,4 +520,4 @@ Die Testsuite prüft unter anderem:
 
 ## Lizenz
 
-MIT · erstellt von **Vexo × Fufi**
+MIT — siehe [LICENSE](LICENSE) · erstellt von **Vexo × Fufi**
