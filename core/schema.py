@@ -7,23 +7,24 @@ loudly at startup instead of halfway through rebuilding somebody's server.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from collections.abc import Iterator, Mapping, Sequence
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any
 
 from .small_caps import category_name, channel_name, role_name
 
 __all__ = [
+    "CategorySpec",
     "ChannelKind",
     "ChannelMode",
-    "Widget",
-    "Visibility",
-    "RoleTier",
-    "RoleSpec",
     "ChannelSpec",
-    "CategorySpec",
+    "RoleSpec",
+    "RoleTier",
     "Template",
     "TemplateError",
+    "Visibility",
+    "Widget",
 ]
 
 
@@ -159,7 +160,7 @@ class RoleSpec:
         return self.tier.is_staff
 
     @classmethod
-    def parse(cls, data: Mapping[str, Any], where: str) -> "RoleSpec":
+    def parse(cls, data: Mapping[str, Any], where: str) -> RoleSpec:
         label = _require(data, "label", where)
         raw_tier = data.get("tier", "member")
         try:
@@ -221,7 +222,7 @@ class ChannelSpec:
         )
 
     @classmethod
-    def parse(cls, data: Mapping[str, Any], where: str) -> "ChannelSpec":
+    def parse(cls, data: Mapping[str, Any], where: str) -> ChannelSpec:
         label = _require(data, "label", where)
         raw_kind = data.get("kind", "text")
         try:
@@ -305,7 +306,7 @@ class CategorySpec:
         return channel.visibility or self.visibility
 
     @classmethod
-    def parse(cls, data: Mapping[str, Any], where: str) -> "CategorySpec":
+    def parse(cls, data: Mapping[str, Any], where: str) -> CategorySpec:
         label = _require(data, "label", where)
         raw_visibility = data.get("visibility", "public")
         try:
@@ -375,7 +376,7 @@ class Template:
 
     # ---------------------------------------------------------------- parse --
     @classmethod
-    def parse(cls, data: Mapping[str, Any], *, source: str = "<memory>") -> "Template":
+    def parse(cls, data: Mapping[str, Any], *, source: str = "<memory>") -> Template:
         key = _require(data, "key", source)
         where = f"Template '{key}' ({source})"
 

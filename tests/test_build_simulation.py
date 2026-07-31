@@ -20,13 +20,12 @@ import pytest
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import discord  # noqa: E402
+import discord
 
-import config  # noqa: E402
-from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder  # noqa: E402
-from core.registry import TemplateRegistry  # noqa: E402
-from core.schema import Visibility  # noqa: E402
-
+import config
+from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
+from core.registry import TemplateRegistry
+from core.schema import Visibility
 
 # --------------------------------------------------------------------------- #
 # Fakes
@@ -85,7 +84,7 @@ class _FakeResponse:
     reason = "Bad Request"
 
 
-async def _bulk_noop(self, guild_id, data, reason=None):  # noqa: ARG001
+async def _bulk_noop(self, guild_id, data, reason=None):
     """Sammel-Endpunkt fuer Kanalpositionen — hier nur mitgezaehlt."""
 
     _BULK_CALLS.append(list(data))
@@ -122,8 +121,8 @@ class FakeChannel:
         self.position = kwargs.get("position", 0)
         self.deleted = False
         self.edits = 0
-        self.sent: list["FakeMessage"] = []
-        self.pinned: list["FakeMessage"] = []
+        self.sent: list[FakeMessage] = []
+        self.pinned: list[FakeMessage] = []
         self.can_send = True
 
     async def send(self, content=None, view=None, **kwargs):
@@ -747,7 +746,7 @@ class TestProductionRegressions:
     ):
         """Die Reihenfolge ist Kosmetik — der Aufbau zählt."""
 
-        async def refuse(self, guild_id, data, reason=None):  # noqa: ARG001
+        async def refuse(self, guild_id, data, reason=None):
             raise discord.HTTPException(_FakeResponse(), "nope")
 
         template = registry.get("support")

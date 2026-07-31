@@ -17,13 +17,13 @@ import pytest
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import discord  # noqa: E402
+import discord
 
-import config  # noqa: E402
-from core.autosetup import AutoSetup  # noqa: E402
-from core.handoff_store import PendingHandoffs, SetupLedger  # noqa: E402
-from core.handshake import SOURCE, Handoff, sign_state  # noqa: E402
-from core.registry import TemplateRegistry  # noqa: E402
+import config
+from core.autosetup import AutoSetup
+from core.handoff_store import PendingHandoffs, SetupLedger
+from core.handshake import SOURCE, Handoff, sign_state
+from core.registry import TemplateRegistry
 
 SECRET = "test-secret-mit-genug-entropie-1234567890"
 GUILD_ID = 123456789012345678
@@ -120,7 +120,7 @@ class FakeBot:
         self.autosetup = AutoSetup(self)
         self.builds: list[tuple[int, str]] = []
 
-    def get_guild(self, guild_id):  # noqa: ARG002
+    def get_guild(self, guild_id):
         return None
 
 
@@ -138,7 +138,7 @@ def no_real_build(monkeypatch):
     def install(bot):
         from core.builder import BuildMode, BuildReport
 
-        async def fake_apply(self, mode, **kwargs):  # noqa: ARG001
+        async def fake_apply(self, mode, **kwargs):
             calls.append((self.guild.id, self.template.key))
             report = BuildReport(mode=BuildMode.EXTEND, template_key=self.template.key)
             report.channels_created = 42
@@ -303,7 +303,7 @@ class TestNoDoubleSetup:
     async def test_ledger_is_only_written_after_success(self, bot, monkeypatch):
         """Bricht der Aufbau ab, darf ein zweiter Versuch nicht blockiert sein."""
 
-        async def failing_apply(self, mode, **kwargs):  # noqa: ARG001
+        async def failing_apply(self, mode, **kwargs):
             raise discord.HTTPException(
                 type("R", (), {"status": 500, "reason": "boom"})(), "kaputt"
             )

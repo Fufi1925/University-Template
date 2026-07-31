@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from .schema import Template, TemplateError
 
@@ -22,7 +22,7 @@ class TemplateRegistry:
         self._templates: dict[str, Template] = {}
 
     # ------------------------------------------------------------- loading --
-    def load(self) -> "TemplateRegistry":
+    def load(self) -> TemplateRegistry:
         """(Re)load every template file. Raises on the first invalid file."""
 
         if not self.directory.is_dir():

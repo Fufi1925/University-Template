@@ -20,13 +20,15 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Awaitable, Callable, Mapping, Sequence
+from typing import Any
 
 import discord
 
 from config import SETUP_REASON
+
 from .content import channel_guide, has_marker, seed_message
 from .enforcement import mode_tag, reaction_tag
 from .permissions import (
@@ -41,17 +43,73 @@ from .schema import (
     ChannelSpec,
     RoleSpec,
     Template,
-    Widget,
 )
 from .small_caps import strip_decoration
 
 LOGGER = logging.getLogger("architect.builder")
 
-__all__ = ["BuildMode", "BuildReport", "ServerBuilder", "BuildError"]
+__all__ = ["BuildError", "BuildMode", "BuildReport", "ServerBuilder", "with_retry"]
 
 # Discord tolerates bursts but sustained creation gets rate limited hard. A
 # small delay between mutations keeps large templates (60+ channels) smooth.
 _THROTTLE = 0.35
+
+#: So oft wird eine gedrosselte Anfrage wiederholt, bevor sie als Fehler gilt.
+RETRY_ATTEMPTS = 3
+
+#: Obergrenze fuer eine einzelne Wartezeit. Discord nennt bei globalen Limits
+#: gelegentlich sehr grosse Werte; laenger als eine Minute zu warten haelt den
+#: Fortschrittsbalken an, ohne dass der Nutzer versteht, warum.
+MAX_RETRY_WAIT = 60.0
+
+
+async def with_retry(
+    action: Callable[[], Awaitable[Any]],
+    *,
+    what: str = "Anfrage",
+    attempts: int = RETRY_ATTEMPTS,
+) -> Any:
+    """Eine Discord-Anfrage ausfuehren und bei 429 erneut versuchen.
+
+    Der feste Throttle zwischen den Mutationen haelt den Normalfall ruhig,
+    aber er ist eine Schaetzung: laeuft parallel noch ein anderer Bot oder
+    aendert Discord seine Buckets, kommt trotzdem ein 429. Ohne Wiederholung
+    faellt an dieser Stelle ein einzelner Kanal aus — mitten in einem sonst
+    erfolgreichen Aufbau, und niemand sieht warum.
+
+    Discord nennt im ``Retry-After``-Header, wie lange zu warten ist. Diese
+    Angabe wird bevorzugt; fehlt sie, waechst die Wartezeit exponentiell.
+    """
+
+    last: discord.HTTPException | None = None
+
+    for attempt in range(attempts):
+        try:
+            return await action()
+        except discord.HTTPException as exc:
+            if exc.status != 429 or attempt == attempts - 1:
+                raise
+            last = exc
+
+            wait = 2.0**attempt
+            headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+            try:
+                wait = float(headers.get("Retry-After", wait))
+            except (TypeError, ValueError):
+                pass
+
+            wait = min(max(wait, 0.0), MAX_RETRY_WAIT)
+            LOGGER.warning(
+                "Rate-Limit bei %s — Versuch %d/%d, warte %.1fs",
+                what,
+                attempt + 1,
+                attempts,
+                wait,
+            )
+            await asyncio.sleep(wait)
+
+    # Nur erreichbar, wenn attempts <= 0 uebergeben wurde.
+    raise last if last is not None else RuntimeError("with_retry ohne Versuche")
 
 
 class BuildError(RuntimeError):
@@ -277,13 +335,18 @@ class ServerBuilder:
 
             if existing is None:
                 try:
-                    role = await self.guild.create_role(
-                        name=spec.display_name,
-                        colour=discord.Colour(spec.colour),
-                        permissions=permissions,
-                        hoist=spec.hoist,
-                        mentionable=spec.mentionable,
-                        reason=SETUP_REASON,
+                    def create(spec: RoleSpec = spec, permissions: discord.Permissions = permissions):
+                        return self.guild.create_role(
+                            name=spec.display_name,
+                            colour=discord.Colour(spec.colour),
+                            permissions=permissions,
+                            hoist=spec.hoist,
+                            mentionable=spec.mentionable,
+                            reason=SETUP_REASON,
+                        )
+
+                    role = await with_retry(
+                        create, what=f"Rolle {spec.display_name}"
                     )
                     report.roles_created += 1
                     self._roles[spec.key] = role
@@ -357,7 +420,7 @@ class ServerBuilder:
 
     def _channel_kwargs(
         self, category_spec: CategorySpec, spec: ChannelSpec
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         overwrites = channel_overwrites(
             self.guild,
             category_spec.visibility,
@@ -366,10 +429,24 @@ class ServerBuilder:
             staff_keys=self._staff_keys,
             leadership_keys=self._leadership_keys,
         )
-        kwargs: dict[str, object] = {"reason": SETUP_REASON}
+        # ``Any`` statt ``object``: die Werte landen per ** in die
+        # create_*_channel-Signaturen, die jeweils eigene konkrete Typen
+        # erwarten. Mit ``object`` meldet der Typpruefer jeden dieser
+        # Aufrufe als Fehler, obwohl der Inhalt korrekt ist.
+        kwargs: dict[str, Any] = {"reason": SETUP_REASON}
         if overwrites:
             kwargs["overwrites"] = overwrites
         return kwargs
+
+    def _topic_kwargs(self, spec: ChannelSpec) -> dict[str, Any]:
+        """``topic`` nur mitgeben, wenn es eines gibt.
+
+        Discord unterscheidet zwischen "kein Topic" und "leeres Topic"; die
+        Stubs von discord.py verlangen ausserdem ``str`` statt ``str | None``.
+        """
+
+        topic = self._topic_for(spec)
+        return {"topic": topic} if topic else {}
 
     async def _create_channel(
         self,
@@ -381,8 +458,11 @@ class ServerBuilder:
         name = spec.display_name
 
         if spec.kind is ChannelKind.VOICE:
-            return await self.guild.create_voice_channel(
-                name, category=category, user_limit=spec.user_limit, **kwargs
+            return await with_retry(
+                lambda: self.guild.create_voice_channel(
+                    name, category=category, user_limit=spec.user_limit, **kwargs
+                ),
+                what=f"Sprachkanal {name}",
             )
         if spec.kind is ChannelKind.STAGE:
             try:
@@ -397,21 +477,24 @@ class ServerBuilder:
         if spec.kind is ChannelKind.FORUM:
             try:
                 return await self.guild.create_forum(
-                    name, category=category, topic=self._topic_for(spec), **kwargs
+                    name, category=category, **self._topic_kwargs(spec), **kwargs
                 )
             except (discord.Forbidden, discord.HTTPException):
                 return await self.guild.create_text_channel(
-                    name, category=category, topic=self._topic_for(spec), **kwargs
+                    name, category=category, **self._topic_kwargs(spec), **kwargs
                 )
 
         news = spec.kind is ChannelKind.NEWS
-        channel = await self.guild.create_text_channel(
-            name,
-            category=category,
-            topic=self._topic_for(spec),
-            slowmode_delay=spec.slowmode,
-            nsfw=spec.nsfw,
-            **kwargs,
+        channel = await with_retry(
+            lambda: self.guild.create_text_channel(
+                name,
+                category=category,
+                slowmode_delay=spec.slowmode,
+                nsfw=spec.nsfw,
+                **self._topic_kwargs(spec),
+                **kwargs,
+            ),
+            what=f"Textkanal {name}",
         )
         if news and "NEWS" in self.guild.features:
             try:
@@ -434,7 +517,7 @@ class ServerBuilder:
             staff_keys=self._staff_keys,
             leadership_keys=self._leadership_keys,
         )
-        payload: dict[str, object] = {}
+        payload: dict[str, Any] = {}
         if overwrites:
             payload["overwrites"] = overwrites
         if isinstance(channel, discord.TextChannel):
@@ -445,7 +528,10 @@ class ServerBuilder:
         if not payload:
             return False
         try:
-            await channel.edit(reason=SETUP_REASON, **payload)
+            # ``edit`` liegt auf den konkreten Kanalklassen, nicht auf der
+            # gemeinsamen Basisklasse. Zur Laufzeit hat jeder Kanal, der hier
+            # ankommt, die Methode.
+            await channel.edit(reason=SETUP_REASON, **payload)  # type: ignore[attr-defined]
             return True
         except (discord.Forbidden, discord.HTTPException):
             return False
@@ -600,16 +686,22 @@ class ServerBuilder:
             category = self._find_category(category_spec)
             if category is None:
                 try:
-                    category = await self.guild.create_category(
-                        category_spec.display_name,
-                        overwrites=category_overwrites(
-                            self.guild,
-                            category_spec.visibility,
-                            self._roles,
-                            staff_keys=self._staff_keys,
-                            leadership_keys=self._leadership_keys,
-                        ),
-                        reason=SETUP_REASON,
+                    def create_category(spec: CategorySpec = category_spec):
+                        return self.guild.create_category(
+                            spec.display_name,
+                            overwrites=category_overwrites(
+                                self.guild,
+                                spec.visibility,
+                                self._roles,
+                                staff_keys=self._staff_keys,
+                                leadership_keys=self._leadership_keys,
+                            ),
+                            reason=SETUP_REASON,
+                        )
+
+                    category = await with_retry(
+                        create_category,
+                        what=f"Kategorie {category_spec.display_name}",
                     )
                     report.categories_created += 1
                     await asyncio.sleep(_THROTTLE)
@@ -742,7 +834,7 @@ class ServerBuilder:
         der alle Positionen in **einem** Request setzt.
         """
 
-        payload = []
+        payload: list[Any] = []
         for position, spec in enumerate(self.template.categories):
             category = self._find_category(spec)
             if category is None:

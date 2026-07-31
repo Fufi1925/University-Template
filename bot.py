@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import time
 import logging
 import sys
+import time
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -18,12 +19,15 @@ from discord.ext import commands
 import config
 from core.autosetup import AutoSetup
 from core.handoff_store import PendingHandoffs, SetupLedger
-from core.handshake import Handoff, is_enabled as handshake_enabled
+from core.handshake import Handoff
 from core.premium import PremiumStore
 from core.registry import TemplateRegistry
 from core.schema import TemplateError
 from ui.components import notice
 from ui.views import build_start_view
+
+if TYPE_CHECKING:
+    from aiohttp.web import AppRunner
 
 logging.basicConfig(
     level=config.LOG_LEVEL,
@@ -62,7 +66,7 @@ class ArchitectBot(commands.Bot):
             guild_wide=config.PREMIUM_UNLOCKS_GUILD,
         )
         self.active_builds: set[int] = set()
-        self._health_runner = None
+        self._health_runner: AppRunner | None = None
         self._status_task: asyncio.Task | None = None
 
         # Partner-Handshake: kurzlebige Vormerkungen und dauerhafter Vermerk,
@@ -103,6 +107,12 @@ class ArchitectBot(commands.Bot):
                 "Privileged Intents sind aus — '%sstart' funktioniert nicht. "
                 "Nutze /start oder setze ENABLE_PRIVILEGED_INTENTS=true.",
                 config.COMMAND_PREFIX,
+            )
+
+        if not self.premium.is_configured:
+            LOGGER.warning(
+                "Kein PREMIUM_KEY gesetzt — die Premium-Vorlagen lassen sich "
+                "nicht freischalten. Variable setzen, um sie zu aktivieren."
             )
 
     async def close(self) -> None:
@@ -251,6 +261,26 @@ bot = ArchitectBot()
 # Commands
 # --------------------------------------------------------------------------- #
 
+async def _require_guild(ctx: commands.Context) -> discord.Guild | None:
+    """Den Server aus dem Kontext holen, oder freundlich abbrechen.
+
+    ``@commands.guild_only()`` schuetzt das zur Laufzeit bereits, aber der
+    Typ bleibt ``Guild | None``. Statt die Pruefung in jedem Befehl zu
+    wiederholen — oder sie wegzucasten und beim naechsten Umbau zu verlieren —
+    steht sie hier einmal.
+    """
+
+    if ctx.guild is not None:
+        return ctx.guild
+    await ctx.send(
+        view=notice(
+            "Nur auf Servern verfügbar",
+            "Dieser Befehl funktioniert nur innerhalb eines Servers.",
+            tone="error",
+        )
+    )
+    return None
+
 @bot.command(name="start", aliases=["templates", "setup", "menu"])
 @commands.guild_only()
 async def start_prefix(ctx: commands.Context) -> None:
@@ -274,7 +304,11 @@ async def rules_prefix(ctx: commands.Context) -> None:
 
     from ui.rules import RulesetPicker, find_rules_channel
 
-    channel = find_rules_channel(ctx.guild)
+    guild = await _require_guild(ctx)
+    if guild is None:
+        return
+
+    channel = find_rules_channel(guild)
     if channel is None:
         await ctx.send(
             view=notice(
@@ -302,7 +336,10 @@ async def rules_slash(interaction: discord.Interaction) -> None:
 async def partner_setup(ctx: commands.Context) -> None:
     """Die Partner-Vorlage bewusst erneut anwenden."""
 
-    guild = ctx.guild
+    guild = await _require_guild(ctx)
+    if guild is None:
+        return
+
     previous = bot.setup_ledger.details(guild.id)
 
     if previous is not None:
@@ -384,7 +421,7 @@ def main() -> None:
         bot.run(config.DISCORD_TOKEN, log_handler=None)
     except discord.LoginFailure:
         print("\n  ❌  Token ungültig — bitte im Developer Portal neu generieren.\n", file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
     except discord.PrivilegedIntentsRequired:
         print(
             "\n  ❌  Privileged Intents nicht aktiviert.\n\n"
@@ -392,7 +429,7 @@ def main() -> None:
             "     oder ENABLE_PRIVILEGED_INTENTS=false setzen (dann nur /start).\n",
             file=sys.stderr,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from None
     except (OSError, aiohttp.ClientError) as exc:
         # No traceback for a plain connectivity problem — it is never a bug here.
         print(
@@ -400,7 +437,7 @@ def main() -> None:
             "     Prüfe Internetverbindung, Proxy oder Firewall.\n",
             file=sys.stderr,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":
@@ -408,6 +445,6 @@ if __name__ == "__main__":
         main()
     except TemplateError as exc:
         print(f"\n  ❌  Template-Fehler: {exc}\n", file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
     except KeyboardInterrupt:
         pass

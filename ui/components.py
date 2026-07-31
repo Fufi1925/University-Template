@@ -26,7 +26,7 @@ Zwei harte Grenzen von Discord:
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import discord
 from discord import ui
@@ -39,19 +39,20 @@ from config import (
     COLOR_PREMIUM,
     COLOR_SUCCESS,
 )
-from core.schema import ChannelKind, Template, Visibility
+from core.schema import ChannelKind, Visibility
 
 __all__ = [
     "RULE",
     "SPACE",
-    "quote",
+    "field_value",
     "footer",
     "heading",
-    "stat_line",
     "kind_icon",
-    "visibility_badge",
-    "progress_bar",
     "notice",
+    "progress_bar",
+    "quote",
+    "stat_line",
+    "visibility_badge",
 ]
 
 
@@ -75,6 +76,21 @@ def SPACE(*, large: bool = False) -> ui.Separator:
         visible=False,
         spacing=discord.SeparatorSpacing.large if large else discord.SeparatorSpacing.small,
     )
+
+
+
+def field_value(label: object) -> str:
+    """Den eingegebenen Text aus einem Modal-Feld holen.
+
+    ``ui.Label`` ist in den Stubs von discord.py als ``Item[Any]`` typisiert,
+    obwohl ``component`` zur Laufzeit immer ein ``TextInput`` mit ``value``
+    ist. Statt an jeder Fundstelle ein ``type: ignore`` zu setzen, steht der
+    Zugriff einmal hier — und liefert nebenbei garantiert einen ``str``
+    statt ``str | None``.
+    """
+
+    component = getattr(label, "component", label)
+    return str(getattr(component, "value", "") or "")
 
 
 def quote(*lines: str) -> str:

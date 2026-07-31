@@ -16,10 +16,11 @@ from discord import ui
 
 from config import COLOR_BRAND, COLOR_NEUTRAL
 from core.schema import ChannelMode, ChannelSpec, Visibility, Widget
+
 from .components import RULE, footer, quote
 from .widgets import build_widget_view
 
-__all__ = ["intro_view", "header_view"]
+__all__ = ["header_view", "intro_view"]
 
 
 # Ruhige Farbe fuer Log- und Archivkanaele, damit die Startnachricht dort

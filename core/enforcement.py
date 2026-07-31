@@ -23,14 +23,14 @@ from .schema import ChannelMode
 LOGGER = logging.getLogger("architect.enforcement")
 
 __all__ = [
+    "check_message",
     "is_exempt",
     "mode_tag",
-    "read_mode",
+    "next_count",
     "reaction_tag",
+    "read_mode",
     "read_reactions",
     "strip_tags",
-    "check_message",
-    "next_count",
 ]
 
 # Die Marken stehen am Ende des Topics. Eckige Klammern sind in Topics
@@ -66,8 +66,14 @@ def reaction_tag(reactions: tuple[str, ...]) -> str:
     return f"[react:{''.join(reactions)}]" if reactions else ""
 
 
-def read_mode(channel: discord.abc.GuildChannel) -> ChannelMode:
-    """Modus eines Kanals aus dessen Topic lesen."""
+def read_mode(channel: object) -> ChannelMode:
+    """Modus eines Kanals aus dessen Topic lesen.
+
+    Der Parameter ist bewusst weit typisiert: gelesen wird ausschliesslich per
+    ``getattr(channel, "topic")``. ``message.channel`` ist je nach Kanalart ein
+    halbes Dutzend verschiedener Klassen — die meisten davon ohne ``topic``,
+    was hier korrekt zu :data:`ChannelMode.FREE` fuehrt.
+    """
 
     topic = getattr(channel, "topic", None) or ""
     match = _MODE_RE.search(topic)
@@ -79,8 +85,11 @@ def read_mode(channel: discord.abc.GuildChannel) -> ChannelMode:
         return ChannelMode.FREE
 
 
-def read_reactions(channel: discord.abc.GuildChannel) -> tuple[str, ...]:
-    """Auto-Reaktionen eines Kanals aus dessen Topic lesen."""
+def read_reactions(channel: object) -> tuple[str, ...]:
+    """Auto-Reaktionen eines Kanals aus dessen Topic lesen.
+
+    Wie :func:`read_mode` rein ueber ``getattr`` — siehe dort.
+    """
 
     topic = getattr(channel, "topic", None) or ""
     match = _REACT_RE.search(topic)

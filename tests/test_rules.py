@@ -10,9 +10,9 @@ import pytest
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import config  # noqa: E402
-from core.registry import TemplateRegistry  # noqa: E402
-from core.rulesets import (  # noqa: E402
+import config
+from core.registry import TemplateRegistry
+from core.rulesets import (
     RULESETS,
     RuleLength,
     RuleScope,
@@ -20,7 +20,7 @@ from core.rulesets import (  # noqa: E402
     by_scope,
     get_ruleset,
 )
-from core.small_caps import strip_decoration  # noqa: E402
+from core.small_caps import strip_decoration
 
 
 def _walk(payload):
@@ -352,10 +352,10 @@ class TestPickerView:
         labels = [
             c.get("label", "") for c in _walk(payload) if c.get("type") == 2
         ]
-        assert any("Ergänzen" in l for l in labels)
-        assert any("Neu aufsetzen" in l for l in labels)
-        assert any("Abbrechen" in l for l in labels)
-        assert any("Eigenes" in l for l in labels)
+        assert any("Ergänzen" in label for label in labels)
+        assert any("Neu aufsetzen" in label for label in labels)
+        assert any("Abbrechen" in label for label in labels)
+        assert any("Eigenes" in label for label in labels)
 
     def test_apply_buttons_disabled_until_selection(self):
         from ui.rules import RulesetPicker
@@ -476,7 +476,7 @@ class TestTemplateIntegration:
         # Ohne Guild-Kontext bleibt der Bericht wie bisher.
         view = _report_view(template, report)
         labels = [c.get("label", "") for c in _walk(view.to_components()) if c.get("type") == 2]
-        assert not any("Regelwerk" in l for l in labels)
+        assert not any("Regelwerk" in label for label in labels)
 
 
 # --------------------------------------------------------------------------- #
@@ -738,7 +738,7 @@ class TestParagraphStyle:
         from ui.rules import ruleset_views
 
         blob = "\n".join(_texts(ruleset_views(get_ruleset("standard"))[0]))
-        lines = [l for l in blob.splitlines() if l.startswith("> **§")]
+        lines = [line for line in blob.splitlines() if line.startswith("> **§")]
         assert lines
         for line in lines:
             # Die Überschrift steht allein in ihrer Zeile.

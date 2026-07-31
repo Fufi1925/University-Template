@@ -13,20 +13,20 @@ from discord import ui
 from config import (
     BRAND_NAME,
     BRAND_TAGLINE,
-    COMMAND_PREFIX,
     COLOR_BRAND,
-    COLOR_DANGER,
-    COLOR_NEUTRAL,
     COLOR_PREMIUM,
     COLOR_SUCCESS,
+    COMMAND_PREFIX,
 )
 from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
 from core.permissions import BASE_ROLES
 from core.rulesets import RULESETS
 from core.schema import Template
+
 from .components import (
     RULE,
     SPACE,
+    field_value,
     footer,
     kind_icon,
     notice,
@@ -80,13 +80,13 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         ),
     )
 
-    def __init__(self, bot: "ArchitectBot") -> None:
+    def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(timeout=300)
         self.bot = bot
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         # self.key ist das Label; der eingegebene Text liegt in dessen component.
-        supplied = str(self.key.component.value)
+        supplied = field_value(self.key)
 
         if not self.bot.premium.verify(supplied):
             LOGGER.info(
@@ -145,8 +145,11 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         view.add_item(container)
         await interaction.response.send_message(view=view, ephemeral=True)
 
-    async def on_error(
-        self, interaction: discord.Interaction, error: Exception
+    # discord.ui.Modal.on_error nimmt (interaction, error), die geerbte
+    # BaseView-Variante zusaetzlich ein ``item``. Mypy sieht nur die
+    # Basisklasse; zur Laufzeit ruft der Modal-Pfad die richtige Signatur.
+    async def on_error(  # type: ignore[override]
+        self, interaction: discord.Interaction, error: Exception, /
     ) -> None:  # pragma: no cover
         LOGGER.exception("Premium-Modal fehlgeschlagen", exc_info=error)
         if not interaction.response.is_done():
@@ -161,7 +164,7 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
 
 
 class PremiumButton(ui.Button["ui.LayoutView"]):
-    def __init__(self, bot: "ArchitectBot") -> None:
+    def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(
             label="Premium freischalten",
             style=discord.ButtonStyle.secondary,
@@ -197,7 +200,7 @@ class ConfirmView(ui.LayoutView):
 
     def __init__(
         self,
-        bot: "ArchitectBot",
+        bot: ArchitectBot,
         template: Template,
         *,
         write_intros: bool = True,
@@ -356,7 +359,7 @@ def _progress_view(template: Template, label: str, step: int, total: int) -> ui.
 def _report_view(
     template: Template,
     report: BuildReport,
-    bot: "ArchitectBot | None" = None,
+    bot: ArchitectBot | None = None,
     guild: discord.Guild | None = None,
 ) -> ui.LayoutView:
     rebuilt = report.mode is BuildMode.REBUILD
@@ -463,7 +466,7 @@ def _report_view(
 class _OpenRulesButton(ui.Button["ui.LayoutView"]):
     """Fuehrt vom fertigen Server direkt zum Regelwerk-Assistenten."""
 
-    def __init__(self, bot: "ArchitectBot", channel: discord.TextChannel) -> None:
+    def __init__(self, bot: ArchitectBot, channel: discord.TextChannel) -> None:
         super().__init__(
             label="Regelwerk einrichten",
             style=discord.ButtonStyle.primary,
@@ -536,7 +539,7 @@ async def _report(
 
 async def _run_build(
     interaction: discord.Interaction,
-    bot: "ArchitectBot",
+    bot: ArchitectBot,
     template: Template,
     mode: BuildMode,
     *,
@@ -715,7 +718,7 @@ class DetailView(ui.LayoutView):
 
     def __init__(
         self,
-        bot: "ArchitectBot",
+        bot: ArchitectBot,
         template: Template,
         *,
         write_intros: bool = True,
@@ -810,7 +813,7 @@ class _ApplyButton(ui.Button["DetailView"]):
 # --------------------------------------------------------------------------- #
 
 class TemplateSelect(ui.Select["StartView"]):
-    def __init__(self, bot: "ArchitectBot", templates: list[Template], *, premium: bool) -> None:
+    def __init__(self, bot: ArchitectBot, templates: list[Template], *, premium: bool) -> None:
         options = [
             discord.SelectOption(
                 label=template.name,
@@ -865,7 +868,7 @@ class TemplateSelect(ui.Select["StartView"]):
 class StartView(ui.LayoutView):
     """The screen behind ``!start`` / ``/start``."""
 
-    def __init__(self, bot: "ArchitectBot", *, premium: bool) -> None:
+    def __init__(self, bot: ArchitectBot, *, premium: bool) -> None:
         super().__init__(timeout=None)
         self.bot = bot
 
@@ -939,7 +942,7 @@ class StartView(ui.LayoutView):
         self.add_item(container)
 
 
-def build_start_view(bot: "ArchitectBot", *, premium: bool) -> StartView:
+def build_start_view(bot: ArchitectBot, *, premium: bool) -> StartView:
     return StartView(bot, premium=premium)
 
 
@@ -975,8 +978,10 @@ def partner_summary_view(template: Template, report: BuildReport) -> ui.LayoutVi
     if report.messages_posted:
         lines += [
             "",
-            f"In {report.messages_posted} Kanälen steht eine angeheftete "
-            "Nachricht, die den Zweck des Kanals erklärt.",
+            (
+                f"In {report.messages_posted} Kanälen steht eine angeheftete "
+                "Nachricht, die den Zweck des Kanals erklärt."
+            ),
         ]
     container.add_item(ui.TextDisplay(quote(*lines)))
 

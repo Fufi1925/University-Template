@@ -23,17 +23,18 @@ from typing import TYPE_CHECKING
 import discord
 from discord import ui
 
-from config import COLOR_BRAND, COLOR_DANGER, COLOR_NEUTRAL, COLOR_SUCCESS
+from config import COLOR_BRAND, COLOR_SUCCESS
 from core.rulesets import RULESETS, RuleLength, RuleSet, get_ruleset
 from core.small_caps import strip_decoration
-from .components import RULE, SPACE, footer, notice, quote
+
+from .components import RULE, SPACE, field_value, footer, notice, quote
 
 if TYPE_CHECKING:
     from bot import ArchitectBot
 
 LOGGER = logging.getLogger("architect.rules")
 
-__all__ = ["RulesetPicker", "open_rules_assistant", "RULES_CHANNEL_HINTS"]
+__all__ = ["RULES_CHANNEL_HINTS", "RulesetPicker", "open_rules_assistant"]
 
 # Namensbestandteile, an denen der Regelkanal erkannt wird.
 RULES_CHANNEL_HINTS = ("serverregeln", "regeln", "regelwerk", "rules")
@@ -264,7 +265,7 @@ async def _post(
 # Eigenes Regelwerk
 # --------------------------------------------------------------------------- #
 
-_URL_RE = re.compile(r"^https?://\S+\.(?:png|jpe?g|gif|webp)(?:\?\S*)?$", re.I)
+_URL_RE = re.compile(r"^https?://\S+\.(?:png|jpe?g|gif|webp)(?:\?\S*)?$", re.IGNORECASE)
 
 
 class CustomRulesModal(ui.Modal, title="Eigenes Regelwerk"):
@@ -311,14 +312,14 @@ class CustomRulesModal(ui.Modal, title="Eigenes Regelwerk"):
         ),
     )
 
-    def __init__(self, bot: "ArchitectBot", channel: discord.TextChannel) -> None:
+    def __init__(self, bot: ArchitectBot, channel: discord.TextChannel) -> None:
         super().__init__(timeout=900)
         self.bot = bot
         self.channel = channel
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        top = (self.top_image.component.value or "").strip() or None
-        bottom = (self.bottom_image.component.value or "").strip() or None
+        top = field_value(self.top_image).strip() or None
+        bottom = field_value(self.bottom_image).strip() or None
 
         for url, where in ((top, "oben rechts"), (bottom, "unten")):
             if url and not _URL_RE.match(url):
@@ -335,8 +336,8 @@ class CustomRulesModal(ui.Modal, title="Eigenes Regelwerk"):
                 return
 
         view = custom_rules_view(
-            str(self.heading.component.value),
-            str(self.body.component.value),
+            field_value(self.heading),
+            field_value(self.body),
             top,
             bottom,
         )
@@ -350,7 +351,7 @@ class _PreviewWrapper(ui.LayoutView):
 
     def __init__(
         self,
-        bot: "ArchitectBot",
+        bot: ArchitectBot,
         channel: discord.TextChannel,
         views: list[ui.LayoutView],
     ) -> None:
@@ -397,7 +398,7 @@ class _PublishCustom(ui.Button["_PreviewWrapper"]):
 # --------------------------------------------------------------------------- #
 
 class _RulesetSelect(ui.Select["RulesetPicker"]):
-    def __init__(self, screen: "RulesetPicker") -> None:
+    def __init__(self, screen: RulesetPicker) -> None:
         options = [
             discord.SelectOption(
                 label=rs.name,
@@ -429,7 +430,7 @@ class RulesetPicker(ui.LayoutView):
 
     def __init__(
         self,
-        bot: "ArchitectBot",
+        bot: ArchitectBot,
         channel: discord.TextChannel,
         *,
         selected: str | None = None,
@@ -591,7 +592,7 @@ class _CustomRules(ui.Button["RulesetPicker"]):
 # --------------------------------------------------------------------------- #
 
 async def open_rules_assistant(
-    interaction: discord.Interaction, bot: "ArchitectBot"
+    interaction: discord.Interaction, bot: ArchitectBot
 ) -> None:
     """Assistenten oeffnen — sucht den Regelkanal selbst."""
 

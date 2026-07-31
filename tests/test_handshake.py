@@ -15,14 +15,15 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from core.handoff_store import PendingHandoffs, SetupLedger  # noqa: E402
-from core.handshake import (  # noqa: E402
+from core.handoff_store import PendingHandoffs, SetupLedger
+from core.handshake import (
     MAX_AGE,
     SOURCE,
     Handoff,
@@ -112,7 +113,8 @@ class TestValidToken:
         """Ein geprüftes Token darf nachträglich nicht verändert werden."""
 
         handoff = read_state(_token(_payload()))
-        with pytest.raises(Exception):
+        # frozen dataclass -> FrozenInstanceError, eine AttributeError-Variante
+        with pytest.raises(AttributeError):
             handoff.guild_id = 999
 
 
@@ -275,7 +277,7 @@ class TestConstantTimeComparison:
 # --------------------------------------------------------------------------- #
 
 def _handoff(guild_id: int = 1, **kwargs) -> Handoff:
-    defaults = {
+    defaults: dict[str, Any] = {
         "guild_id": guild_id,
         "user_id": 2,
         "issued_at": int(time.time()),

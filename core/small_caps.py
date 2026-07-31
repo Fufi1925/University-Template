@@ -15,14 +15,14 @@ import re
 import unicodedata
 
 __all__ = [
-    "to_small_caps",
-    "from_small_caps",
-    "channel_name",
     "category_name",
+    "channel_name",
+    "from_small_caps",
+    "is_small_caps",
     "role_name",
     "slugify",
-    "is_small_caps",
     "strip_decoration",
+    "to_small_caps",
 ]
 
 

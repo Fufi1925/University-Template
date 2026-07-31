@@ -16,8 +16,8 @@ import json
 import logging
 import os
 import threading
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 LOGGER = logging.getLogger("architect.premium")
 
@@ -43,8 +43,22 @@ class PremiumStore:
         self._load()
 
     # --------------------------------------------------------------- keys ---
+    @property
+    def is_configured(self) -> bool:
+        """Ist ueberhaupt ein Key hinterlegt?
+
+        Ohne Key kann niemand freischalten. Das ist der sichere Zustand, aber
+        er soll beim Start sichtbar sein statt still zu ueberraschen.
+        """
+
+        return bool(self._keys)
+
     def verify(self, candidate: str) -> bool:
-        """Constant-time check of a user supplied key."""
+        """Constant-time check of a user supplied key.
+
+        Ist kein Key konfiguriert, schlaegt jede Eingabe fehl: ``self._keys``
+        ist dann leer und die Schleife laeuft ins Leere. Fail-Closed.
+        """
 
         supplied = candidate.strip()
         if not supplied:

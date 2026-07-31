@@ -10,7 +10,9 @@ Run:  python -m pytest tests/ -v
 
 from __future__ import annotations
 
+import itertools
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,18 +21,18 @@ import pytest
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import config  # noqa: E402
-from core.premium import PremiumStore  # noqa: E402
-from core.permissions import BASE_ROLES, permissions_for_tier  # noqa: E402
-from core.registry import TemplateRegistry  # noqa: E402
-from core.schema import (  # noqa: E402
+import config
+from core.permissions import BASE_ROLES, permissions_for_tier
+from core.premium import PremiumStore
+from core.registry import TemplateRegistry
+from core.schema import (
     ChannelKind,
     RoleTier,
     Template,
     TemplateError,
     Visibility,
 )
-from core.small_caps import (  # noqa: E402
+from core.small_caps import (
     channel_name,
     slugify,
     strip_decoration,
@@ -352,7 +354,7 @@ class TestPermissions:
             RoleTier.ADMIN,
             RoleTier.LEADERSHIP,
         ]
-        for lower, higher in zip(ladder, ladder[1:]):
+        for lower, higher in itertools.pairwise(ladder):
             low = permissions_for_tier(lower)
             high = permissions_for_tier(higher)
             assert low.value & high.value == low.value, f"{higher} ⊉ {lower}"
@@ -613,15 +615,47 @@ class TestPremiumKeyLeak:
 
     @staticmethod
     def _ui_sources() -> list[tuple[str, str]]:
-        paths = list((BASE_DIR / "ui").glob("*.py")) + [BASE_DIR / "bot.py"]
+        paths = [*(BASE_DIR / "ui").glob("*.py"), BASE_DIR / "bot.py"]
         return [(p.name, p.read_text(encoding="utf-8")) for p in paths]
 
     def test_key_not_in_ui_source(self):
+        """Der konfigurierte Key darf nicht im Quelltext stehen.
+
+        Ist keiner gesetzt (der Standard), gibt es nichts zu leaken — dann
+        prueft :meth:`test_default_key_fragments_not_in_ui` weiter.
+        """
+
         import config
 
-        secret = config.PREMIUM_KEY
+        secret = config.PREMIUM_KEY.strip()
+        if not secret:
+            pytest.skip("Kein PREMIUM_KEY konfiguriert")
         for name, source in self._ui_sources():
             assert secret not in source, f"{name} enthält den Premium-Key im Klartext"
+
+    def test_no_default_key_in_config(self):
+        """config.py darf keinen einsatzbereiten Key mitliefern.
+
+        Ein Standardwert im Quelltext steht in jedem Klon des Repositories und
+        schaltet jede Installation frei, deren Betreiber die Variable nie
+        gesetzt hat.
+        """
+
+        source = (BASE_DIR / "config.py").read_text(encoding="utf-8")
+        match = re.search(r'PREMIUM_KEY[^=]*=\s*os\.getenv\(\s*"PREMIUM_KEY"\s*,\s*(.*?)\)', source)
+        assert match, "PREMIUM_KEY wird nicht mehr aus der Umgebung gelesen"
+        fallback = match.group(1).strip().strip('"').strip("'")
+        assert not fallback, f"config.py liefert einen Standard-Key mit: {fallback!r}"
+
+    def test_premium_locked_without_key(self, tmp_path):
+        """Ohne konfigurierten Key schaltet keine Eingabe frei."""
+
+        from core.premium import PremiumStore
+
+        store = PremiumStore(tmp_path / "premium.json", keys=())
+        assert not store.is_configured
+        for attempt in ("", " ", "Vexo x Fufi KEY 2354", "irgendwas"):
+            assert not store.verify(attempt), f"{attempt!r} hat freigeschaltet"
 
     def test_default_key_fragments_not_in_ui(self):
         """Auch Teile des Standard-Keys dürfen nicht auftauchen."""
@@ -648,7 +682,8 @@ class TestPremiumKeyLeak:
 
         description = PremiumModal.key.description or ""
         assert description, "Eine Hilfestellung sollte vorhanden sein"
-        assert config.PREMIUM_KEY not in description
+        if config.PREMIUM_KEY.strip():
+            assert config.PREMIUM_KEY not in description
         for fragment in ("Vexo", "2354"):
             assert fragment not in description
 
@@ -668,7 +703,8 @@ class TestPremiumKeyLeak:
             component.get("content", "")
             for component in TestComponentsV2._walk(view.to_components())
         )
-        assert config.PREMIUM_KEY not in blob
+        if config.PREMIUM_KEY.strip():
+            assert config.PREMIUM_KEY not in blob
         assert "Vexo" not in blob
 
 
@@ -695,7 +731,7 @@ class TestVisualPolish:
         bot = _FakeBot(registry)
         for template in registry:
             texts = self._texts(DetailView(bot, template))
-            quoted = [l for t in texts for l in t.splitlines() if l.startswith(">")]
+            quoted = [line for t in texts for line in t.splitlines() if line.startswith(">")]
             assert quoted, f"{template.key}: Detailansicht ohne Blockzitat"
 
     def test_no_h1_headings(self, registry):
@@ -824,13 +860,13 @@ class _FakeBot:
 
 
 class _FakePremium:
-    def has_access(self, guild_id, user_id) -> bool:  # noqa: ARG002
+    def has_access(self, guild_id, user_id) -> bool:
         return False
 
-    def verify(self, key: str) -> bool:  # noqa: ARG002
+    def verify(self, key: str) -> bool:
         return False
 
-    def grant(self, guild_id, user_id) -> None:  # noqa: ARG002
+    def grant(self, guild_id, user_id) -> None:
         pass
 
 

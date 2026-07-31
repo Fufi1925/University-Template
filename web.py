@@ -87,7 +87,7 @@ def _problem(title: str, message: str, status: int = 400) -> web.Response:
 # Server
 # --------------------------------------------------------------------------- #
 
-async def start_web_server(bot: "ArchitectBot") -> web.AppRunner:
+async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
     async def status(_: web.Request) -> web.Response:
         totals = bot.registry.totals
         return web.json_response(

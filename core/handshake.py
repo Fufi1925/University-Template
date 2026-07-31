@@ -38,12 +38,12 @@ from dataclasses import dataclass
 LOGGER = logging.getLogger("architect.handshake")
 
 __all__ = [
-    "SOURCE",
     "MAX_AGE",
+    "SOURCE",
     "Handoff",
+    "is_enabled",
     "read_state",
     "sign_state",
-    "is_enabled",
 ]
 
 #: Kennung des Partners im Token. Aendert der Partner seinen Wert, muss er

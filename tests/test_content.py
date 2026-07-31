@@ -13,24 +13,25 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import config  # noqa: E402
-from core.content import MARKER, channel_guide, mode_rule, seed_message  # noqa: E402
-from core.enforcement import (  # noqa: E402
+import config
+from core.content import MARKER, channel_guide, mode_rule, seed_message
+from core.enforcement import (
     mode_tag,
     next_count,
+    reaction_tag,
     read_mode,
     read_reactions,
-    reaction_tag,
     strip_tags,
 )
-from core.registry import TemplateRegistry  # noqa: E402
-from core.schema import ChannelKind, ChannelMode, ChannelSpec, Widget  # noqa: E402
+from core.registry import TemplateRegistry
+from core.schema import ChannelKind, ChannelMode, ChannelSpec, Widget
 
 
 @pytest.fixture(scope="module")
@@ -521,7 +522,7 @@ class TestComponentsV2Contract:
         # Findet send(...) / edit(...) mit content= UND view= im selben Aufruf.
         pattern = re.compile(
             r"\.(?:send|edit|edit_original_response)\(\s*[^)]*\bcontent\s*=[^)]*\bview\s*=",
-            re.S,
+            re.DOTALL,
         )
         for name, source in self._sources():
             match = pattern.search(source)
@@ -537,7 +538,7 @@ class TestComponentsV2Contract:
 
         pattern = re.compile(
             r"\.(?:send|edit|edit_original_response)\(\s*[^)]*\bview\s*=[^)]*\bcontent\s*=",
-            re.S,
+            re.DOTALL,
         )
         for name, source in self._sources():
             match = pattern.search(source)
@@ -581,7 +582,9 @@ class TestComponentsV2Contract:
 
         class Received:
             content = ""  # Discord liefert bei Components V2 einen leeren String
-            components = [_component_factory(raw) for raw in view.to_components()]
+            components: ClassVar[list] = [
+                _component_factory(raw) for raw in view.to_components()
+            ]
 
         assert has_marker(Received())
 
@@ -592,7 +595,7 @@ class TestComponentsV2Contract:
 
         class Foreign:
             content = "Ein normaler Beitrag"
-            components = []
+            components: ClassVar[list] = []
 
         assert not has_marker(Foreign())
 

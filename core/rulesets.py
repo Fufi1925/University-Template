@@ -30,14 +30,14 @@ from dataclasses import dataclass
 from enum import Enum
 
 __all__ = [
+    "RULESETS",
+    "Paragraph",
     "RuleLength",
     "RuleScope",
-    "Paragraph",
     "RuleSet",
-    "RULESETS",
-    "get_ruleset",
     "by_length",
     "by_scope",
+    "get_ruleset",
 ]
 
 

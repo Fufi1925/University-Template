@@ -19,12 +19,12 @@ from __future__ import annotations
 from .schema import ChannelMode, ChannelSpec, Visibility, Widget
 
 __all__ = [
+    "CHECKLIST_ITEMS",
     "MARKER",
-    "has_marker",
     "channel_guide",
+    "has_marker",
     "mode_rule",
     "seed_message",
-    "CHECKLIST_ITEMS",
 ]
 
 # Unsichtbare Signatur in jeder Bot-Nachricht. Damit findet der Bot seine
@@ -142,18 +142,24 @@ _WIDGET_INTRO: dict[Widget, tuple[str, str]] = {
     ),
     Widget.RULES: (
         "Regeln akzeptieren",
-        "Lies die Regeln und bestätige sie mit dem Button. "
-        "Erst danach ist der Server vollständig sichtbar.",
+        (
+            "Lies die Regeln und bestätige sie mit dem Button. "
+            "Erst danach ist der Server vollständig sichtbar."
+        ),
     ),
     Widget.ROLES: (
         "Rollen auswählen",
-        "Wähle im Menü aus, was auf dich zutrifft. "
-        "Eine erneute Auswahl entfernt die Rolle wieder.",
+        (
+            "Wähle im Menü aus, was auf dich zutrifft. "
+            "Eine erneute Auswahl entfernt die Rolle wieder."
+        ),
     ),
     Widget.TICKET: (
         "Support-Ticket",
-        "Öffne ein Ticket, wenn du Hilfe brauchst. "
-        "Es entsteht ein privater Thread, den nur du und das Team sehen.",
+        (
+            "Öffne ein Ticket, wenn du Hilfe brauchst. "
+            "Es entsteht ein privater Thread, den nur du und das Team sehen."
+        ),
     ),
     Widget.CHECKLIST: (
         "Einrichtung abschließen",

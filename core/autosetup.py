@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger("architect.autosetup")
 
-__all__ = ["AutoSetup", "RETRY_DELAY", "RETRY_ATTEMPTS"]
+__all__ = ["RETRY_ATTEMPTS", "RETRY_DELAY", "AutoSetup"]
 
 #: Wartezeit zwischen den Versuchen, den Handoff doch noch zu finden.
 RETRY_DELAY = 2.0
@@ -40,7 +40,7 @@ RETRY_ATTEMPTS = 2
 class AutoSetup:
     """Bindet Handoff, Ledger und Builder zusammen."""
 
-    def __init__(self, bot: "ArchitectBot") -> None:
+    def __init__(self, bot: ArchitectBot) -> None:
         self.bot = bot
 
     # ----------------------------------------------------------- guild join --

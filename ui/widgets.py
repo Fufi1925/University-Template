@@ -11,6 +11,7 @@ der ``custom_id`` selbst — bei den Selbstrollen zum Beispiel die Rollennamen.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import discord
@@ -19,17 +20,18 @@ from discord import ui
 from config import COLOR_BRAND, COLOR_SUCCESS
 from core.content import CHECKLIST_ITEMS
 from core.permissions import MEMBER, VERIFIED
+from core.small_caps import strip_decoration
 from ui.components import RULE, footer, notice, quote
 
 LOGGER = logging.getLogger("architect.widgets")
 
 __all__ = [
-    "VerifyView",
+    "PERSISTENT_VIEWS",
+    "ChecklistView",
     "RulesView",
     "SelfRoleView",
     "TicketView",
-    "ChecklistView",
-    "PERSISTENT_VIEWS",
+    "VerifyView",
     "build_widget_view",
 ]
 
@@ -40,8 +42,6 @@ __all__ = [
 
 def _find_role(guild: discord.Guild, *needles: str) -> discord.Role | None:
     """Rolle ueber einen Namensbestandteil finden (Small Caps toleriert)."""
-
-    from core.small_caps import strip_decoration
 
     for needle in needles:
         target = needle.casefold()
@@ -109,7 +109,7 @@ async def _grant(
     # Die Unverified-Rolle wird entfernt, sonst bleibt die Schleuse zu.
     unverified = _find_role(guild, "unverified")
     if unverified is not None and unverified in member.roles and unverified.is_assignable():
-        with __import__("contextlib").suppress(discord.HTTPException):
+        with contextlib.suppress(discord.HTTPException):
             await member.remove_roles(unverified, reason="Verifiziert")
 
     await interaction.response.send_message(
@@ -370,7 +370,7 @@ class _TicketButton(ui.Button["TicketView"]):
                 )
                 return
 
-        with __import__("contextlib").suppress(discord.HTTPException):
+        with contextlib.suppress(discord.HTTPException):
             await thread.send(
                 view=notice(
                     "Ticket eröffnet",

@@ -16,10 +16,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import config  # noqa: E402
-from core.registry import TemplateRegistry  # noqa: E402
-from core.schema import ChannelKind, Template, TemplateError  # noqa: E402
-from core.small_caps import slugify  # noqa: E402
+import config
+from core.registry import TemplateRegistry
+from core.schema import ChannelKind, Template, TemplateError
+from core.small_caps import slugify
 
 ICONS = {
     ChannelKind.TEXT: "💬",

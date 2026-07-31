@@ -78,7 +78,15 @@ class PendingHandoffs:
             return len(self._entries)
 
     def __contains__(self, guild_id: object) -> bool:
-        return self.peek(int(guild_id)) is not None if guild_id is not None else False
+        # ``in`` darf mit allem aufgerufen werden, nicht nur mit int-artigem.
+        # Alles, was sich nicht als Guild-ID lesen laesst, ist schlicht nicht
+        # enthalten — eine Exception waere hier das falsche Signal.
+        if not isinstance(guild_id, (int, str)):
+            return False
+        try:
+            return self.peek(int(guild_id)) is not None
+        except ValueError:
+            return False
 
 
 class SetupLedger:

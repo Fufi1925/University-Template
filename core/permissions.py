@@ -13,21 +13,28 @@ Two ideas keep this maintainable:
 
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 import discord
 
 from .schema import RoleTier, Visibility
 
+#: Was Discord als Schluessel einer Overwrite-Map akzeptiert. Praktisch legen
+#: wir hier nur Rollen und den Bot selbst ab, aber discord.py verlangt genau
+#: diese Union — ``abc.Snowflake`` waere zu breit und laesst die Aufrufe von
+#: ``create_category``/``edit`` als Typfehler auflaufen.
+OverwriteTarget = discord.Role | discord.Member | discord.Object
+
 __all__ = [
     "BASE_ROLES",
+    "MEMBER",
     "UNVERIFIED",
     "VERIFIED",
-    "MEMBER",
     "VIP",
-    "permissions_for_tier",
+    "OverwriteTarget",
     "category_overwrites",
     "channel_overwrites",
+    "permissions_for_tier",
 ]
 
 
@@ -212,11 +219,11 @@ def category_overwrites(
     *,
     staff_keys: frozenset[str],
     leadership_keys: frozenset[str],
-) -> dict[discord.abc.Snowflake, discord.PermissionOverwrite]:
+) -> dict[OverwriteTarget, discord.PermissionOverwrite]:
     """Build the overwrite map for a category with the given visibility."""
 
     everyone = guild.default_role
-    result: dict[discord.abc.Snowflake, discord.PermissionOverwrite] = {}
+    result: dict[OverwriteTarget, discord.PermissionOverwrite] = {}
 
     def grant(keys: frozenset[str] | set[str], overwrite: discord.PermissionOverwrite) -> None:
         for key in keys:
@@ -285,7 +292,7 @@ def channel_overwrites(
     *,
     staff_keys: frozenset[str],
     leadership_keys: frozenset[str],
-) -> dict[discord.abc.Snowflake, discord.PermissionOverwrite]:
+) -> dict[OverwriteTarget, discord.PermissionOverwrite]:
     """Overwrites for a single channel.
 
     A channel that matches its category needs no overwrites at all — it simply
