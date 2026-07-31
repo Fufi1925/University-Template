@@ -100,6 +100,21 @@ class TestAllChecksArePresent:
     def test_coverage_is_measured(self, quality_commands):
         assert "--cov" in quality_commands
 
+    def test_coverage_threshold_is_enforced(self):
+        """Gemessene Abdeckung ohne Schwelle ist nur eine Zahl.
+
+        ``fail_under`` laesst die Pipeline scheitern, wenn neue Zeilen ohne
+        Tests dazukommen — sonst rutscht der Wert ueber Monate nach unten,
+        ohne dass es jemandem auffaellt.
+        """
+
+        import tomllib
+
+        data = tomllib.loads((BASE_DIR / "pyproject.toml").read_text(encoding="utf-8"))
+        threshold = data["tool"]["coverage"]["report"]["fail_under"]
+
+        assert threshold >= 90, f"Die Schwelle ist mit {threshold}% zu niedrig"
+
     def test_no_format_check(self, quality_commands):
         """Bewusste Entscheidung, die nicht versehentlich zurueckkommen soll.
 

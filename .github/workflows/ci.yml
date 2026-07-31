@@ -53,7 +53,8 @@ jobs:
         run: mypy .
 
       - name: Tests
-        run: pytest -q --cov=core --cov=ui --cov=web --cov-report=term-missing
+        # Die Abdeckungsschwelle steht in pyproject.toml (fail_under).
+        run: pytest -q --cov --cov-report=term-missing
 
   docker:
     name: Docker-Image baut

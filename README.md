@@ -446,7 +446,7 @@ echten Servers aufzufallen.
 pip install -r requirements-dev.txt
 
 pytest                              # gesamte Testsuite
-pytest --cov=core --cov=ui          # mit Abdeckungsbericht
+pytest --cov                        # mit Abdeckungsbericht
 ruff check .                        # Linting
 mypy .                              # Typprüfung
 
@@ -454,6 +454,10 @@ python tools/preview.py             # Übersicht aller Templates
 python tools/preview.py rp          # Kanalbaum einer Vorlage
 python tools/generate_templates.py  # JSONs neu erzeugen
 ```
+
+Die Abdeckung wird gegen eine Schwelle geprüft (`fail_under` in
+`pyproject.toml`): sinkt sie unter 95 %, schlägt die Pipeline fehl. Sonst
+rutscht der Wert über Monate nach unten, ohne dass es jemandem auffällt.
 
 Alle vier Prüfungen laufen bei jedem Push automatisch
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) — zusätzlich wird dort

@@ -43,7 +43,7 @@ auch automatisch überprüft wird.
   auf 60 s gedeckelt. Ein `403` wird bewusst **nicht** wiederholt.
 - **`HEALTHCHECK`** im Dockerfile — prüft denselben Endpunkt wie Railway, aber
   auch bei einem einfachen `docker run`.
-- **298 neue Tests** (329 → 627):
+- **500 neue Tests** (329 → 829):
   - `test_widget_callbacks.py` — was passiert, wenn jemand tatsächlich klickt:
     Rollenvergabe, Eingangssperre, fehlende und zu hoch stehende Rollen,
     Selbstrollen, Rückmeldung in jedem Fehlerfall.
@@ -76,6 +76,14 @@ auch automatisch überprüft wird.
     Dateisystem.
   - `test_registry_loading.py` — dass ein Fehler in einer Vorlage den Start
     abbricht und die Meldung die betroffene Datei nennt.
+  - `test_rules_assistant.py` — Kanalsuche, Berechtigungen an allen drei
+    Einstiegspunkten und die URL-Prüfung des Baukastens.
+  - `test_schema_validation.py` — jeder Validierungszweig einzeln, plus die
+    Zusage, dass Fehlermeldungen Datei, Position und Feld benennen.
+  - `test_small_helpers.py` — Small-Caps-Typografie, UI-Bausteine,
+    Token-Details.
+  - `test_views_flow.py` — Bestätigungsdialog, Abschlussbericht, Vorschau und
+    die Weiterleitung zum Regelwerk-Assistenten.
 
 ### Geändert
 
@@ -93,7 +101,12 @@ auch automatisch überprüft wird.
 - **`ui/components.field_value()`** — das Auslesen von Modal-Eingaben steht an
   einer Stelle statt fünfmal verstreut.
 - `__import__("contextlib")` mitten im Code durch einen normalen Import ersetzt.
-- Testabdeckung 81 % → 90 %. Im Einzelnen: `ui/widgets.py` 50 → 88 %, `ui/views.py` 67 → 86 %, `core/builder.py` 78 → 84 %, `core/enforcement.py` 81 → 99 %, `core/premium.py` 83 → 95 %, `core/registry.py` 89 → 100 %.
+- **Testabdeckung 81 % → 96 %**, per `fail_under = 95` in der CI abgesichert.
+  Sieben Module stehen bei 100 %: `permissions`, `registry`, `rulesets`,
+  `handshake`, `channel_intro`, `components`, `widgets`. Im Einzelnen:
+  `ui/widgets.py` 50 → 100 %, `ui/rules.py` 77 → 99 %, `ui/views.py` 67 → 96 %,
+  `core/enforcement.py` 81 → 99 %, `core/builder.py` 78 → 89 %,
+  `core/autosetup.py` 91 → 97 %, `web.py` 95 → 98 %.
 
 ### Dokumentation
 

@@ -81,3 +81,23 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "auto"
 addopts = "-q"
+# Warnungen sind Fehler in spe. Die Deprecation-Hinweise von pytest haben
+# hier schon zweimal auf echte Nachlaessigkeiten gezeigt.
+filterwarnings = [
+    "error::pytest.PytestRemovedIn10Warning",
+]
+
+[tool.coverage.run]
+source = ["core", "ui", "web"]
+
+[tool.coverage.report]
+# Die verbleibenden Luecken sind defensive continue/return-Zweige und
+# Fallbacks, die sich nur mit unrealistischen Attrappen erreichen lassen.
+# Die Schwelle haelt den erreichten Stand, statt zu 100 % zu zwingen.
+fail_under = 95
+show_missing = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
