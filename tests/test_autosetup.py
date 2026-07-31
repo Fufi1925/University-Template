@@ -11,6 +11,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -21,6 +22,7 @@ import discord
 
 import config
 from core.autosetup import AutoSetup
+from core.builder import BuildError
 from core.handoff_store import PendingHandoffs, SetupLedger
 from core.handshake import SOURCE, Handoff, sign_state
 from core.registry import TemplateRegistry
@@ -554,6 +556,141 @@ class TestLiveEndpoint:
             assert json.loads(body)["partner_handshake"] is False
         finally:
             await runner.cleanup()
+
+
+class _FakeResponse:
+    """Minimales Response-Double fuer discord-Exceptions."""
+
+    status = 403
+    reason = "Forbidden"
+    headers: ClassVar[dict[str, str]] = {}
+
+
+def _texts(view) -> str:
+    """Alle Textbausteine einer View als ein durchsuchbarer String."""
+
+    if view is None or not hasattr(view, "to_components"):
+        return str(view)
+
+    out: list[str] = []
+
+    def walk(items) -> None:
+        for item in items:
+            if isinstance(item, dict):
+                if isinstance(item.get("content"), str):
+                    out.append(item["content"])
+                for value in item.values():
+                    if isinstance(value, (list, dict)):
+                        walk(value if isinstance(value, list) else [value])
+            elif isinstance(item, list):
+                walk(item)
+
+    walk(view.to_components())
+    return "\n".join(out)
+
+
+class TestNotificationPaths:
+    """Was der Bot meldet, wenn die automatische Einrichtung scheitert.
+
+    Ein Partner-Server wird ohne Zutun umgebaut. Geht dabei etwas schief,
+    ist die Meldung im Server die einzige Spur — im Log sieht sie niemand.
+    """
+
+    async def test_forbidden_is_explained_in_the_server(
+        self, registry, tmp_path, monkeypatch
+    ):
+        import core.autosetup as autosetup_module
+
+        bot = FakeBot(registry, tmp_path)
+        guild = FakeGuild()
+
+        async def refuse(self, mode, progress=None, write_intros=True):
+            raise discord.Forbidden(_FakeResponse(), "nein")
+
+        monkeypatch.setattr(
+            autosetup_module.ServerBuilder, "preflight", lambda self: None
+        )
+        monkeypatch.setattr(autosetup_module.ServerBuilder, "apply", refuse)
+
+        await bot.autosetup.run(guild, _handoff())
+
+        text = "\n".join(_texts(view) for view in guild.outbox)
+        assert "abgelehnt" in text
+        assert "Bot-Rolle" in text, "Der Ausweg wird nicht genannt"
+        assert guild.id not in bot.active_builds, "Die Sperre blieb haengen"
+
+    async def test_build_error_is_forwarded(self, registry, tmp_path, monkeypatch):
+        import core.autosetup as autosetup_module
+
+        bot = FakeBot(registry, tmp_path)
+        guild = FakeGuild()
+
+        def explode(self):
+            raise BuildError("Der Server hätte danach 700 Kanäle.")
+
+        monkeypatch.setattr(autosetup_module.ServerBuilder, "preflight", explode)
+
+        await bot.autosetup.run(guild, _handoff())
+
+        text = "\n".join(_texts(view) for view in guild.outbox)
+        assert "700 Kanäle" in text, "Der Grund wird nicht durchgereicht"
+        assert guild.id not in bot.active_builds
+
+    async def test_missing_template_is_reported(self, registry, tmp_path):
+        """PARTNER_TEMPLATE zeigt auf eine Vorlage, die es nicht gibt."""
+
+        bot = FakeBot(registry, tmp_path, template="gibt-es-nicht")
+        guild = FakeGuild()
+
+        await bot.autosetup.run(guild, _handoff())
+
+        text = "\n".join(_texts(view) for view in guild.outbox)
+        assert "nicht gefunden" in text
+        assert "PARTNER_TEMPLATE" in text, "Der Hinweis nennt die Variable nicht"
+
+    async def test_without_a_writable_channel_nothing_breaks(
+        self, registry, tmp_path, monkeypatch
+    ):
+        """Kein Kanal zum Schreiben: der Bot schweigt, statt zu scheitern."""
+
+        import core.autosetup as autosetup_module
+
+        bot = FakeBot(registry, tmp_path)
+        guild = FakeGuild(writable=False)
+
+        def explode(self):
+            raise BuildError("irgendein Problem")
+
+        monkeypatch.setattr(autosetup_module.ServerBuilder, "preflight", explode)
+
+        await bot.autosetup.run(guild, _handoff())
+
+        assert not guild.outbox
+        assert guild.id not in bot.active_builds
+
+    async def test_unsendable_notice_is_swallowed(
+        self, registry, tmp_path, monkeypatch
+    ):
+        """Der Kanal ist da, lehnt die Nachricht aber ab."""
+
+        import core.autosetup as autosetup_module
+
+        bot = FakeBot(registry, tmp_path)
+        guild = FakeGuild()
+
+        async def refuse(*args, **kwargs):
+            raise discord.HTTPException(_FakeResponse(), "nein")
+
+        monkeypatch.setattr(guild.text_channels[0], "send", refuse)
+
+        def explode(self):
+            raise BuildError("irgendein Problem")
+
+        monkeypatch.setattr(autosetup_module.ServerBuilder, "preflight", explode)
+
+        await bot.autosetup.run(guild, _handoff())  # darf nicht werfen
+
+        assert guild.id not in bot.active_builds
 
 
 class TestLiveEndpointEdges:
