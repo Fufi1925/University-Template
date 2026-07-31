@@ -523,6 +523,12 @@ Die Testsuite prüft unter anderem:
 - **CI-Konfiguration** — dass Ruff, Mypy, Pytest und die Lockfile-Prüfung
   tatsächlich in der Pipeline stehen. Ein Workflow, aus dem still eine Prüfung
   verschwindet, meldet sonst weiter grün
+- **Persistenz** — dass ein Absturz mitten im Schreiben keine Freischaltungen
+  vernichtet, eine unlesbare Datei den Start nicht verhindert und der
+  Premium-Key nie im Dateisystem landet
+- **Startverhalten** — dass eine fehlerhafte Vorlage den Bot beim Start
+  abbricht und die Meldung die betroffene Datei nennt, statt mitten im Umbau
+  eines fremden Servers aufzufallen
 - **Regelwerke** — dass alle 22 vollständig gerendert werden ohne einen
   Paragraphen zu verlieren, die Nummerierung lückenlos durchläuft, kein
   Paragraph beim Aufteilen zerrissen wird, das IC-Regelwerk die klassischen

@@ -19,6 +19,10 @@ auch automatisch überprüft wird.
   darauf hin.
 - **Container läuft nicht mehr als `root`.** Eigener Benutzer `app` (UID 10001),
   `/app/data` gehört ihm.
+- **`PremiumStore.is_configured` meldete bei einem Key aus reinen Leerzeichen
+  fälschlich `True`.** Die Startwarnung blieb dadurch aus, obwohl niemand
+  freischalten konnte. `verify()` hatte solche Eingaben ohnehin abgelehnt — der
+  Fehler war nur unsichtbar.
 
 ### Hinzugefügt
 
@@ -39,7 +43,7 @@ auch automatisch überprüft wird.
   auf 60 s gedeckelt. Ein `403` wird bewusst **nicht** wiederholt.
 - **`HEALTHCHECK`** im Dockerfile — prüft denselben Endpunkt wie Railway, aber
   auch bei einem einfachen `docker run`.
-- **193 neue Tests** (329 → 522):
+- **298 neue Tests** (329 → 627):
   - `test_widget_callbacks.py` — was passiert, wenn jemand tatsächlich klickt:
     Rollenvergabe, Eingangssperre, fehlende und zu hoch stehende Rollen,
     Selbstrollen, Rückmeldung in jedem Fehlerfall.
@@ -63,6 +67,15 @@ auch automatisch überprüft wird.
   - `test_builder_resilience.py` — die Fehlerpfade des Builders: Preflight-
     Grenzen, abgelehnte Rollen, Stage→Voice- und Forum→Text-Rückfälle, und
     was der Wipe **nicht** anfassen darf.
+  - `test_enforcement_edges.py` — die Ränder des einzigen Moduls, das
+    Nachrichten von Menschen löscht: Team und Bots bleiben unangetastet, ein
+    fehlgeschlagener Löschversuch erzeugt keinen irreführenden Hinweis, und
+    der Zählkanal übersteht eine unlesbare Historie.
+  - `test_persistence.py` — beide Speicher auf der Platte: atomares Schreiben,
+    kaputte Dateien verhindern den Start nicht, der Premium-Key landet nie im
+    Dateisystem.
+  - `test_registry_loading.py` — dass ein Fehler in einer Vorlage den Start
+    abbricht und die Meldung die betroffene Datei nennt.
 
 ### Geändert
 
@@ -80,7 +93,7 @@ auch automatisch überprüft wird.
 - **`ui/components.field_value()`** — das Auslesen von Modal-Eingaben steht an
   einer Stelle statt fünfmal verstreut.
 - `__import__("contextlib")` mitten im Code durch einen normalen Import ersetzt.
-- Testabdeckung 81 % → 88 %; `ui/widgets.py` von 50 % auf 88 %, `ui/views.py` von 67 % auf 86 %, `core/builder.py` von 78 % auf 84 %.
+- Testabdeckung 81 % → 90 %. Im Einzelnen: `ui/widgets.py` 50 → 88 %, `ui/views.py` 67 → 86 %, `core/builder.py` 78 → 84 %, `core/enforcement.py` 81 → 99 %, `core/premium.py` 83 → 95 %, `core/registry.py` 89 → 100 %.
 
 ### Dokumentation
 
