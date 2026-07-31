@@ -1,0 +1,25 @@
+version: 2
+
+updates:
+  # Laufzeit- und Entwicklungsabhaengigkeiten
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Patch-Updates gebuendelt: sonst entstehen jede Woche fuenf PRs,
+      # die niemand einzeln prueft.
+      patches:
+        update-types: ["patch"]
+    labels:
+      - dependencies
+
+  # Die Actions in der Pipeline veralten genauso.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# Ein neuer Push auf denselben Branch macht den vorherigen Lauf wertlos.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, Typen und Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Abhaengigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Ruff (Linting)
+        run: ruff check --output-format=github .
+
+      # Bewusst kein `ruff format --check`: die Zeichentabellen in
+      # core/small_caps.py und die ausgerichteten Template-Strukturen sind von
+      # Hand gesetzt und lesen sich umbrochen deutlich schlechter.
+
+      - name: Mypy (Typen)
+        run: mypy .
+
+      - name: Tests
+        run: pytest -q --cov=core --cov=ui --cov=web --cov-report=term-missing
+
+  docker:
+    name: Docker-Image baut
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Ein gruener Testlauf nuetzt nichts, wenn das Image nicht baut. Railway
+    # merkt das sonst erst beim Deploy.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: discord-architect:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Startet ohne Token mit klarer Meldung
+        run: |
+          # Ohne DISCORD_TOKEN muss der Bot mit Exitcode 1 und einem
+          # verstaendlichen Hinweis abbrechen — nicht mit einem Traceback.
+          output=$(docker run --rm discord-architect:ci 2>&1) && status=0 || status=$?
+          echo "$output"
+          test "$status" -eq 1
+          echo "$output" | grep -q "DISCORD_TOKEN"
+
+      - name: Laeuft nicht als root
+        run: |
+          user=$(docker run --rm --entrypoint id discord-architect:ci -un)
+          echo "Container-Benutzer: $user"
+          test "$user" != "root"
