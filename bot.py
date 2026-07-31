@@ -21,6 +21,7 @@ import config
 from core.autosetup import AutoSetup
 from core.handoff_store import PendingHandoffs, SetupLedger
 from core.handshake import Handoff
+from core.licence import LicenceClient
 from core.premium import PremiumStore
 from core.registry import TemplateRegistry
 from core.schema import TemplateError
@@ -65,6 +66,9 @@ class ArchitectBot(commands.Bot):
             config.PREMIUM_STORE,
             keys=(config.PREMIUM_KEY, *config.PREMIUM_EXTRA_KEYS),
             guild_wide=config.PREMIUM_UNLOCKS_GUILD,
+        )
+        self.licence = LicenceClient(
+            config.MAIN_BOT_URL, config.PREMIUM_PARTNER_TOKEN
         )
         self.active_builds: set[int] = set()
         self._health_runner: AppRunner | None = None
@@ -245,14 +249,32 @@ class ArchitectBot(commands.Bot):
         await self.process_commands(message)
 
     # -------------------------------------------------------------- helpers --
-    def has_premium(self, interaction_or_ctx) -> bool:
+    async def has_premium(self, interaction_or_ctx) -> bool:
+        """
+        Hat dieser Nutzer Premium?
+
+        Zwei Wege, in dieser Reihenfolge:
+
+        1. Der lokale Store — jemand hat hier den Master-Key eingegeben.
+           Das ist ein Speicherzugriff und kostet nichts.
+        2. Der University Bot, falls eingerichtet. Dort kauft und loest
+           man einen persoenlichen Key ein.
+
+        Erst lokal, damit eine bestehende Freischaltung auch dann noch
+        gilt, wenn der University Bot gerade nicht erreichbar ist.
+        """
+
         guild = getattr(interaction_or_ctx, "guild", None)
         user = getattr(interaction_or_ctx, "user", None) or getattr(
             interaction_or_ctx, "author", None
         )
         if user is None:
             return False
-        return self.premium.has_access(guild.id if guild else None, user.id)
+
+        if self.premium.has_access(guild.id if guild else None, user.id):
+            return True
+
+        return await self.licence.has_premium(user.id)
 
 
 bot = ArchitectBot()
@@ -287,14 +309,14 @@ async def _require_guild(ctx: commands.Context) -> discord.Guild | None:
 async def start_prefix(ctx: commands.Context) -> None:
     """Open the template menu."""
 
-    await ctx.send(view=build_start_view(bot, premium=bot.has_premium(ctx)))
+    await ctx.send(view=build_start_view(bot, premium=await bot.has_premium(ctx)))
 
 
 @bot.tree.command(name="start", description="Öffnet das Server-Template-Menü")
 @discord.app_commands.guild_only()
 async def start_slash(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(
-        view=build_start_view(bot, premium=bot.has_premium(interaction))
+        view=build_start_view(bot, premium=await bot.has_premium(interaction))
     )
 
 

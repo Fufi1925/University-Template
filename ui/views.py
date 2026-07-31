@@ -174,9 +174,9 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
         self.bot = bot
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        if self.bot.premium.has_access(
-            interaction.guild.id if interaction.guild else None, interaction.user.id
-        ):
+        # Auch der University Bot zaehlt, nicht nur der lokale Store —
+        # sonst bekaeme jemand mit gekaufter Lizenz hier das Key-Formular.
+        if await self.bot.has_premium(interaction):
             await interaction.response.send_message(
                 view=notice(
                     "Bereits freigeschaltet",
@@ -845,9 +845,7 @@ class TemplateSelect(ui.Select["StartView"]):
             )
             return
 
-        if template.premium and not self.bot.premium.has_access(
-            interaction.guild.id if interaction.guild else None, interaction.user.id
-        ):
+        if template.premium and not await self.bot.has_premium(interaction):
             await interaction.response.send_message(
                 view=notice(
                     "Premium erforderlich",

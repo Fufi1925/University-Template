@@ -133,6 +133,23 @@ class FakeBot:
         self.premium = store
         self.active_builds: set[int] = set()
 
+    async def has_premium(self, interaction_or_ctx) -> bool:
+        """
+        Wie im echten Bot: lokaler Store zuerst.
+
+        Der Lizenz-Client wird hier nicht nachgebildet — diese Tests
+        pruefen die Views, nicht die HTTP-Abfrage. Die hat ihre eigenen
+        Tests in test_licence.py.
+        """
+
+        guild = getattr(interaction_or_ctx, "guild", None)
+        user = getattr(interaction_or_ctx, "user", None) or getattr(
+            interaction_or_ctx, "author", None
+        )
+        if user is None:
+            return False
+        return self.premium.has_access(guild.id if guild else None, user.id)
+
 
 class _Resp:
     def __init__(self, status: int) -> None:

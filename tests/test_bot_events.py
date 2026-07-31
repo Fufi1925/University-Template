@@ -377,7 +377,7 @@ class TestOnMessage:
 class TestHasPremium:
     """Muss mit Interaction *und* Context umgehen — beide Wege existieren."""
 
-    def test_interaction_style_object(self, architect, monkeypatch):
+    async def test_interaction_style_object(self, architect, monkeypatch):
         seen: list[tuple] = []
         monkeypatch.setattr(
             architect.premium,
@@ -389,10 +389,10 @@ class TestHasPremium:
             "I", (), {"guild": FakeGuild(), "user": FakeMember()}
         )()
 
-        assert architect.has_premium(interaction)
+        assert await architect.has_premium(interaction)
         assert seen == [(4242, 7)]
 
-    def test_context_style_object(self, architect, monkeypatch):
+    async def test_context_style_object(self, architect, monkeypatch):
         """Prefix-Befehle liefern ``author`` statt ``user``."""
 
         seen: list[tuple] = []
@@ -404,15 +404,15 @@ class TestHasPremium:
 
         ctx = type("C", (), {"guild": FakeGuild(), "author": FakeMember()})()
 
-        assert architect.has_premium(ctx)
+        assert await architect.has_premium(ctx)
         assert seen == [(4242, 7)]
 
-    def test_without_a_user_there_is_no_premium(self, architect):
+    async def test_without_a_user_there_is_no_premium(self, architect):
         empty = type("X", (), {"guild": None})()
 
-        assert not architect.has_premium(empty)
+        assert not await architect.has_premium(empty)
 
-    def test_direct_message_passes_no_guild(self, architect, monkeypatch):
+    async def test_direct_message_passes_no_guild(self, architect, monkeypatch):
         seen: list[tuple] = []
         monkeypatch.setattr(
             architect.premium,
@@ -422,7 +422,7 @@ class TestHasPremium:
 
         interaction = type("I", (), {"guild": None, "user": FakeMember()})()
 
-        architect.has_premium(interaction)
+        await architect.has_premium(interaction)
         assert seen == [(None, 7)]
 
 

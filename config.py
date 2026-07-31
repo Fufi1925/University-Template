@@ -70,6 +70,19 @@ PREMIUM_STORE: Path = Path(
     os.getenv("PREMIUM_STORE", str(BASE_DIR / "data" / "premium.json"))
 ).expanduser()
 
+# Lizenzen ueber den University Bot.
+#
+# Ist MAIN_BOT_URL gesetzt, kann ein Nutzer dort einen persoenlichen Key
+# kaufen und einloesen; dieser Bot fragt dann nur noch nach. Ohne die
+# Variable bleibt alles beim Master-Key, damit bestehende Installationen
+# unveraendert weiterlaufen.
+#
+# Beide Werte muessen gesetzt sein — eine URL ohne Token liefert nur 401.
+MAIN_BOT_URL: str = os.getenv("MAIN_BOT_URL", "").strip().rstrip("/")
+
+# Muss exakt dem Wert beim University Bot entsprechen.
+PREMIUM_PARTNER_TOKEN: str = os.getenv("PREMIUM_PARTNER_TOKEN", "").strip()
+
 # --------------------------------------------------------------------------- #
 # Runtime
 # --------------------------------------------------------------------------- #
