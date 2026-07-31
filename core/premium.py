@@ -36,7 +36,11 @@ class PremiumStore:
     ) -> None:
         self.path = Path(path)
         self.guild_wide = guild_wide
-        self._keys = tuple(key for key in keys if key)
+        # ``key.strip()``: Ein Key aus reinen Leerzeichen ist keiner. Die
+        # Pruefung in :meth:`verify` lehnt ihn ohnehin ab — wuerde er hier
+        # stehen bleiben, meldete :attr:`is_configured` faelschlich True und
+        # die Startwarnung bliebe aus, obwohl niemand freischalten kann.
+        self._keys = tuple(key for key in keys if key and key.strip())
         self._lock = threading.Lock()
         self._users: set[tuple[int, int]] = set()
         self._guilds: set[int] = set()
