@@ -556,6 +556,129 @@ class TestLiveEndpoint:
             await runner.cleanup()
 
 
+class TestLiveEndpointEdges:
+    """Antwortpfade des Callbacks, die bisher nur statisch belegt waren."""
+
+    @staticmethod
+    async def _serve(bot_obj, port):
+        import web as web_module
+
+        config.PORT = port
+        return await web_module.start_web_server(bot_obj)
+
+    @staticmethod
+    def _bot(registry, tmp_path):
+        class Bot(FakeBot):
+            def __init__(self):
+                super().__init__(registry, tmp_path)
+                self.user = "Bot#1"
+                self.guilds = []
+                self.latency = 0.03
+                self.scheduled: list[int] = []
+
+            def is_ready(self):
+                return True
+
+            def schedule_partner_setup(self, guild):
+                self.scheduled.append(guild.id)
+
+        return Bot()
+
+    async def _get(self, port, path, **params):
+        import aiohttp
+
+        async with aiohttp.ClientSession() as session:
+            url = f"http://127.0.0.1:{port}{path}"
+            async with session.get(url, params=params) as response:
+                return response.status, await response.text()
+
+    async def test_user_cancelled_is_not_an_error(self, registry, tmp_path):
+        """Wer im Discord-Dialog abbricht, hat nichts falsch gemacht."""
+
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8241)
+        try:
+            status, body = await self._get(
+                8241, "/oauth/callback", error="access_denied"
+            )
+            assert status == 200
+            assert "Abgebrochen" in body
+            assert bot_obj.pending_handoffs.peek(GUILD_ID) is None
+        finally:
+            await runner.cleanup()
+
+    async def test_unreadable_guild_id_is_refused(self, registry, tmp_path):
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8242)
+        try:
+            state = sign_state(GUILD_ID, 42)
+            status, body = await self._get(
+                8242, "/oauth/callback", code="c", guild_id="keine-zahl", state=state
+            )
+            assert status == 400
+            assert "unlesbar" in body
+            assert bot_obj.pending_handoffs.peek(GUILD_ID) is None
+        finally:
+            await runner.cleanup()
+
+    async def test_callback_without_state_still_welcomes(self, registry, tmp_path):
+        """Ein normaler Beitritt ohne Partner-Token ist voellig in Ordnung."""
+
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8243)
+        try:
+            status, body = await self._get(8243, "/oauth/callback", code="c")
+            assert status == 200
+            assert "hinzugefügt" in body
+        finally:
+            await runner.cleanup()
+
+    async def test_health_endpoint_reports_state(self, registry, tmp_path):
+        """Railway prueft diesen Endpunkt — er muss echte Zahlen liefern."""
+
+        import json
+
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8244)
+        try:
+            status, body = await self._get(8244, "/health")
+            assert status == 200
+
+            payload = json.loads(body)
+            assert payload["status"] == "online"
+            assert payload["templates"] == len(registry)
+            assert payload["channels"] > 0
+        finally:
+            await runner.cleanup()
+
+    async def test_root_serves_the_same_status(self, registry, tmp_path):
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8245)
+        try:
+            status, _ = await self._get(8245, "/")
+            assert status == 200
+        finally:
+            await runner.cleanup()
+
+    async def test_html_escapes_the_guild_name(self, registry, tmp_path):
+        """Der Servername kommt aus dem Token und landet in einer HTML-Seite."""
+
+        bot_obj = self._bot(registry, tmp_path)
+        runner = await self._serve(bot_obj, 8246)
+        try:
+            state = sign_state(
+                GUILD_ID, 42, guild_name="<script>alert(1)</script>"
+            )
+            status, body = await self._get(
+                8246, "/oauth/callback", code="c", guild_id=str(GUILD_ID), state=state
+            )
+            assert status == 200
+            assert "<script>" not in body, "Servername ungefiltert in der Antwort"
+            assert "&lt;script&gt;" in body
+        finally:
+            await runner.cleanup()
+
+
 class TestWebRoutes:
     """Statische Prüfung der Endpunkte."""
 
