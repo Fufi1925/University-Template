@@ -52,7 +52,10 @@ ENABLE_PRIVILEGED_INTENTS: bool = _flag("ENABLE_PRIVILEGED_INTENTS", default=Tru
 # Premium
 # --------------------------------------------------------------------------- #
 
-PREMIUM_KEY: str = os.getenv("PREMIUM_KEY", "Vexo x Fufi KEY 2354")
+# Bewusst OHNE Standardwert. Ein im Quelltext hinterlegter Key ist kein Key:
+# er steht in jedem Klon des Repositories und schaltet jede Installation frei,
+# deren Betreiber die Variable nie gesetzt hat.
+PREMIUM_KEY: str = os.getenv("PREMIUM_KEY", "")
 
 # Optional comma separated list of additional accepted keys.
 PREMIUM_EXTRA_KEYS: tuple[str, ...] = tuple(
