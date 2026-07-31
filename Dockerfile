@@ -6,8 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Installiert wird aus dem Lockfile, nicht aus requirements.txt: dort stehen
+# nur Bereiche (">=2.6,<3.0"), sodass ein Patch-Release das Image veraendern
+# koennte, ohne dass ein Commit stattgefunden hat. --require-hashes lehnt
+# ausserdem jedes Paket ab, dessen Inhalt nicht zum Lockfile passt.
+COPY requirements.lock ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 COPY config.py web.py bot.py ./
 COPY core/ ./core/

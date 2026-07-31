@@ -64,6 +64,21 @@ Was sich bewährt hat:
   "Der Server bleibt dauerhaft gesperrt"` erklärt beim Fehlschlag sofort,
   worum es ging.
 
+## Abhängigkeiten ändern
+
+`requirements.txt` ist die Quelle, `requirements.lock` das, woraus deployt
+wird. Nach jeder Änderung an den Bereichen:
+
+```bash
+uv pip compile requirements.txt --generate-hashes --universal \
+    -o requirements.lock
+pytest tests/test_dependencies.py
+```
+
+`--universal` ist nicht optional: discord.py braucht ab Python 3.13 zusätzlich
+`audioop-lts` (das Modul flog aus der Standardbibliothek). Ein nur für 3.12
+erzeugtes Lockfile lässt sich dort mit `--require-hashes` nicht installieren.
+
 ## Templates ändern
 
 Die Dateien in `templates/` sind **generiert**. Eine Handänderung am JSON geht

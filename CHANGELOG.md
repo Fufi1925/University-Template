@@ -22,6 +22,10 @@ auch automatisch überprüft wird.
 
 ### Hinzugefügt
 
+- **Lockfile** (`requirements.lock`) — voll gepinnt, mit Hashes, per
+  `uv pip compile --universal` für Python 3.12 und 3.13 gültig. Das Image
+  installiert mit `--require-hashes`. Bisher konnte ein Patch-Release einer
+  Abhängigkeit das Deployment verändern, ohne dass ein Commit stattfand.
 - **CI-Pipeline** (`.github/workflows/ci.yml`): Ruff, Mypy und die Testsuite bei
   jedem Push. Zusätzlich wird das Docker-Image gebaut und geprüft, dass der
   Container nicht als root läuft und ohne Token verständlich abbricht.
@@ -35,7 +39,7 @@ auch automatisch überprüft wird.
   auf 60 s gedeckelt. Ein `403` wird bewusst **nicht** wiederholt.
 - **`HEALTHCHECK`** im Dockerfile — prüft denselben Endpunkt wie Railway, aber
   auch bei einem einfachen `docker run`.
-- **84 neue Tests** (329 → 413):
+- **116 neue Tests** (329 → 445):
   - `test_widget_callbacks.py` — was passiert, wenn jemand tatsächlich klickt:
     Rollenvergabe, Eingangssperre, fehlende und zu hoch stehende Rollen,
     Selbstrollen, Rückmeldung in jedem Fehlerfall.
@@ -46,6 +50,11 @@ auch automatisch überprüft wird.
     eingecheckten JSONs erzeugt. Bisher konnten Generator und Templates
     auseinanderlaufen, ohne dass es jemandem auffiel.
   - Deployment-Tests für die Container-Härtung.
+  - `test_dependencies.py` — Lockfile vollständig, gepinnt, mit Hashes, im
+    Einklang mit `requirements.txt`; Dockerfile nutzt es auch wirklich.
+  - `test_ci_config.py` — dass die Pipeline-Datei gültig ist und alle vier
+    Prüfungen enthält. Ein Workflow, aus dem still eine Prüfung verschwindet,
+    meldet sonst weiter grün.
 
 ### Geändert
 

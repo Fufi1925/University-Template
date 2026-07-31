@@ -24,12 +24,23 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements-dev.txt
+          cache-dependency-path: |
+            requirements-dev.txt
+            requirements.lock
 
       - name: Abhaengigkeiten installieren
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+
+      - name: Lockfile ist installierbar
+        # Getestet wird gegen requirements-dev.txt (Bereiche), deployt wird aus
+        # dem Lockfile. Ohne diesen Schritt faellt ein kaputtes Lockfile erst
+        # beim Docker-Build auf.
+        run: |
+          python -m venv /tmp/lockcheck
+          /tmp/lockcheck/bin/pip install --quiet --require-hashes -r requirements.lock
+          /tmp/lockcheck/bin/python -c "import discord, aiohttp, dotenv; print('Lockfile ok:', discord.__version__)"
 
       - name: Ruff (Linting)
         run: ruff check --output-format=github .

@@ -8,3 +8,6 @@ pytest-cov>=5.0
 # Statische Pruefung — laeuft in der CI (.github/workflows/ci.yml)
 ruff>=0.6
 mypy>=1.11
+
+# Nur fuer tests/test_ci_config.py: prueft die Workflow-Dateien
+pyyaml>=6.0

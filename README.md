@@ -462,6 +462,23 @@ und ohne Token mit einer verständlichen Meldung abbricht.
 
 Konfiguration für Ruff, Mypy und Pytest steht gesammelt in `pyproject.toml`.
 
+### Abhängigkeiten
+
+`requirements.txt` nennt Bereiche und ist die Quelle für die Entwicklung.
+Deployt wird aus `requirements.lock` — voll gepinnt, mit Hashes, für Python
+3.12 und 3.13 gültig:
+
+```bash
+uv pip compile requirements.txt --generate-hashes --universal \
+    -o requirements.lock
+```
+
+Ohne Lockfile kann ein Patch-Release einer Abhängigkeit das Verhalten des Bots
+ändern, ohne dass ein einziger Commit stattgefunden hat. Das Image installiert
+mit `--require-hashes`, sodass auch ein ausgetauschtes PyPI-Archiv auffällt.
+Nach jeder Änderung an `requirements.txt` das Lockfile neu erzeugen —
+`tests/test_dependencies.py` prüft, dass beide zusammenpassen.
+
 Die Testsuite prüft unter anderem:
 
 - **Components V2** — jede View wird zu echtem API-Payload serialisiert und
@@ -500,6 +517,12 @@ Die Testsuite prüft unter anderem:
   JSON beim nächsten Generator-Lauf still verloren
 - **Deployment-Härtung** — dass der Container einen eigenen Benutzer hat, einen
   `HEALTHCHECK` mitbringt und `/app/data` dem Laufzeitbenutzer gehört
+- **Abhängigkeiten** — dass jedes Paket im Lockfile gepinnt ist und Hashes
+  trägt, keine gepinnte Version die Bereiche aus `requirements.txt` verletzt
+  und das Dockerfile wirklich mit `--require-hashes` daraus installiert
+- **CI-Konfiguration** — dass Ruff, Mypy, Pytest und die Lockfile-Prüfung
+  tatsächlich in der Pipeline stehen. Ein Workflow, aus dem still eine Prüfung
+  verschwindet, meldet sonst weiter grün
 - **Regelwerke** — dass alle 22 vollständig gerendert werden ohne einen
   Paragraphen zu verlieren, die Nummerierung lückenlos durchläuft, kein
   Paragraph beim Aufteilen zerrissen wird, das IC-Regelwerk die klassischen

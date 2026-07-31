@@ -1,0 +1,160 @@
+"""Die CI-Konfiguration selbst.
+
+Ein Tippfehler in ``ci.yml`` faellt sonst genau dann auf, wenn man die
+Pipeline am dringendsten braucht — und ein Workflow, der versehentlich nur
+noch die Tests ausfuehrt, meldet weiter brav gruen, waehrend Ruff und Mypy
+still verschwunden sind.
+
+Geprueft wird deshalb nicht nur, dass die Dateien gueltiges YAML sind,
+sondern auch, dass die vier Pruefungen tatsaechlich darin vorkommen.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+yaml = pytest.importorskip("yaml", reason="pyyaml nicht installiert")
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+WORKFLOW = BASE_DIR / ".github" / "workflows" / "ci.yml"
+DEPENDABOT = BASE_DIR / ".github" / "dependabot.yml"
+
+
+@pytest.fixture(scope="module")
+def workflow() -> dict:
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def raw_workflow() -> str:
+    return WORKFLOW.read_text(encoding="utf-8")
+
+
+def _commands(job: dict) -> str:
+    """Alle ``run``-Bloecke eines Jobs als ein Text."""
+
+    return "\n".join(step.get("run", "") for step in job.get("steps", []))
+
+
+@pytest.fixture(scope="module")
+def quality_commands(workflow: dict) -> str:
+    return _commands(workflow["jobs"]["quality"])
+
+
+@pytest.fixture(scope="module")
+def docker_job(workflow: dict) -> dict:
+    assert "docker" in workflow["jobs"], (
+        "Ein gruener Testlauf nuetzt nichts, wenn das Image nicht baut"
+    )
+    return workflow["jobs"]["docker"]
+
+
+class TestWorkflowIsValid:
+    def test_files_exist(self):
+        assert WORKFLOW.exists(), "Ohne Workflow laeuft nichts automatisch"
+        assert DEPENDABOT.exists()
+
+    def test_workflow_parses(self, workflow):
+        assert isinstance(workflow, dict)
+
+    def test_dependabot_parses(self):
+        data = yaml.safe_load(DEPENDABOT.read_text(encoding="utf-8"))
+        assert data["version"] == 2
+        ecosystems = {entry["package-ecosystem"] for entry in data["updates"]}
+        assert "pip" in ecosystems
+        assert "github-actions" in ecosystems, (
+            "Auch die Actions in der Pipeline veralten"
+        )
+
+    def test_runs_on_push_and_pull_request(self, workflow):
+        # PyYAML liest das unquotierte ``on:`` als Boolean True — deshalb beide
+        # Schluessel akzeptieren.
+        triggers = workflow.get("on") or workflow.get(True)
+        assert triggers, "Der Workflow hat keine Ausloeser"
+        assert "push" in triggers
+        assert "pull_request" in triggers
+
+
+class TestAllChecksArePresent:
+    """Die vier Pruefungen, die lokal auch gefordert werden."""
+
+    @pytest.mark.parametrize(
+        ("tool", "hint"),
+        [
+            ("ruff check", "Linting"),
+            ("mypy", "Typpruefung"),
+            ("pytest", "Testsuite"),
+        ],
+    )
+    def test_tool_runs(self, tool, hint, quality_commands):
+        assert tool in quality_commands, f"{hint} fehlt in der Pipeline"
+
+    def test_lockfile_is_verified(self, quality_commands):
+        """Deployt wird aus dem Lockfile — also muss es auch geprueft werden."""
+
+        assert "--require-hashes" in quality_commands
+        assert "requirements.lock" in quality_commands
+
+    def test_coverage_is_measured(self, quality_commands):
+        assert "--cov" in quality_commands
+
+    def test_no_format_check(self, quality_commands):
+        """Bewusste Entscheidung, die nicht versehentlich zurueckkommen soll.
+
+        ``ruff format`` wuerde die von Hand ausgerichteten Zeichentabellen in
+        core/small_caps.py umbrechen.
+        """
+
+        assert "ruff format" not in quality_commands
+
+
+class TestDockerJob:
+    def test_builds_the_image(self, docker_job):
+        uses = [step.get("uses", "") for step in docker_job["steps"]]
+        assert any("build-push-action" in entry for entry in uses)
+
+    def test_does_not_push_anything(self, docker_job):
+        """Die CI soll pruefen, nicht veroeffentlichen."""
+
+        for step in docker_job["steps"]:
+            if "build-push-action" in step.get("uses", ""):
+                assert step["with"]["push"] is False
+
+    def test_checks_the_container_user(self, docker_job):
+        commands = _commands(docker_job)
+        assert "root" in commands, "Niemand prueft, ob der Container als root laeuft"
+
+    def test_checks_the_token_message(self, docker_job):
+        commands = _commands(docker_job)
+        assert "DISCORD_TOKEN" in commands
+
+
+class TestJobsAreBounded:
+    """Ein haengender Job blockiert sonst stundenlang einen Runner."""
+
+    @pytest.mark.parametrize("job", ["quality", "docker"])
+    def test_timeout_is_set(self, job, workflow):
+        assert "timeout-minutes" in workflow["jobs"][job], (
+            f"Job '{job}' laeuft ohne Zeitlimit"
+        )
+
+    def test_concurrency_cancels_outdated_runs(self, workflow):
+        concurrency = workflow.get("concurrency")
+        assert concurrency, "Ohne concurrency laufen ueberholte Pushes weiter"
+        assert concurrency.get("cancel-in-progress") is True
+
+
+class TestPythonVersionMatchesTheImage:
+    def test_ci_uses_the_same_python_as_the_dockerfile(self, raw_workflow):
+        """Getestet werden muss die Version, die produktiv laeuft."""
+
+        import re
+
+        dockerfile = (BASE_DIR / "Dockerfile").read_text(encoding="utf-8")
+        match = re.search(r"FROM python:(\d+\.\d+)", dockerfile)
+        assert match, "Das Basis-Image nennt keine Python-Version"
+        assert f'"{match.group(1)}"' in raw_workflow, (
+            f"Die CI testet nicht gegen Python {match.group(1)}"
+        )
