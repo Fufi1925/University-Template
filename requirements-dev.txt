@@ -10,4 +10,4 @@ ruff>=0.6
 mypy>=1.11
 
 # Nur fuer tests/test_ci_config.py: prueft die Workflow-Dateien
-pyyaml>=6.0
+pyyaml>=6.0.3
