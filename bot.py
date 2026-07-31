@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import math
 import sys
 import time
 from typing import TYPE_CHECKING
@@ -378,10 +379,16 @@ async def partner_setup_error(ctx: commands.Context, error: commands.CommandErro
 
 @bot.command(name="ping")
 async def ping(ctx: commands.Context) -> None:
+    # Vor dem ersten Heartbeat liefert discord.py NaN — round() wirft darauf
+    # einen ValueError. Das Zeitfenster ist klein, aber ausgerechnet direkt
+    # nach dem Start greift man am ehesten zu !ping.
+    latency = bot.latency
+    measured = "—" if math.isnan(latency) else f"{round(latency * 1000)} ms"
+
     await ctx.send(
         view=notice(
             "Pong",
-            f"Latenz **{round(bot.latency * 1000)} ms**",
+            f"Latenz **{measured}**",
             tone="neutral",
             hint=f"{len(bot.registry)} Vorlagen geladen",
         )
