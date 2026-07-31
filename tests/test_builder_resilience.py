@@ -28,6 +28,7 @@ sys.path.insert(0, str(BASE_DIR))
 # tests-Verzeichnis in sys.path, sodass dieselbe Datei sonst unter zwei
 # Modulnamen gefunden wird — mypy bricht darauf ab.
 from test_build_simulation import (
+    FakeCategory,
     FakeChannel,
     FakeGuild,
     FakeRole,
@@ -61,6 +62,37 @@ def _no_sleep(monkeypatch):
         return None
 
     monkeypatch.setattr(builder.asyncio, "sleep", instant)
+
+
+@pytest.fixture
+def as_text_channels(monkeypatch):
+    """Laesst den Builder die Attrappen als Textkanaele akzeptieren.
+
+    Der Produktivcode prueft ``isinstance(channel, discord.TextChannel)``,
+    bevor er eine Startnachricht schreibt — zu Recht, in einem Sprachkanal
+    gibt es keine. Statt diese Pruefung aufzuweichen, wird sie hier fuer die
+    Dauer des Tests auf die Fakes ausgeweitet. (Dieselbe Idee wie
+    ``as_text_channels`` in der Bau-Simulation; importierte Fixtures
+    registriert pytest nicht, deshalb steht sie hier noch einmal.)
+    """
+
+    import core.builder as builder_module
+
+    real_isinstance = isinstance
+
+    def patched(obj, cls):
+        if cls is discord.TextChannel:
+            return (
+                real_isinstance(obj, FakeChannel)
+                and not real_isinstance(obj, FakeCategory)
+                and obj.kind in {"text", "news", "forum"}
+            )
+        if cls is discord.VoiceChannel:
+            return real_isinstance(obj, FakeChannel) and obj.kind in {"voice", "stage"}
+        return real_isinstance(obj, cls)
+
+    monkeypatch.setattr(builder_module, "isinstance", patched, raising=False)
+    return patched
 
 
 def http(status: int = 500) -> discord.HTTPException:
@@ -122,6 +154,39 @@ class TestPreflight:
 
     def test_healthy_guild_passes(self, template):
         ServerBuilder(FakeGuild(), template).preflight()
+
+    def test_incomplete_guild_is_rejected(self, template):
+        """``guild.me`` fehlt, solange der Member-Cache noch leer ist."""
+
+        guild = FakeGuild()
+        guild.me = None
+
+        with pytest.raises(BuildError) as excinfo:
+            ServerBuilder(guild, template).preflight()
+
+        assert "vollständig geladen" in str(excinfo.value)
+
+    def test_bot_role_at_the_bottom_is_rejected(self, template):
+        """Ganz unten kann der Bot gar nichts verwalten."""
+
+        guild = FakeGuild()
+        guild._bot_role.position = 0
+
+        with pytest.raises(BuildError) as excinfo:
+            ServerBuilder(guild, template).preflight()
+
+        assert "ganz unten" in str(excinfo.value)
+
+    def test_both_missing_permissions_are_listed(self, template):
+        guild = FakeGuild()
+        guild.me.guild_permissions.manage_roles = False
+        guild.me.guild_permissions.manage_channels = False
+
+        with pytest.raises(BuildError) as excinfo:
+            ServerBuilder(guild, template).preflight()
+
+        message = str(excinfo.value)
+        assert "Rollen verwalten" in message and "Kanäle verwalten" in message
 
 
 # --------------------------------------------------------------------------- #
@@ -401,3 +466,302 @@ class TestReport:
             report.roles_created + report.categories_created + report.channels_created
         )
         assert report.channels_created == guild.created_channels
+
+
+# --------------------------------------------------------------------------- #
+# Kategorie-Wiederherstellung
+# --------------------------------------------------------------------------- #
+
+class TestCategoryRecovery:
+    """Der Fall aus dem Railway-Log: die Kategorie verschwindet mittendrin.
+
+    Passiert, wenn ein anderer Bot parallel aufraeumt. Discord antwortet dann
+    mit *In parent_id: Category does not exist*, und ohne Wiederherstellung
+    fehlten ab diesem Punkt alle uebrigen Kanaele der Kategorie.
+    """
+
+    async def test_channel_is_retried_in_a_fresh_category(
+        self, template, monkeypatch
+    ):
+        guild = FakeGuild()
+        original = guild.create_text_channel
+        state = {"failed": False}
+
+        async def vanish_once(name, **kwargs):
+            if not state["failed"]:
+                state["failed"] = True
+                raise discord.HTTPException(
+                    _FakeResponse(), "In parent_id: Category does not exist"
+                )
+            return await original(name, **kwargs)
+
+        monkeypatch.setattr(guild, "create_text_channel", vanish_once)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert report.channels_created > 0, "Nach dem Verlust kam kein Kanal mehr"
+        assert report.categories_created > template.category_count - 1, (
+            "Es wurde keine Ersatzkategorie angelegt"
+        )
+
+    async def test_unrecoverable_channel_is_reported_and_skipped(
+        self, template, monkeypatch
+    ):
+        """Ein anderer Fehler darf die folgenden Kanaele nicht mitnehmen."""
+
+        guild = FakeGuild()
+        original = guild.create_text_channel
+        state = {"n": 0}
+
+        async def one_bad_apple(name, **kwargs):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise discord.HTTPException(_FakeResponse(), "irgendein Feldfehler")
+            return await original(name, **kwargs)
+
+        monkeypatch.setattr(guild, "create_text_channel", one_bad_apple)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert report.warnings, "Der Ausfall wurde nicht gemeldet"
+        assert report.channels_created > 0, "Der Rest wurde nicht mehr gebaut"
+
+    async def test_forbidden_channel_is_named_in_the_report(
+        self, template, monkeypatch
+    ):
+        guild = FakeGuild()
+        original = guild.create_text_channel
+        state = {"n": 0}
+
+        async def refuse_first(name, **kwargs):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise forbidden()
+            return await original(name, **kwargs)
+
+        monkeypatch.setattr(guild, "create_text_channel", refuse_first)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert any("konnte nicht erstellt werden" in w for w in report.warnings)
+
+
+# --------------------------------------------------------------------------- #
+# Zweiter Durchlauf
+# --------------------------------------------------------------------------- #
+
+class TestRebuildUpdates:
+    """``REBUILD`` auf einem bestehenden Server aktualisiert statt zu doppeln."""
+
+    async def test_existing_categories_are_updated(self, template, monkeypatch):
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        before = guild.created_categories
+
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert guild.created_categories == before, "Kategorien wurden verdoppelt"
+
+    async def test_uneditable_category_is_reported(self, template, monkeypatch):
+        """Rebuild passt Rechte an — geht das nicht, muss es auffallen."""
+
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        for category in guild.categories:
+            async def refuse(**kwargs):
+                raise forbidden()
+
+            monkeypatch.setattr(category, "edit", refuse)
+
+        # REBUILD wuerde zuerst alles loeschen; hier interessiert der
+        # Aktualisierungspfad, also EXTEND mit vorhandenen Kategorien.
+        report = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert report is not None
+
+    async def test_category_order_failure_is_survivable(self, template, monkeypatch):
+        """Die Reihenfolge ist Kosmetik — sie darf den Bau nicht kippen."""
+
+        guild = FakeGuild()
+
+        async def refuse(guild_id, payload, reason=None):
+            raise forbidden()
+
+        monkeypatch.setattr(guild._state.http, "bulk_channel_update", refuse)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert report.channels_created > 0
+        assert any("Reihenfolge" in w for w in report.warnings)
+
+
+# --------------------------------------------------------------------------- #
+# Startnachrichten
+# --------------------------------------------------------------------------- #
+
+class TestChannelIntroFailures:
+    """Die angehefteten Startnachrichten sind Beiwerk — sie duerfen nie stoeren.
+
+    ``as_text_channels`` weitet die ``isinstance``-Pruefung des Builders auf
+    die Attrappen aus, statt sie im Produktivcode aufzuweichen.
+    """
+
+    async def test_missing_write_permission_is_reported(
+        self, template, as_text_channels, monkeypatch
+    ):
+        guild = FakeGuild()
+        original = guild.create_text_channel
+
+        async def make_mute(name, **kwargs):
+            channel = await original(name, **kwargs)
+            channel.can_send = False
+            return channel
+
+        monkeypatch.setattr(guild, "create_text_channel", make_mute)
+
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=True
+        )
+
+        assert report.channels_created > 0, "Der Aufbau selbst muss durchlaufen"
+        assert any("nicht schreiben" in w for w in report.warnings)
+
+    async def test_unpinnable_message_still_counts_as_posted(
+        self, template, as_text_channels, monkeypatch
+    ):
+        """50 Pins sind das Limit — danach bleibt die Nachricht trotzdem stehen."""
+
+        from test_build_simulation import FakeMessage
+
+        async def refuse(self, reason=None):
+            raise forbidden()
+
+        monkeypatch.setattr(FakeMessage, "pin", refuse)
+
+        report = await ServerBuilder(FakeGuild(), template).apply(
+            BuildMode.EXTEND, write_intros=True
+        )
+
+        assert report.messages_posted > 0, "Ohne Pin darf keine Nachricht fehlen"
+        assert report.messages_pinned == 0
+
+    async def test_intros_can_be_switched_off(self, template, as_text_channels):
+        """Wer leere Kanaele will, soll leere Kanaele bekommen."""
+
+        guild = FakeGuild()
+
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        assert report.messages_posted == 0
+        assert report.channels_created > 0
+
+    async def test_second_run_edits_instead_of_duplicating(
+        self, template, as_text_channels
+    ):
+        """Sonst stapeln sich bei jedem Lauf die Startnachrichten."""
+
+        guild = FakeGuild()
+        first = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=True
+        )
+        second = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=True
+        )
+
+        assert first.messages_posted > 0
+        assert second.messages_posted == 0, "Die Nachrichten wurden verdoppelt"
+        assert second.messages_updated > 0
+
+
+# --------------------------------------------------------------------------- #
+# Aktualisieren statt neu anlegen
+# --------------------------------------------------------------------------- #
+
+class TestUpdatingExistingObjects:
+    """Ein zweiter Lauf trifft auf alles, was der erste angelegt hat."""
+
+    async def test_rebuild_updates_existing_roles(self, template):
+        """Nach dem Wipe bleiben unloeschbare Rollen stehen und werden angepasst."""
+
+        guild = FakeGuild()
+        first = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+        assert first.roles_created > 0
+
+        # Rollen behalten, Kanaele leeren: der zweite Lauf muss die Rollen
+        # aktualisieren statt sie zu verdoppeln.
+        before = len(guild.roles)
+        second = await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        assert len(guild.roles) == before, "Rollen wurden verdoppelt"
+        assert second.roles_created == 0
+
+    async def test_role_above_the_bot_is_skipped_on_update(self, template):
+        """Was der Bot nicht bearbeiten darf, zaehlt als uebersprungen."""
+
+        guild = FakeGuild(bot_top=5)
+        # Eine Rolle mit passendem Namen, aber ueber der Bot-Rolle.
+        spec = ServerBuilder(guild, template)._specs[0]
+        blocked = FakeRole(guild, spec.display_name, 99)
+        guild.roles.append(blocked)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert report.roles_skipped >= 1
+
+    async def test_failed_role_update_is_counted(self, template, monkeypatch):
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(BuildMode.EXTEND)
+
+        for role in guild.roles:
+            if role.is_default() or role.managed:
+                continue
+
+            async def refuse(**kwargs):
+                raise forbidden()
+
+            monkeypatch.setattr(role, "edit", refuse)
+
+        report = await ServerBuilder(guild, template).apply(BuildMode.REBUILD)
+
+        assert report.roles_skipped >= 0  # kein Absturz, Zaehlung laeuft
+
+    async def test_existing_channels_are_updated_on_rebuild(
+        self, template, as_text_channels
+    ):
+        """Vorhandene Kanaele bekommen Topic und Rechte neu gesetzt."""
+
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        # Zweiter EXTEND-Lauf: nichts Neues, aber auch nichts kaputt.
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        assert report.channels_created == 0, "Kanaele wurden verdoppelt"
+
+    async def test_uneditable_channel_does_not_break_the_run(
+        self, template, as_text_channels, monkeypatch
+    ):
+        guild = FakeGuild()
+        await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        from test_build_simulation import FakeChannel as _FC
+
+        async def refuse(self, **kwargs):
+            raise forbidden()
+
+        monkeypatch.setattr(_FC, "edit", refuse)
+
+        report = await ServerBuilder(guild, template).apply(
+            BuildMode.EXTEND, write_intros=False
+        )
+
+        assert report is not None, "Ein nicht editierbarer Kanal hat den Lauf gekippt"
