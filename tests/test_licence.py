@@ -171,6 +171,63 @@ class TestFailClosed:
         assert await client.has_premium(USER) is False
 
 
+class TestAccountBound:
+    """
+    Die Lizenz haengt am Konto, nicht am Server.
+
+    Wer den Key auf der Website eingeloest hat, soll Premium haben,
+    bevor der Bot ueberhaupt irgendwo eingeladen wurde — und auf jedem
+    weiteren Server sofort, ohne erneut etwas einzugeben.
+    """
+
+    async def test_no_guild_is_part_of_the_request(self, patched):
+        session = patched(FakeSession(FakeResponse(200, {"premium": True})))
+        client = LicenceClient("https://bot.example", "token")
+
+        await client.has_premium(USER)
+
+        url, _ = session.calls[0]
+        assert str(USER) in url
+        # Taucht hier je eine Server-ID auf, waere die Lizenz an den
+        # Server gebunden statt an das Konto.
+        assert "guild" not in url.lower()
+
+    async def test_same_answer_regardless_of_server(self, patched):
+        session = patched(FakeSession(FakeResponse(200, {"premium": True})))
+        client = LicenceClient("https://bot.example", "token")
+
+        first = await client.has_premium(USER)
+        client.forget(USER)
+        second = await client.has_premium(USER)
+
+        assert first is second is True
+        assert session.calls[0][0] == session.calls[1][0]
+
+
+class TestExpiry:
+    """Laeuft eine Lizenz ab, muss der Zugang wieder verschwinden."""
+
+    async def test_premium_drops_when_the_licence_ends(self, patched, monkeypatch):
+        import core.licence as licence
+
+        session = FakeSession(FakeResponse(200, {"premium": True}))
+        patched(session)
+        client = LicenceClient("https://bot.example", "token")
+
+        clock = {"now": 1000.0}
+        monkeypatch.setattr(licence.time, "monotonic", lambda: clock["now"])
+
+        assert await client.has_premium(USER) is True
+
+        # Der University Bot meldet die Lizenz jetzt als abgelaufen.
+        session.response = FakeResponse(200, {"premium": False})
+        clock["now"] += licence.CACHE_TTL + 1
+
+        assert await client.has_premium(USER) is False, (
+            "eine abgelaufene Lizenz gilt weiter"
+        )
+
+
 class TestCache:
     async def test_repeated_checks_hit_the_network_once(self, patched):
         session = patched(FakeSession(FakeResponse(200, {"premium": True})))
