@@ -10,6 +10,7 @@ Den eigentlichen Aufbau uebernimmt danach ``on_guild_join``.
 
 from __future__ import annotations
 
+import hmac
 import html
 import logging
 from typing import TYPE_CHECKING
@@ -173,10 +174,58 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             "Du kannst dieses Fenster schließen.",
         )
 
+    async def licence_revoked(request: web.Request) -> web.Response:
+        """
+        Der University Bot meldet, dass eine Lizenz erloschen ist.
+
+        Ohne diesen Weg wirkt ein Widerruf erst, wenn der
+        Zwischenspeicher ablaeuft — und lokale Freischaltungen aus dem
+        Master-Key blieben ganz bestehen. Beides zusammen hiesse: im
+        Dashboard weggenommen, im Bot weiter aktiv.
+
+        Authentifiziert mit demselben Token wie die Abfrage. Ohne
+        gesetztes Token ist der Endpunkt abgeschaltet, nicht offen.
+        """
+
+        expected = config.PREMIUM_PARTNER_TOKEN
+        if not expected:
+            return web.json_response(
+                {"error": "PREMIUM_PARTNER_TOKEN ist nicht gesetzt."}, status=503
+            )
+
+        supplied = (request.headers.get("X-Partner-Token") or "").strip()
+        # compare_digest: ein zeichenweiser Vergleich verraet ueber die
+        # Laufzeit, wie viele Zeichen stimmen.
+        if not supplied or not hmac.compare_digest(supplied, expected):
+            return web.json_response({"error": "Ungültiges Token."}, status=401)
+
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response({"error": "Kein gültiges JSON."}, status=400)
+
+        raw_user = str(payload.get("user_id") or "").strip()
+        if not raw_user.isdigit():
+            return web.json_response({"error": "user_id fehlt."}, status=400)
+
+        user_id = int(raw_user)
+        removed = bot.premium.revoke_user(user_id)
+        # Auch den Zwischenspeicher leeren, sonst gilt die Lizenz noch
+        # bis zu fuenf Minuten weiter.
+        bot.licence.forget(user_id)
+
+        LOGGER.info(
+            "Lizenz widerrufen für user=%s — %d lokale Freischaltung(en) entfernt",
+            user_id,
+            removed,
+        )
+        return web.json_response({"status": "ok", "removed": removed})
+
     app = web.Application()
     app.router.add_get("/", status)
     app.router.add_get("/health", status)
     app.router.add_get("/oauth/callback", oauth_callback)
+    app.router.add_post("/internal/licence-revoked", licence_revoked)
 
     runner = web.AppRunner(app)
     await runner.setup()

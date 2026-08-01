@@ -151,6 +151,73 @@ class FakeBot:
         return self.premium.has_access(guild.id if guild else None, user.id)
 
 
+class TestRevokeUser:
+    """
+    Nimmt der University Bot eine Lizenz weg, muss sie hier auch weg
+    sein — sofort und dauerhaft.
+
+    ``revoke`` allein reicht nicht: es braucht die Server-ID, und beim
+    Widerruf ueber das Dashboard kennt niemand die. Dort wird eine
+    *Lizenz* gesperrt, und die gehoert einem Konto.
+    """
+
+    def test_every_unlock_of_that_account_goes(self, tmp_path):
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+        store.grant(111, 42)
+        store.grant(222, 42)
+
+        removed = store.revoke_user(42)
+
+        assert removed == 2
+        assert store.has_access(111, 42) is False
+        assert store.has_access(222, 42) is False
+
+    def test_other_accounts_are_untouched(self, tmp_path):
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+        store.grant(111, 42)
+        store.grant(111, 99)
+
+        store.revoke_user(42)
+
+        assert store.has_access(111, 99) is True
+
+    def test_an_unknown_account_changes_nothing(self, tmp_path):
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+        store.grant(111, 42)
+
+        assert store.revoke_user(555) == 0
+        assert store.has_access(111, 42) is True
+
+    def test_guild_wide_unlock_goes_too(self, tmp_path):
+        """
+        Bei ``guild_wide`` galt die Freischaltung fuer den ganzen Server.
+        Bleibt sie stehen, hat der Server weiter Premium, obwohl niemand
+        mehr eine gueltige Lizenz besitzt.
+        """
+
+        store = PremiumStore(
+            tmp_path / "premium.json", keys=(KEY,), guild_wide=True
+        )
+        store.grant(111, 42)
+        assert store.has_access(111, 999) is True  # ganzer Server
+
+        store.revoke_user(42)
+
+        assert store.has_access(111, 999) is False
+
+    def test_the_revoke_survives_a_restart(self, tmp_path):
+        """Sonst waere Premium nach dem naechsten Deploy wieder da."""
+
+        path = tmp_path / "premium.json"
+        first = PremiumStore(path, keys=(KEY,))
+        first.grant(111, 42)
+        first.revoke_user(42)
+
+        second = PremiumStore(path, keys=(KEY,))
+
+        assert second.has_access(111, 42) is False
+
+
 class TestStorageIsPersistent:
     """
     Freischaltungen muessen ein Redeploy ueberleben.

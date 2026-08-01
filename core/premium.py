@@ -144,6 +144,36 @@ class PremiumStore:
             self._users.discard((guild_id or 0, user_id))
             self._persist()
 
+    def revoke_user(self, user_id: int) -> int:
+        """
+        Jede Freischaltung dieses Kontos entfernen, serveruebergreifend.
+
+        :meth:`revoke` braucht die Server-ID, die beim Widerruf ueber das
+        Dashboard niemand kennt: dort wird eine *Lizenz* gesperrt, und
+        die gehoert einem Konto, nicht einem Server. Ohne diese Methode
+        blieben alle lokalen Freischaltungen bestehen und der Nutzer
+        haette weiter Premium, obwohl die Lizenz weg ist.
+
+        Gibt zurueck, wie viele Eintraege entfernt wurden.
+        """
+
+        user_id = int(user_id)
+        with self._lock:
+            gone = {pair for pair in self._users if pair[1] == user_id}
+            if not gone:
+                return 0
+            self._users -= gone
+
+            # guild_wide: eine Freischaltung galt fuer den ganzen Server.
+            # Sie muss mit, sonst behaelt der Server Premium, obwohl
+            # niemand mehr eine gueltige Lizenz hat.
+            for guild_id, _ in gone:
+                if guild_id and guild_id in self._guilds:
+                    self._guilds.discard(guild_id)
+
+            self._persist()
+            return len(gone)
+
     @property
     def unlock_count(self) -> int:
         with self._lock:
