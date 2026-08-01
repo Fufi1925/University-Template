@@ -114,10 +114,23 @@ class ArchitectBot(commands.Bot):
                 config.COMMAND_PREFIX,
             )
 
-        if not self.premium.is_configured:
+        # Sagt, ob Freischaltungen einen Deploy ueberleben. Railway loggt
+        # beim Mounten nur den Host-Pfad, nicht den Pfad im Container.
+        self.premium.log_storage_state()
+
+        if not self.premium.is_configured and not self.licence.is_configured:
+            # Nur warnen, wenn *beide* Wege fehlen. Wer Lizenzen ueber den
+            # University Bot bezieht, braucht keinen Master-Key — die alte
+            # Warnung erschien dort trotzdem und sah aus wie ein Fehler.
             LOGGER.warning(
-                "Kein PREMIUM_KEY gesetzt — die Premium-Vorlagen lassen sich "
-                "nicht freischalten. Variable setzen, um sie zu aktivieren."
+                "Weder PREMIUM_KEY noch MAIN_BOT_URL gesetzt — Premium "
+                "laesst sich nicht freischalten."
+            )
+
+        if self.licence.is_configured:
+            LOGGER.info(
+                "Lizenzabfrage aktiv: Premium wird beim University Bot "
+                "erfragt (%s)", self.licence.base_url,
             )
 
     async def close(self) -> None:

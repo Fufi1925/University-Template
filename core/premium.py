@@ -46,6 +46,56 @@ class PremiumStore:
         self._guilds: set[int] = set()
         self._load()
 
+    # ------------------------------------------------------------ storage ---
+    @property
+    def storage_is_persistent(self) -> bool:
+        """
+        Liegt der Store auf etwas, das ein Redeploy ueberlebt?
+
+        Verglichen wird mit dem *Elternordner*, nicht mit "/": ein Mount
+        erscheint als anderes Geraet als das Verzeichnis, in dem er
+        haengt. Der Vergleich mit dem Wurzeldateisystem geht in einem
+        Container daneben, weil / dort selbst ein Overlay ist.
+
+        Ohne Volume ist jede Freischaltung nach dem naechsten Deploy weg
+        — und zwar lautlos. Genau deshalb wird beim Start darauf
+        hingewiesen.
+        """
+
+        directory = self.path.parent
+        try:
+            if not directory.is_dir():
+                return False
+            parent = directory.parent
+            return directory.stat().st_dev != parent.stat().st_dev
+        except OSError:
+            return False
+
+    def log_storage_state(self) -> None:
+        """Beim Start sagen, ob die Freischaltungen bestehen bleiben.
+
+        Railway zeigt beim Mounten nur den Host-Pfad an, nicht den Pfad
+        im Container. Ob das Volume wirklich dort haengt, wo dieser Bot
+        schreibt, sieht man sonst erst, wenn nach einem Deploy alle
+        Freischaltungen fehlen.
+        """
+
+        if self.storage_is_persistent:
+            LOGGER.info(
+                "Premium-Store liegt auf einem Volume (%s) — "
+                "Freischaltungen ueberleben ein Redeploy",
+                self.path,
+            )
+        else:
+            LOGGER.warning(
+                "Premium-Store liegt NICHT auf einem Volume (%s) — alle "
+                "Freischaltungen sind nach dem naechsten Deploy weg. "
+                "In Railway unter Settings -> Volumes den Mount path "
+                "auf %s setzen.",
+                self.path,
+                self.path.parent,
+            )
+
     # --------------------------------------------------------------- keys ---
     @property
     def is_configured(self) -> bool:

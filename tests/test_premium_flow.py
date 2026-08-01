@@ -151,6 +151,87 @@ class FakeBot:
         return self.premium.has_access(guild.id if guild else None, user.id)
 
 
+class TestStorageIsPersistent:
+    """
+    Freischaltungen muessen ein Redeploy ueberleben.
+
+    Ohne gemountetes Volume schreibt der Bot in den Container, und nach
+    dem naechsten Deploy ist jede Freischaltung weg — lautlos. Railway
+    zeigt beim Mounten nur den Host-Pfad an, deshalb sagt der Bot beim
+    Start selbst, ob er auf einem Volume liegt.
+    """
+
+    def test_a_plain_directory_is_not_persistent(self, tmp_path):
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+
+        assert store.storage_is_persistent is False
+
+    def test_a_missing_directory_is_not_persistent(self, tmp_path):
+        store = PremiumStore(tmp_path / "weg" / "premium.json", keys=(KEY,))
+
+        assert store.storage_is_persistent is False
+
+    def test_a_mount_is_recognised(self, tmp_path, monkeypatch):
+        """Ein Mount hat eine andere Geraete-ID als sein Elternordner."""
+
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+        directory = store.path.parent
+        real_stat = Path.stat
+
+        class Faked:
+            """Reicht alles durch und aendert nur st_dev.
+
+            Ein Objekt mit *nur* st_dev reicht nicht: is_dir() liest
+            st_mode aus demselben Ergebnis.
+            """
+
+            def __init__(self, real):
+                self._real = real
+
+            def __getattr__(self, name):
+                return getattr(self._real, name)
+
+            @property
+            def st_dev(self):
+                return self._real.st_dev + 1
+
+        def fake_stat(self, *args, **kwargs):
+            result = real_stat(self, *args, **kwargs)
+            if self == directory:
+                return Faked(result)
+            return result
+
+        monkeypatch.setattr(Path, "stat", fake_stat)
+
+        assert store.storage_is_persistent is True
+
+    def test_the_warning_names_the_mount_path(self, tmp_path, caplog):
+        """
+        Die Meldung muss sagen, wo das Volume hin soll — sonst weiss
+        niemand, welchen Pfad er in Railway eintragen muss.
+        """
+
+        store = PremiumStore(tmp_path / "premium.json", keys=(KEY,))
+
+        with caplog.at_level("WARNING"):
+            store.log_storage_state()
+
+        text = caplog.text
+        assert "NICHT" in text
+        assert str(tmp_path) in text
+
+    def test_unlocks_survive_a_restart(self, tmp_path):
+        """Der eigentliche Zweck: neu geladen, Freischaltung noch da."""
+
+        path = tmp_path / "premium.json"
+        first = PremiumStore(path, keys=(KEY,))
+        first.grant(4242, 7)
+
+        second = PremiumStore(path, keys=(KEY,))
+
+        assert second.has_access(4242, 7) is True
+
+
 class _Resp:
     def __init__(self, status: int) -> None:
         self.status = status

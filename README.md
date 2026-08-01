@@ -329,6 +329,19 @@ Ohne aktivierte Intents startet der Bot trotzdem — setze
 > eingerichteter Server bei jedem Redeploy verloren. Letzteres hätte zur
 > Folge, dass ein Partner-Server nach einem Deploy erneut aufgebaut wird.
 
+**Prüfen, ob das Volume wirklich greift.** Railway zeigt beim Mounten nur den
+Host-Pfad an, nicht den Pfad im Container — ob es dort hängt, wo der Bot
+schreibt, sieht man sonst erst, wenn nach einem Deploy alle Freischaltungen
+fehlen. Der Bot sagt es deshalb beim Start selbst:
+
+```
+Premium-Store liegt auf einem Volume (/app/data/premium.json) — Freischaltungen überleben ein Redeploy
+```
+
+Steht dort stattdessen `liegt NICHT auf einem Volume`, ist der Mount path
+falsch. Er muss auf den Ordner zeigen, in dem `premium.json` liegt —
+standardmäßig `/app/data`.
+
 > **Warum kein `VOLUME` im Dockerfile?** Railway lehnt das ab
 > (`docker VOLUME ... is not supported, use Railway Volumes`) und bricht den
 > Build sofort ab. Persistenter Speicher wird dort ausschließlich im Dashboard
