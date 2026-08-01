@@ -35,6 +35,7 @@ from .components import (
     stat_line,
     visibility_badge,
 )
+from .emojis import button_emoji
 
 if TYPE_CHECKING:
     from bot import ArchitectBot
@@ -168,7 +169,9 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
         super().__init__(
             label="Premium freischalten",
             style=discord.ButtonStyle.secondary,
-            emoji="💎",
+            # App-Emoji wenn uebertragen, sonst der Unicode-Diamant. Ein
+            # fehlendes Emoji darf den Knopf nicht kaputt machen.
+            emoji=button_emoji("premium", "💎"),
             custom_id="architect:premium",
         )
         self.bot = bot
@@ -470,7 +473,7 @@ class _OpenRulesButton(ui.Button["ui.LayoutView"]):
         super().__init__(
             label="Regelwerk einrichten",
             style=discord.ButtonStyle.primary,
-            emoji="📜",
+            emoji=button_emoji("RedRulesBook", "📜"),
         )
         self.bot = bot
         self.channel = channel

@@ -329,6 +329,35 @@ Ohne aktivierte Intents startet der Bot trotzdem — setze
 > eingerichteter Server bei jedem Redeploy verloren. Letzteres hätte zur
 > Folge, dass ein Partner-Server nach einem Deploy erneut aufgebaut wird.
 
+### Eigene Emojis
+
+Der Bot benutzt Unicode-Zeichen, bis die Emojis des University Bots
+übertragen wurden. Der Grund ist eine Discord-Regel:
+
+> *"An application can own up to 2000 emojis that can only be used by
+> that app."* — [Discord Docs](https://docs.discord.com/developers/resources/emoji)
+
+Die Emojis der anderen App lassen sich hier also **nicht** einsetzen; sie
+erschienen als roher Text `<:zbot:1530…>` mitten im Satz. Die Bilder sind
+aber frei abrufbar, also werden sie kopiert:
+
+```bash
+python tools/sync_emojis.py            # Probelauf, lädt nichts hoch
+python tools/sync_emojis.py --write    # überträgt und schreibt ui/emojis.py
+```
+
+Das legt 142 Emojis unter *dieser* App an — gleiche Namen, neue IDs. Beim
+Start steht im Log, welcher Fall gilt:
+
+```
+142 eigene Emojis geladen
+Keine eigenen Emojis — es werden Unicode-Zeichen benutzt.
+```
+
+Ohne Übertragung funktioniert alles normal weiter, nur eben mit
+Standard-Emojis. `ui/emojis.py` wird vom Skript geschrieben und sollte
+nicht von Hand bearbeitet werden.
+
 **Prüfen, ob das Volume wirklich greift.** Railway zeigt beim Mounten nur den
 Host-Pfad an, nicht den Pfad im Container — ob es dort hängt, wo der Bot
 schreibt, sieht man sonst erst, wenn nach einem Deploy alle Freischaltungen

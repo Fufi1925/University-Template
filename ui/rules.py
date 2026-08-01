@@ -28,6 +28,7 @@ from core.rulesets import RULESETS, RuleLength, RuleSet, get_ruleset
 from core.small_caps import strip_decoration
 
 from .components import RULE, SPACE, field_value, footer, notice, quote
+from .emojis import button_emoji
 
 if TYPE_CHECKING:
     from bot import ArchitectBot
@@ -567,7 +568,7 @@ class _CustomRules(ui.Button["RulesetPicker"]):
         super().__init__(
             label="Eigenes Regelwerk erstellen",
             style=discord.ButtonStyle.secondary,
-            emoji="✏️",
+            emoji=button_emoji("zwrench", "✏️"),
         )
         self.screen = screen
 

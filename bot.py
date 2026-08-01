@@ -133,6 +133,18 @@ class ArchitectBot(commands.Bot):
                 "erfragt (%s)", self.licence.base_url,
             )
 
+        # Ohne uebertragene Emojis faellt alles auf Unicode zurueck. Das
+        # sieht man den Antworten nicht sofort an, deshalb steht es im Log.
+        from ui.emojis import EMOJIS, has_emojis
+
+        if has_emojis():
+            LOGGER.info("%d eigene Emojis geladen", len(EMOJIS))
+        else:
+            LOGGER.info(
+                "Keine eigenen Emojis — es werden Unicode-Zeichen benutzt. "
+                "Mit 'python tools/sync_emojis.py --write' uebertragen."
+            )
+
     async def close(self) -> None:
         if self._status_task is not None:
             self._status_task.cancel()
