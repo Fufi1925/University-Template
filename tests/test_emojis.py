@@ -11,7 +11,7 @@ Ein ``<:zbot:1530375453142159521>`` aus dessen App erscheint bei uns als
 roher Text mitten im Satz -- derselbe Fehler, der dort schon einmal live
 war, als vier Emojis auf geloeschte IDs zeigten.
 
-Deshalb kopiert ``tools/sync_emojis.py`` die Bilder unter eigene IDs.
+Deshalb legt ``core.emoji_sync`` sie beim Start unter dieser App an.
 Bis das gelaufen ist, ist ``EMOJIS`` leer, und alles faellt auf Unicode
 zurueck. Genau dieser Zustand wird hier geprueft: er muss unauffaellig
 funktionieren, nicht scheitern.
@@ -158,4 +158,114 @@ class TestStartupNotice:
         assert "has_emojis" in body, (
             "der Start sagt nicht, ob Emojis uebertragen wurden"
         )
-        assert "sync_emojis" in body, "der Hinweis nennt das Werkzeug nicht"
+        assert "EMOJI_SYNC" in body, "der Hinweis nennt die Variable nicht"
+
+
+class TestAutomaticSync:
+    """
+    Der Abgleich laeuft beim Start, nicht von Hand.
+
+    Zwei Dinge duerfen dabei nicht schiefgehen: er muss *vor* den
+    persistenten Views laufen, und er darf den Start nie kippen.
+    """
+
+    def test_it_runs_before_the_persistent_views(self):
+        """
+        Die angehefteten Views bauen ihre Buttons beim Erzeugen, und
+        button_emoji() liest die Tabelle in genau diesem Moment. Laeuft
+        der Sync danach, haben diese Nachrichten fuer immer die
+        Unicode-Rueckfaelle -- sie werden nie neu gebaut.
+        """
+
+        body = (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+        setup = body[body.index("async def setup_hook"):]
+        setup = setup[: setup.index("async def ", 10)]
+
+        assert "sync_emojis" in setup, "der Sync laeuft nicht im setup_hook"
+        assert setup.index("sync_emojis") < setup.index("PERSISTENT_VIEWS"), (
+            "der Sync laeuft nach den Views -- die Buttons blieben Unicode"
+        )
+
+    def test_the_result_is_loaded(self):
+        body = (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+        assert "load_emojis" in body, "das Ergebnis wird nirgends uebernommen"
+
+    def test_the_variable_controls_it(self):
+        config_body = (BASE_DIR / "config.py").read_text(encoding="utf-8")
+        assert "EMOJI_SYNC" in config_body
+        bot_body = (BASE_DIR / "bot.py").read_text(encoding="utf-8")
+        assert "config.EMOJI_SYNC" in bot_body, (
+            "die Variable wird gelesen, aber nicht benutzt"
+        )
+
+    async def test_disabled_makes_no_requests(self, monkeypatch):
+        from core import emoji_sync
+
+        called = []
+        monkeypatch.setattr(
+            emoji_sync.aiohttp, "ClientSession",
+            lambda *a, **k: called.append(1),
+        )
+
+        result = await emoji_sync.sync_emojis("token", enabled=False)
+
+        assert result == {}
+        assert not called, "EMOJI_SYNC=false hat trotzdem angefragt"
+
+    async def test_without_a_token_nothing_happens(self, monkeypatch):
+        from core import emoji_sync
+
+        called = []
+        monkeypatch.setattr(
+            emoji_sync.aiohttp, "ClientSession",
+            lambda *a, **k: called.append(1),
+        )
+
+        assert await emoji_sync.sync_emojis("", enabled=True) == {}
+        assert not called
+
+    async def test_a_network_failure_does_not_raise(self, monkeypatch):
+        """Ein Emoji ist Zierde. Daran darf kein Start scheitern."""
+
+        from core import emoji_sync
+
+        def boom(*args, **kwargs):
+            raise OSError("kein Netz")
+
+        monkeypatch.setattr(emoji_sync.aiohttp, "ClientSession", boom)
+
+        # Kein pytest.raises: der Punkt ist, dass es *nicht* wirft.
+        assert await emoji_sync.sync_emojis("token", enabled=True) == {}
+
+    async def test_a_broken_source_is_survived(self, monkeypatch, tmp_path):
+        from core import emoji_sync
+
+        broken = tmp_path / "kaputt.json"
+        broken.write_text("{ das ist kein JSON", encoding="utf-8")
+        monkeypatch.setattr(emoji_sync, "SOURCE_FILE", broken)
+
+        assert await emoji_sync.sync_emojis("token", enabled=True) == {}
+
+    async def test_an_oversized_source_is_refused(self, monkeypatch, tmp_path):
+        """Eine kaputte Quelle darf keine tausend Uploads ausloesen."""
+
+        from core import emoji_sync
+
+        huge = tmp_path / "viele.json"
+        huge.write_text(
+            json.dumps([
+                {"name": f"emoji_{i}", "id": str(1000 + i), "animated": False}
+                for i in range(emoji_sync.MAX_UPLOADS + 1)
+            ]),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(emoji_sync, "SOURCE_FILE", huge)
+
+        called = []
+        monkeypatch.setattr(
+            emoji_sync.aiohttp, "ClientSession",
+            lambda *a, **k: called.append(1),
+        )
+
+        assert await emoji_sync.sync_emojis("token", enabled=True) == {}
+        assert not called, "es wurde trotz Ueberschreitung angefragt"

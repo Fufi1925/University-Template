@@ -6,25 +6,33 @@ App-Emojis gehoeren genau *einer* Anwendung. Discord ist da eindeutig:
      that app."
     https://docs.discord.com/developers/resources/emoji
 
-Die Emojis des University Bots lassen sich hier also nicht einfach
-einsetzen -- sie erschienen als roher Text ``<:zbot:1530...>`` mitten im
-Satz statt als Bild. Genau dieser Fehler war dort schon einmal live.
+Die Emojis des University Bots lassen sich hier also nicht einsetzen --
+sie erschienen als roher Text ``<:zbot:1530...>`` mitten im Satz statt
+als Bild. Genau dieser Fehler war dort schon einmal live.
 
-Deshalb werden sie kopiert: ``tools/sync_emojis.py`` laedt die Bilder
-vom CDN (die sind frei abrufbar) und legt sie unter dieser App neu an.
-Dieses Modul wird dabei ueberschrieben.
+Deshalb legt ``core.emoji_sync`` sie beim Start unter dieser App an und
+ruft danach :func:`load` mit dem Ergebnis auf. Bis dahin ist die Tabelle
+leer, und alles faellt auf die Unicode-Zeichen zurueck, die jeder
+Aufrufer mitgibt.
 
-Bis das Skript gelaufen ist, ist ``EMOJIS`` leer. Das ist Absicht und
-kein Fehler: ``emoji()`` liefert dann den Unicode-Rueckfall, den jeder
-Aufrufer mitgibt, und alles sieht aus wie vorher. Ein fest eingetragener
-Platzhalter waere schlimmer -- er wuerde als Text erscheinen.
+Bewusst zur Laufzeit gefuellt und nicht als Datei geschrieben: eine
+generierte Quelldatei muesste nach dem Schreiben neu geladen werden, und
+der University Bot startet sich dafuer selbst neu. Ein Dict im Speicher
+spart diesen Neustart.
 """
 
 from __future__ import annotations
 
-# Wird von tools/sync_emojis.py gefuellt. Leer = es wurde noch nicht
-# uebertragen.
+# Wird beim Start von core.emoji_sync gefuellt. Leer heisst: noch nicht
+# uebertragen, oder EMOJI_SYNC steht auf "false".
 EMOJIS: dict[str, str] = {}
+
+
+def load(mapping: dict[str, str]) -> None:
+    """Die Tabelle setzen. Ruft ``core.emoji_sync`` nach dem Abgleich auf."""
+
+    EMOJIS.clear()
+    EMOJIS.update(mapping)
 
 
 def emoji(name: str, fallback: str = "") -> str:

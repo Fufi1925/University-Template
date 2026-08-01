@@ -84,6 +84,18 @@ MAIN_BOT_URL: str = os.getenv("MAIN_BOT_URL", "").strip().rstrip("/")
 PREMIUM_PARTNER_TOKEN: str = os.getenv("PREMIUM_PARTNER_TOKEN", "").strip()
 
 # --------------------------------------------------------------------------- #
+# Emojis
+# --------------------------------------------------------------------------- #
+
+# Beim Start werden die Emojis des University Bots unter dieser App
+# angelegt, soweit sie noch fehlen. App-Emojis gehoeren genau einer
+# Anwendung, deshalb Kopien statt gemeinsamer Nutzung.
+#
+# Nach dem ersten Lauf ist nichts mehr zu tun -- vorhandene Namen werden
+# erkannt. Auf "false" setzen, um bei Unicode-Zeichen zu bleiben.
+EMOJI_SYNC: bool = _flag("EMOJI_SYNC", default=True)
+
+# --------------------------------------------------------------------------- #
 # Runtime
 # --------------------------------------------------------------------------- #
 

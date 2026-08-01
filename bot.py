@@ -83,6 +83,17 @@ class ArchitectBot(commands.Bot):
 
     # ------------------------------------------------------------ lifecycle --
     async def setup_hook(self) -> None:
+        # Emojis zuerst: die persistenten Views bauen ihre Buttons beim
+        # Erzeugen, und button_emoji() liest die Tabelle in diesem
+        # Moment. Andersherum haetten die angehefteten Nachrichten fuer
+        # immer die Unicode-Rueckfaelle -- sie werden nie neu gebaut.
+        from core.emoji_sync import sync_emojis
+        from ui.emojis import load as load_emojis
+
+        load_emojis(
+            await sync_emojis(config.DISCORD_TOKEN or "", enabled=config.EMOJI_SYNC)
+        )
+
         # Angeheftete Verify-/Rollen-/Ticket-Nachrichten muessen einen
         # Neustart ueberleben, sonst sind die Buttons danach tot.
         from ui.widgets import PERSISTENT_VIEWS
@@ -138,11 +149,11 @@ class ArchitectBot(commands.Bot):
         from ui.emojis import EMOJIS, has_emojis
 
         if has_emojis():
-            LOGGER.info("%d eigene Emojis geladen", len(EMOJIS))
+            LOGGER.info("%d eigene Emojis aktiv", len(EMOJIS))
         else:
             LOGGER.info(
                 "Keine eigenen Emojis — es werden Unicode-Zeichen benutzt. "
-                "Mit 'python tools/sync_emojis.py --write' uebertragen."
+                "EMOJI_SYNC=true setzen, um sie zu uebernehmen."
             )
 
     async def close(self) -> None:
