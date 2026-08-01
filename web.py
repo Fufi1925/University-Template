@@ -174,6 +174,35 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             "Du kannst dieses Fenster schließen.",
         )
 
+    def _check_partner(request: web.Request) -> web.Response | None:
+        """Partner-Token pruefen. Gibt eine Fehlerantwort zurueck oder None."""
+
+        expected = config.PREMIUM_PARTNER_TOKEN
+        if not expected:
+            return web.json_response(
+                {"error": "PREMIUM_PARTNER_TOKEN ist nicht gesetzt."}, status=503
+            )
+
+        supplied = (request.headers.get("X-Partner-Token") or "").strip()
+        # compare_digest: ein zeichenweiser Vergleich verraet ueber die
+        # Laufzeit, wie viele Zeichen stimmen.
+        if not supplied or not hmac.compare_digest(supplied, expected):
+            return web.json_response({"error": "Ungültiges Token."}, status=401)
+        return None
+
+    async def _read_user_id(request: web.Request):
+        """``user_id`` aus dem Rumpf lesen. (id, None) oder (None, Fehler)."""
+
+        try:
+            payload = await request.json()
+        except Exception:
+            return None, web.json_response({"error": "Kein gültiges JSON."}, status=400)
+
+        raw = str(payload.get("user_id") or "").strip()
+        if not raw.isdigit():
+            return None, web.json_response({"error": "user_id fehlt."}, status=400)
+        return int(raw), None
+
     async def licence_revoked(request: web.Request) -> web.Response:
         """
         Der University Bot meldet, dass eine Lizenz erloschen ist.
@@ -187,28 +216,14 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
         gesetztes Token ist der Endpunkt abgeschaltet, nicht offen.
         """
 
-        expected = config.PREMIUM_PARTNER_TOKEN
-        if not expected:
-            return web.json_response(
-                {"error": "PREMIUM_PARTNER_TOKEN ist nicht gesetzt."}, status=503
-            )
+        error = _check_partner(request)
+        if error is not None:
+            return error
 
-        supplied = (request.headers.get("X-Partner-Token") or "").strip()
-        # compare_digest: ein zeichenweiser Vergleich verraet ueber die
-        # Laufzeit, wie viele Zeichen stimmen.
-        if not supplied or not hmac.compare_digest(supplied, expected):
-            return web.json_response({"error": "Ungültiges Token."}, status=401)
+        user_id, error = await _read_user_id(request)
+        if error is not None:
+            return error
 
-        try:
-            payload = await request.json()
-        except Exception:
-            return web.json_response({"error": "Kein gültiges JSON."}, status=400)
-
-        raw_user = str(payload.get("user_id") or "").strip()
-        if not raw_user.isdigit():
-            return web.json_response({"error": "user_id fehlt."}, status=400)
-
-        user_id = int(raw_user)
         removed = bot.premium.revoke_user(user_id)
         # Auch den Zwischenspeicher leeren, sonst gilt die Lizenz noch
         # bis zu fuenf Minuten weiter.
@@ -221,11 +236,42 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
         )
         return web.json_response({"status": "ok", "removed": removed})
 
+    async def licence_refresh(request: web.Request) -> web.Response:
+        """
+        Der University Bot meldet, dass sich eine Lizenz geaendert hat.
+
+        Gebraucht wird das vor allem beim *Wieder*-Freigeben. Bisher
+        passierte dabei nichts, und das Ergebnis war die schlimmste
+        Sorte Fehler: im Dashboard stand "aktiv", im Bot galt weiter
+        "nein" — bis zu fuenf Minuten durch den Zwischenspeicher.
+
+        Der Zwischenspeicher wird geleert, damit die naechste Pruefung
+        wirklich nachfragt.
+
+        Die lokale Freischaltung aus dem Master-Key wird *nicht*
+        wiederhergestellt: die stammte aus einer Key-Eingabe hier und
+        gehoert nicht dem University Bot. Wer eine gueltige Lizenz hat,
+        bekommt Premium ueber die Abfrage — dafuer reicht das Leeren.
+        """
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        user_id, error = await _read_user_id(request)
+        if error is not None:
+            return error
+
+        bot.licence.forget(user_id)
+        LOGGER.info("Lizenz aufgefrischt für user=%s", user_id)
+        return web.json_response({"status": "ok"})
+
     app = web.Application()
     app.router.add_get("/", status)
     app.router.add_get("/health", status)
     app.router.add_get("/oauth/callback", oauth_callback)
     app.router.add_post("/internal/licence-revoked", licence_revoked)
+    app.router.add_post("/internal/licence-refresh", licence_refresh)
 
     runner = web.AppRunner(app)
     await runner.setup()
