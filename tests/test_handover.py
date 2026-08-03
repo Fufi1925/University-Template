@@ -141,6 +141,58 @@ class TestHandover:
             f"unerwartet ohne Zuordnung: {sorted(unmapped)}"
         )
 
+    async def test_the_counting_channel_is_handed_over(self, registry):
+        """Ohne diese ID bleibt das Zählspiel im Hauptbot auf None.
+
+        Der Kanal steht dann da, der Template-Bot hat eine 1
+        hineingeschrieben, und auf jede weitere Zahl passiert nichts.
+        Genau so wurde es gemeldet.
+        """
+
+        guild, template, builder = await _build(registry)
+        handover = build_handover(guild, template, builder.created_roles)
+
+        channel_id = handover["channels"]["counting"]
+        assert channel_id, "kein Zähl-Kanal übergeben"
+
+        channel = next(c for c in guild.channels if str(c.id) == channel_id)
+        # Gegenprobe über das Template: welcher Kanal trägt mode=counting?
+        expected = next(
+            spec
+            for _category, spec in template.iter_channels()
+            if spec.mode is ChannelMode.COUNTING
+        )
+        assert slugify(channel.name) == slugify(expected.display_name)
+
+    async def test_the_j2c_channel_is_a_voice_channel(self, registry):
+        """Join to Create auf einem Textkanal wäre wirkungslos."""
+
+        guild, template, builder = await _build(registry)
+        handover = build_handover(guild, template, builder.created_roles)
+
+        channel_id = handover["channels"]["j2c"]
+        assert channel_id, "kein Sprachkanal für Join to Create übergeben"
+
+        channel = next(c for c in guild.channels if str(c.id) == channel_id)
+        assert channel.type.name in ("voice", "stage_voice"), (
+            f"j2c zeigt auf einen {channel.type.name}-Kanal"
+        )
+
+    async def test_the_ticket_channel_is_a_text_channel(self, registry):
+        """In ein Forum lässt sich kein Panel mit Knöpfen stellen."""
+
+        guild, template, builder = await _build(registry)
+        handover = build_handover(guild, template, builder.created_roles)
+
+        channel_id = handover["channels"]["tickets"]
+        assert channel_id, "kein Ticket-Kanal übergeben"
+
+        channel = next(c for c in guild.channels if str(c.id) == channel_id)
+        assert channel.type.name == "text", (
+            f"tickets zeigt auf einen {channel.type.name}-Kanal — "
+            "dort erscheint kein Panel"
+        )
+
     async def test_staff_roles_are_staff(self, registry):
         guild, template, builder = await _build(registry)
         handover = build_handover(guild, template, builder.created_roles)

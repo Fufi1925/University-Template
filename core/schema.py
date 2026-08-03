@@ -261,6 +261,18 @@ class ChannelSpec:
 
         if widget is not Widget.NONE and kind.is_voice_like:
             raise TemplateError(f"{where}: Sprachkanäle können kein Widget tragen")
+        # Ein Forum hat keine Nachrichtenliste, sondern Beiträge. Eine
+        # angeheftete Nachricht mit Knöpfen lässt sich dort nicht
+        # ablegen -- das Widget wäre stumm vorhanden und nie sichtbar.
+        #
+        # Drei Templates hatten genau das: widget="ticket" auf einem
+        # Forum. Das Ticket-Panel wurde nie gepostet, und niemand konnte
+        # sagen, warum. Die Prüfung stand nur für Sprachkanäle da.
+        if widget is not Widget.NONE and kind is ChannelKind.FORUM:
+            raise TemplateError(
+                f"{where}: Foren können kein Widget tragen — "
+                "ein Panel mit Knöpfen braucht einen Textkanal"
+            )
         if mode.is_enforced and kind.is_voice_like:
             raise TemplateError(f"{where}: Modus '{mode.value}' gilt nur für Textkanäle")
 

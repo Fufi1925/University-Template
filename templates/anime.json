@@ -563,6 +563,13 @@
       "visibility": "public",
       "channels": [
         {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
           "label": "hilfe-und-support",
           "emoji": "❓",
           "kind": "forum",

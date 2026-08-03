@@ -172,11 +172,17 @@
           ]
         },
         {
-          "label": "tickets",
+          "label": "ticket-eroeffnen",
           "emoji": "🎫",
-          "kind": "forum",
-          "topic": "Erstelle hier dein Ticket",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
           "widget": "ticket"
+        },
+        {
+          "label": "tickets",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Erstelle hier dein Ticket"
         },
         {
           "label": "kurze-fragen",

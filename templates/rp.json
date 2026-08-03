@@ -515,11 +515,17 @@
       "visibility": "public",
       "channels": [
         {
-          "label": "support",
+          "label": "ticket-eroeffnen",
           "emoji": "🎫",
-          "kind": "forum",
-          "topic": "Tickets und Hilfe",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
           "widget": "ticket"
+        },
+        {
+          "label": "support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Tickets und Hilfe"
         },
         {
           "label": "fehler-melden",

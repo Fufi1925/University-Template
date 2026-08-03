@@ -249,6 +249,8 @@ def community() -> dict[str, Any]:
                 ch("gaming-talk", "🕹️", "voice", user_limit=10),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
@@ -424,7 +426,9 @@ def rp() -> dict[str, Any]:
                 ch("freizeit-talk", "☕", "voice"),
             ]),
             cat("hilfe", "🛟", "public", [
-                ch("support", "🎫", "forum", topic="Tickets und Hilfe", widget="ticket"),
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("support", "❓", "forum", topic="Tickets und Hilfe"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("beschwerden", "📣", topic="Beschwerden über Spieler", mode="threads"),
                 ch("entbannungsantrag", "⚖️", topic="Entbannungsanträge", mode="threads"),
@@ -634,6 +638,8 @@ def social() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
@@ -818,7 +824,9 @@ def gaming() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
-                ch("support", "🎫", "forum", topic="Hilfe vom Team", widget="ticket"),
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("support", "❓", "forum", topic="Hilfe vom Team"),
                 ch("technik-hilfe", "🛠️", topic="Technische Probleme"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Vorschläge", mode="threads", reactions=["👍", "👎"]),
@@ -1000,6 +1008,8 @@ def anime() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
@@ -1355,6 +1365,8 @@ def study() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
@@ -1536,6 +1548,8 @@ def creator() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
@@ -1636,7 +1650,9 @@ def support() -> dict[str, Any]:
                         "Alles, was länger dauert, gehört in ein Ticket.",
                     ],
                 ),
-                ch("tickets", "🎫", "forum", topic="Erstelle hier dein Ticket", widget="ticket"),
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("tickets", "❓", "forum", topic="Erstelle hier dein Ticket"),
                 ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
                 ch("community-hilfe", "🤝", topic="Nutzer helfen Nutzern"),
                 ch("fehler-melden", "🐛", "forum", topic="Fehler melden"),
@@ -1863,6 +1879,8 @@ def esports() -> dict[str, Any]:
                 ch("vip-talk", "🥂", "voice", user_limit=15),
             ]),
             cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),

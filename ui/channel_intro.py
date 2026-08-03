@@ -48,10 +48,25 @@ def header_view(spec: ChannelSpec, title: str, lines: list[str]) -> ui.LayoutVie
     return view
 
 
+# Widgets, die der University Bot uebernimmt.
+#
+# Verify, Regeln und die Rollen-Vergabe haengen an Rollen, die der
+# Hauptbot verwaltet: er kennt die Verified-Rolle, fuehrt das
+# Verify-Protokoll und haelt die Reaktions-Rollen. Postet der
+# Template-Bot dort zusaetzlich einen eigenen Knopf, stehen zwei Panels
+# im selben Kanal -- und welcher der beiden wirkt, sieht man erst beim
+# Draufklicken.
+#
+# Der Template-Bot schreibt hier weiterhin den Kanal-Header, damit der
+# Kanal nicht leer ist, bis der Speedrun bei Schritt 2 angekommen ist.
+# Nur die Knoepfe bleiben weg.
+_MAIN_BOT_WIDGETS = {Widget.VERIFY, Widget.RULES, Widget.ROLES, Widget.TICKET}
+
+
 def intro_view(spec: ChannelSpec, title: str, lines: list[str]) -> ui.LayoutView:
     """Passende View fuer diesen Kanal — mit Widget, falls vorgesehen."""
 
-    if spec.widget is not Widget.NONE:
+    if spec.widget is not Widget.NONE and spec.widget not in _MAIN_BOT_WIDGETS:
         view = build_widget_view(spec.widget.value, title, lines)
         if view is not None:
             return view

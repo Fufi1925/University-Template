@@ -125,6 +125,8 @@ def build_handover(
     ticket_channel = None
     announce_channel = None
     welcome_channel = None
+    counting_channel = None
+    j2c_channel = None
     log_channels: dict[str, str] = {}
 
     for category_spec, spec in template.iter_channels():
@@ -150,6 +152,22 @@ def build_handover(
 
         if spec.mode is ChannelMode.ANNOUNCE and announce_channel is None:
             announce_channel = channel
+
+        # Der Zaehl-Kanal. Ohne diese Angabe stuende das Zaehlspiel im
+        # Hauptbot auf "channel: None" und der Kanal bliebe tot -- er
+        # sieht dann aus wie ein normaler Textkanal, in dem die 1 des
+        # Template-Bots steht und sonst nichts passiert.
+        if spec.mode is ChannelMode.COUNTING and counting_channel is None:
+            counting_channel = channel
+
+        # Ein Sprachkanal fuer "Join to Create". Der erste allgemeine
+        # Talk ist der naheliegende: dort landen Leute ohnehin zuerst.
+        if (
+            j2c_channel is None
+            and spec.kind.is_voice_like
+            and slugify(spec.display_name) == "allgemeiner-talk"
+        ):
+            j2c_channel = channel
 
         # Der Willkommenskanal traegt kein Widget; er ist der erste
         # Textkanal der Gate-Kategorie, der kein Verify und keine Regeln
@@ -190,6 +208,8 @@ def build_handover(
             "tickets": str(ticket_channel.id) if ticket_channel else None,
             "announcements": str(announce_channel.id) if announce_channel else None,
             "welcome": str(welcome_channel.id) if welcome_channel else None,
+            "counting": str(counting_channel.id) if counting_channel else None,
+            "j2c": str(j2c_channel.id) if j2c_channel else None,
         },
         "log_channels": log_channels,
         # Und alles im Rohzustand, damit das Dashboard eine Liste zeigen

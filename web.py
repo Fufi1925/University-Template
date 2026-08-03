@@ -541,9 +541,16 @@ async def _run_speedrun(
             job.total = total
             job.log(f"[{step}/{total}] {label}")
 
+        # Eine Zeile pro Rolle und pro Kanal. Ohne die kommt nur alle
+        # paar Sekunden etwas an -- der Fortschritt meldet sich nur je
+        # Kategorie, und bei vierzehn Kanaelen darin steht das Terminal
+        # fuenf Sekunden still. Es sieht dann aus, als haenge der Bau.
+        async def detail(line: str) -> None:
+            job.log(line)
+
         mode = BuildMode.REBUILD if rebuild else BuildMode.EXTEND
         report = await builder.apply(
-            mode, progress=progress, write_intros=write_intros
+            mode, progress=progress, write_intros=write_intros, detail=detail
         )
 
         # Was der University Bot danach braucht: nicht nur die Namen,

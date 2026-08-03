@@ -589,11 +589,17 @@
       "visibility": "public",
       "channels": [
         {
-          "label": "support",
+          "label": "ticket-eroeffnen",
           "emoji": "🎫",
-          "kind": "forum",
-          "topic": "Hilfe vom Team",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
           "widget": "ticket"
+        },
+        {
+          "label": "support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Hilfe vom Team"
         },
         {
           "label": "technik-hilfe",

@@ -135,30 +135,42 @@ def mode_rule(spec: ChannelSpec) -> str | None:
 # Widgets
 # --------------------------------------------------------------------------- #
 
+# Die Texte der Startnachricht.
+#
+# Verify, Regeln, Rollen-Vergabe und Tickets bestueckt der University
+# Bot mit den Knoepfen (siehe ui/channel_intro.py). Der Text darf hier
+# also keinen Button versprechen, den es in dieser Nachricht nicht gibt
+# -- "Klicke auf den Button" ohne Button ist schlimmer als gar kein
+# Text: es sieht nach einem kaputten Panel aus.
+#
+# Stattdessen sagt er, was der Kanal ist und dass gleich etwas kommt.
 _WIDGET_INTRO: dict[Widget, tuple[str, str]] = {
     Widget.VERIFY: (
         "Verifizierung",
-        "Klicke auf den Button, um Zugriff auf den Server zu erhalten.",
+        (
+            "Hier schaltest du dich für den Server frei. "
+            "Das Panel dazu richtet der University Bot ein."
+        ),
     ),
     Widget.RULES: (
-        "Regeln akzeptieren",
+        "Regeln",
         (
-            "Lies die Regeln und bestätige sie mit dem Button. "
-            "Erst danach ist der Server vollständig sichtbar."
+            "Die Serverregeln und die Bestätigung dazu. "
+            "Der University Bot stellt sie hier ein."
         ),
     ),
     Widget.ROLES: (
-        "Rollen auswählen",
+        "Rollen-Vergabe",
         (
-            "Wähle im Menü aus, was auf dich zutrifft. "
-            "Eine erneute Auswahl entfernt die Rolle wieder."
+            "Hier suchst du dir deine Rollen selbst aus. "
+            "Die Auswahl richtet der University Bot ein."
         ),
     ),
     Widget.TICKET: (
         "Support-Ticket",
         (
-            "Öffne ein Ticket, wenn du Hilfe brauchst. "
-            "Es entsteht ein privater Thread, den nur du und das Team sehen."
+            "Hier öffnest du ein Ticket, wenn du Hilfe brauchst. "
+            "Das Panel dazu richtet der University Bot ein."
         ),
     ),
     Widget.CHECKLIST: (

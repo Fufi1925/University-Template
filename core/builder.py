@@ -152,6 +152,14 @@ class BuildReport:
 
 ProgressHook = Callable[[str, int, int], Awaitable[None]]
 
+# Feinmeldung: eine Zeile pro angelegtem Objekt, ohne Zaehler.
+#
+# ProgressHook feuert nur einmal je Kategorie. Bei 94 Kanaelen sind das
+# 31 Zeilen -- und zwischen zweien davon vergehen bis zu fuenf Sekunden,
+# in denen im Terminal des Dashboards nichts passiert. Es sieht dann aus,
+# als haenge der Bau. Diese Meldung schliesst die Luecke.
+DetailHook = Callable[[str], Awaitable[None]]
+
 
 class ServerBuilder:
     """Applies templates to a guild."""
@@ -159,6 +167,9 @@ class ServerBuilder:
     def __init__(self, guild: discord.Guild, template: Template) -> None:
         self.guild = guild
         self.template = template
+        # Feinmeldungen. Standardmaessig still: nur der Speedrun setzt
+        # einen Hook, die Chat-Befehle brauchen keinen.
+        self._detail_hook: DetailHook | None = None
         self._roles: dict[str, discord.Role] = {}
         self._specs = self._resolve_role_specs()
         self._staff_keys = frozenset(
@@ -167,6 +178,20 @@ class ServerBuilder:
         self._leadership_keys = frozenset(
             spec.key for spec in self._specs if spec.tier.is_leadership
         )
+
+    async def _detail(self, line: str) -> None:
+        """Eine Feinmeldung, falls jemand zuhoert.
+
+        Wie beim Progress-Hook gilt: eine kaputte Meldung darf den Bau
+        nicht abbrechen. Der Server ist wichtiger als das Log.
+        """
+
+        if self._detail_hook is None:
+            return
+        try:
+            await self._detail_hook(line)
+        except Exception:  # pragma: no cover
+            LOGGER.debug("Detail-Hook fehlgeschlagen", exc_info=True)
 
     @property
     def created_roles(self) -> dict[str, discord.Role]:
@@ -362,6 +387,7 @@ class ServerBuilder:
                     )
                     report.roles_created += 1
                     self._roles[spec.key] = role
+                    await self._detail(f"Rolle angelegt: {spec.display_name}")
                     await asyncio.sleep(_THROTTLE)
                 except discord.Forbidden:
                     report.roles_skipped += 1
@@ -659,6 +685,7 @@ class ServerBuilder:
         *,
         progress: ProgressHook | None = None,
         write_intros: bool = True,
+        detail: DetailHook | None = None,
     ) -> BuildReport:
         """Baut den Server und gibt einen Bericht zurueck.
 
@@ -685,6 +712,12 @@ class ServerBuilder:
                     await progress(label, step, total_steps)
                 except Exception:  # pragma: no cover - progress must never break a build
                     LOGGER.debug("Progress-Hook fehlgeschlagen", exc_info=True)
+
+        # Ab hier meldet _detail() an den Hook, den der Aufrufer
+        # mitgegeben hat. _ensure_roles laeuft ueber dieselbe Methode,
+        # deshalb steht sie an der Instanz und nicht hier lokal.
+        self._detail_hook = detail
+        say = self._detail
 
         if rebuild:
             await self._wipe(report)
@@ -716,6 +749,7 @@ class ServerBuilder:
                         what=f"Kategorie {category_spec.display_name}",
                     )
                     report.categories_created += 1
+                    await say(f"Kategorie angelegt: {category_spec.display_name}")
                     await asyncio.sleep(_THROTTLE)
                 except discord.Forbidden as exc:
                     raise BuildError(
@@ -742,6 +776,7 @@ class ServerBuilder:
                     try:
                         await self._create_channel(category, category_spec, spec)
                         report.channels_created += 1
+                        await say(f"Kanal angelegt: {spec.display_name}")
                         await asyncio.sleep(_THROTTLE)
                     except discord.Forbidden:
                         report.warn(f"Kanal '{spec.display_name}' konnte nicht erstellt werden.")
