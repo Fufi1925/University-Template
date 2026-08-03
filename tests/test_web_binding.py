@@ -87,6 +87,9 @@ class TestBinding:
             def totals(self):
                 return {"templates": 0, "categories": 0, "channels": 0, "voice": 0}
 
+            # Property, kein Aufruf -- wie in der echten Registry.
+            # test_fakes_match_reality.py hält das fest.
+            @property
             def all(self):
                 return []
 

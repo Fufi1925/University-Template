@@ -50,6 +50,15 @@ class _Registry:
         return {"templates": len(self._templates), "categories": 1,
                 "channels": 1, "voice": 0}
 
+    # Property, kein Aufruf -- genau wie in der echten TemplateRegistry.
+    #
+    # Vorher stand hier eine Methode. Damit war ``registry.all()`` im
+    # Endpunkt gruen, waehrend es gegen die echte Registry mit
+    # "TypeError: 'list' object is not callable" abstuerzte -- HTTP 500,
+    # und im Dashboard "Template-Bot antwortet nicht". Eine Attrappe,
+    # die sich anders verhaelt als das Original, prueft nichts; sie
+    # bestaetigt nur die eigene Erfindung.
+    @property
     def all(self):
         return list(self._templates.values())
 

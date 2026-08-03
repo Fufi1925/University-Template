@@ -283,7 +283,10 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             return error
 
         items = []
-        for template in bot.registry.all():
+        # ``all`` ist eine Property, kein Aufruf -- genau wie ``free``,
+        # ``premium`` und ``totals``. Mit Klammern kommt die Liste
+        # zurueck und wird dann aufgerufen: TypeError, HTTP 500.
+        for template in bot.registry.all:
             items.append(
                 {
                     "key": template.key,
