@@ -32,7 +32,13 @@ from core.schema import Visibility
 # --------------------------------------------------------------------------- #
 
 class FakeRole:
+    # Echte Rollen haben eine Snowflake; die Uebergabe an den University
+    # Bot besteht aus genau diesen IDs.
+    _next_id = 800_000_000_000_000_000
+
     def __init__(self, guild, name, position, *, managed=False, default=False, **kwargs):
+        FakeRole._next_id += 1
+        self.id = FakeRole._next_id
         self.guild = guild
         self.name = name
         self.position = position
@@ -103,6 +109,17 @@ def _components_from_view(view):
     return [_component_factory(raw) for raw in view.to_components()]
 
 
+# Der String, den der Builder als Art durchreicht, auf Discords Enum.
+_CHANNEL_TYPES = {
+    "text": discord.ChannelType.text,
+    "voice": discord.ChannelType.voice,
+    "stage": discord.ChannelType.stage_voice,
+    "forum": discord.ChannelType.forum,
+    "news": discord.ChannelType.news,
+    "category": discord.ChannelType.category,
+}
+
+
 class FakeChannel:
     _next_id = 700_000_000_000_000_000
 
@@ -124,6 +141,17 @@ class FakeChannel:
         self.sent: list[FakeMessage] = []
         self.pinned: list[FakeMessage] = []
         self.can_send = True
+
+    @property
+    def type(self):
+        """Wie discord.py: ein ChannelType, nicht der rohe String.
+
+        Die Uebergabe an den University Bot liest ``channel.type.name``.
+        Ohne das hier laeuft der Test an einem Fake vorbei, der die
+        Eigenschaft gar nicht hat.
+        """
+
+        return _CHANNEL_TYPES[self.kind]
 
     async def send(self, content=None, view=None, **kwargs):
         if not self.can_send:

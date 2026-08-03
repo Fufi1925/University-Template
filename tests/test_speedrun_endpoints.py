@@ -317,13 +317,53 @@ class TestJobStore:
     """Der Speicher selbst, ohne HTTP."""
 
     def test_a_finished_job_stays_readable(self):
+        """Nach dem Bau muss das Ergebnis noch abholbar sein.
+
+        Die erste Fassung dieses Tests stand als
+        ``assert store.get(1) is not None or store.get(1) is None`` da --
+        eine Tautologie, die nichts prueft. Sie war von mir und ist
+        durchgerutscht, weil sie gruen war.
+        """
+
+        import time
+
         store = speedrun.JobStore()
         job = store.start(1, "community")
+        job.log("fertig")
         job.state = speedrun.JobState.DONE
-        job.finished = 1.0  # lange her
-        # Direkt danach noch da -- das Dashboard muss die letzten Zeilen
-        # sicher abholen koennen.
-        assert store.get(1) is not None or store.get(1) is None
+        job.finished = time.time()
+
+        # Gerade eben fertig: das Dashboard holt jetzt die letzten Zeilen.
+        again = store.get(1)
+        assert again is not None
+        assert again.lines[-1].text == "fertig"
+
+    def test_an_old_job_is_forgotten(self):
+        """Sonst waechst der Speicher mit jedem je gebauten Server."""
+
+        import time
+
+        store = speedrun.JobStore()
+        job = store.start(9, "community")
+        job.state = speedrun.JobState.DONE
+        job.finished = time.time() - speedrun.KEEP_FINISHED - 1
+
+        assert store.get(9) is None
+
+    def test_a_running_job_is_never_forgotten(self):
+        """Auch nicht, wenn der Bau laenger dauert als die Aufbewahrung."""
+
+        import time
+
+        store = speedrun.JobStore()
+        job = store.start(10, "community")
+        # Laeuft seit Stunden -- ein sehr grosses Template plus
+        # Rate-Limits. Wegzuraeumen hiesse: das Dashboard verliert den
+        # laufenden Bau aus den Augen.
+        job.started = time.time() - 10 * speedrun.KEEP_FINISHED
+
+        assert store.get(10) is not None
+        assert store.running(10) is True
 
     def test_running_is_only_true_while_running(self):
         store = speedrun.JobStore()

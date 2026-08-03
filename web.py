@@ -22,6 +22,7 @@ from aiohttp import web
 import config
 from core import speedrun
 from core.builder import BuildMode, ServerBuilder
+from core.handover import build_handover
 from core.handshake import is_enabled, read_state
 
 if TYPE_CHECKING:
@@ -299,6 +300,60 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             )
         return web.json_response({"templates": items})
 
+    async def speedrun_precheck(request: web.Request) -> web.Response:
+        """Ist der Template-Bot auf diesem Server -- und darf er bauen?
+
+        Der University Bot kann das nicht selbst feststellen: er sieht
+        nur seine eigene Mitgliedschaft. Ohne diese Frage wuerde der
+        Speedrun erst beim Bauen merken, dass der zweite Bot fehlt.
+        """
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response({"error": "Kein gültiges JSON."}, status=400)
+
+        raw = str(payload.get("guild_id") or "").strip()
+        if not raw.isdigit():
+            return web.json_response({"error": "guild_id fehlt."}, status=400)
+
+        guild = bot.get_guild(int(raw))
+        if guild is None:
+            return web.json_response(
+                {
+                    "present": False,
+                    "can_manage": False,
+                    "detail": "Der Template-Bot ist nicht auf diesem Server.",
+                }
+            )
+
+        me = guild.me
+        perms = me.guild_permissions if me is not None else None
+        can_manage = bool(
+            perms
+            and (
+                perms.administrator
+                or (perms.manage_roles and perms.manage_channels)
+            )
+        )
+
+        return web.json_response(
+            {
+                "present": True,
+                "can_manage": can_manage,
+                "guild_name": guild.name,
+                "detail": (
+                    ""
+                    if can_manage
+                    else "Dem Template-Bot fehlen Rechte für Rollen und Kanäle."
+                ),
+            }
+        )
+
     async def speedrun_start(request: web.Request) -> web.Response:
         """Bau starten. Antwortet sofort, gebaut wird im Hintergrund.
 
@@ -403,6 +458,7 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
     app.router.add_get("/oauth/callback", oauth_callback)
     app.router.add_post("/internal/licence-revoked", licence_revoked)
     app.router.add_post("/internal/licence-refresh", licence_refresh)
+    app.router.add_post("/internal/speedrun/precheck", speedrun_precheck)
     app.router.add_get("/internal/speedrun/templates", speedrun_templates)
     app.router.add_post("/internal/speedrun/start", speedrun_start)
     app.router.add_get("/internal/speedrun/{guild_id}", speedrun_status)
@@ -473,29 +529,17 @@ async def _run_speedrun(
             mode, progress=progress, write_intros=write_intros
         )
 
-        # Was der University Bot danach braucht: die echten Namen und
-        # IDs. Ohne die muesste er raten, welcher Kanal der Verify-Kanal
-        # ist -- und raten ist, wie man das falsche Ding konfiguriert.
+        # Was der University Bot danach braucht: nicht nur die Namen,
+        # sondern die Zuordnung nach Zweck. Welcher Kanal der
+        # Verify-Kanal ist, steht in der Template-Definition
+        # (widget=verify) -- der Hauptbot koennte es am Namen nicht
+        # erkennen, weil der in Small Caps mit Emoji-Praefix steht.
         job.result = {
-            "template": template.key,
             "roles_created": report.roles_created,
             "channels_created": report.channels_created,
             "categories_created": report.categories_created,
             "warnings": list(report.warnings),
-            "roles": [
-                {"id": str(role.id), "name": role.name}
-                for role in guild.roles
-                if not role.is_default()
-            ],
-            "channels": [
-                {
-                    "id": str(channel.id),
-                    "name": channel.name,
-                    "type": channel.type.name,
-                    "category": channel.category.name if channel.category else None,
-                }
-                for channel in guild.channels
-            ],
+            **build_handover(guild, template, builder.created_roles),
         }
 
         job.log(

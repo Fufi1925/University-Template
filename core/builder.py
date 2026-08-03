@@ -168,6 +168,18 @@ class ServerBuilder:
             spec.key for spec in self._specs if spec.tier.is_leadership
         )
 
+    @property
+    def created_roles(self) -> dict[str, discord.Role]:
+        """Rollen-Key -> Rolle, wie sie nach ``apply()`` dastehen.
+
+        Fuer die Uebergabe an den University Bot. Der braucht die
+        Verified-Rolle als ID; sie nachtraeglich am Namen zu suchen
+        griffe bei zwei aehnlich benannten Rollen daneben, und hier ist
+        bekannt, welche Rolle zu welchem Key gehoert.
+        """
+
+        return dict(self._roles)
+
     # ------------------------------------------------------------- roles ----
     def _resolve_role_specs(self) -> tuple[RoleSpec, ...]:
         """Base ladder first, then the template's own accent roles."""
