@@ -10,14 +10,18 @@ Den eigentlichen Aufbau uebernimmt danach ``on_guild_join``.
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import html
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from aiohttp import web
 
 import config
+from core import speedrun
+from core.builder import BuildMode, ServerBuilder
 from core.handshake import is_enabled, read_state
 
 if TYPE_CHECKING:
@@ -266,12 +270,142 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
         LOGGER.info("Lizenz aufgefrischt für user=%s", user_id)
         return web.json_response({"status": "ok"})
 
+    # ----------------------------------------------------------------- #
+    # Speedrun: das Dashboard laesst hier einen Server bauen
+    # ----------------------------------------------------------------- #
+
+    async def speedrun_templates(request: web.Request) -> web.Response:
+        """Welche Templates es gibt -- fuer die Auswahl im Dashboard."""
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        items = []
+        for template in bot.registry.all():
+            items.append(
+                {
+                    "key": template.key,
+                    "name": template.name,
+                    "emoji": template.emoji,
+                    "tagline": template.tagline,
+                    "description": template.description,
+                    "premium": bool(template.premium),
+                    "accent": template.accent,
+                    "highlights": list(template.highlights),
+                    "role_count": len(template.roles),
+                    "category_count": template.category_count,
+                }
+            )
+        return web.json_response({"templates": items})
+
+    async def speedrun_start(request: web.Request) -> web.Response:
+        """Bau starten. Antwortet sofort, gebaut wird im Hintergrund.
+
+        Ein Bau dauert je nach Template ueber eine Minute. Wuerde hier
+        auf das Ergebnis gewartet, liefe die HTTP-Anfrage in einen
+        Timeout und das Dashboard wuesste nicht, ob der Bau laeuft oder
+        gescheitert ist.
+        """
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response({"error": "Kein gültiges JSON."}, status=400)
+
+        raw_guild = str(payload.get("guild_id") or "").strip()
+        if not raw_guild.isdigit():
+            return web.json_response({"error": "guild_id fehlt."}, status=400)
+        guild_id = int(raw_guild)
+
+        template_key = str(payload.get("template") or "").strip()
+        template = bot.registry.get(template_key)
+        if template is None:
+            return web.json_response(
+                {"error": f"Unbekanntes Template: {template_key!r}"}, status=400
+            )
+
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            return web.json_response(
+                {
+                    "error": "Der Template-Bot ist nicht auf diesem Server.",
+                    "code": "bot_missing",
+                },
+                status=404,
+            )
+
+        if speedrun.STORE.running(guild_id):
+            return web.json_response(
+                {"error": "Für diesen Server läuft bereits ein Bau.",
+                 "code": "already_running"},
+                status=409,
+            )
+
+        # Der Bot baut sonst gleichzeitig zweimal am selben Server.
+        if guild_id in bot.active_builds:
+            return web.json_response(
+                {"error": "Für diesen Server läuft bereits ein Bau.",
+                 "code": "already_running"},
+                status=409,
+            )
+
+        options = payload.get("options") or {}
+        write_intros = bool(options.get("intros", True))
+        rebuild = bool(options.get("rebuild", False))
+
+        job = speedrun.STORE.start(guild_id, template.key)
+        job.log(f"Speedrun gestartet — Template »{template.name}«")
+
+        task = asyncio.create_task(
+            _run_speedrun(
+                bot,
+                guild,
+                template,
+                job,
+                write_intros=write_intros,
+                rebuild=rebuild,
+            )
+        )
+        speedrun.STORE.attach(guild_id, task)
+
+        return web.json_response({"status": "started", "guild_id": str(guild_id)})
+
+    async def speedrun_status(request: web.Request) -> web.Response:
+        """Fortschritt abfragen. ``since`` = schon gelesene Zeilen."""
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        raw_guild = request.match_info.get("guild_id", "")
+        if not raw_guild.isdigit():
+            return web.json_response({"error": "guild_id fehlt."}, status=400)
+
+        job = speedrun.STORE.get(int(raw_guild))
+        if job is None:
+            return web.json_response({"state": "none", "lines": [], "line_count": 0})
+
+        try:
+            since = int(request.query.get("since", "0"))
+        except ValueError:
+            since = 0
+
+        return web.json_response(job.as_dict(since=max(since, 0)))
+
     app = web.Application()
     app.router.add_get("/", status)
     app.router.add_get("/health", status)
     app.router.add_get("/oauth/callback", oauth_callback)
     app.router.add_post("/internal/licence-revoked", licence_revoked)
     app.router.add_post("/internal/licence-refresh", licence_refresh)
+    app.router.add_get("/internal/speedrun/templates", speedrun_templates)
+    app.router.add_post("/internal/speedrun/start", speedrun_start)
+    app.router.add_get("/internal/speedrun/{guild_id}", speedrun_status)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -286,3 +420,101 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             "PARTNER_HANDSHAKE_SECRET fehlt — automatische Einrichtung ist aus"
         )
     return runner
+
+
+# --------------------------------------------------------------------------- #
+# Speedrun: der eigentliche Bau
+# --------------------------------------------------------------------------- #
+
+
+async def _run_speedrun(
+    bot: ArchitectBot,
+    guild,
+    template,
+    job: speedrun.Job,
+    *,
+    write_intros: bool,
+    rebuild: bool,
+) -> None:
+    """Baut den Server und schreibt dabei ins Job-Log.
+
+    Laeuft als Hintergrund-Task, damit die HTTP-Antwort sofort raus
+    kann. Jeder Fehler landet im Job statt in einem Traceback, den
+    niemand sieht -- das Dashboard zeigt ihn dann im Terminal an.
+    """
+
+    guild_id = guild.id
+    bot.active_builds.add(guild_id)
+
+    try:
+        builder = ServerBuilder(guild, template)
+
+        try:
+            builder.preflight()
+        except Exception as exc:  # BuildError und alles andere
+            job.state = speedrun.JobState.FAILED
+            job.error = str(exc)
+            job.finished = time.time()
+            job.log(f"Abbruch: {exc}", level="error")
+            return
+
+        job.total = 1 + template.category_count + (
+            template.category_count if write_intros else 0
+        )
+        job.log(f"Vorprüfung ok — {template.category_count} Kategorien geplant")
+
+        async def progress(label: str, step: int, total: int) -> None:
+            job.step = step
+            job.total = total
+            job.log(f"[{step}/{total}] {label}")
+
+        mode = BuildMode.REBUILD if rebuild else BuildMode.EXTEND
+        report = await builder.apply(
+            mode, progress=progress, write_intros=write_intros
+        )
+
+        # Was der University Bot danach braucht: die echten Namen und
+        # IDs. Ohne die muesste er raten, welcher Kanal der Verify-Kanal
+        # ist -- und raten ist, wie man das falsche Ding konfiguriert.
+        job.result = {
+            "template": template.key,
+            "roles_created": report.roles_created,
+            "channels_created": report.channels_created,
+            "categories_created": report.categories_created,
+            "warnings": list(report.warnings),
+            "roles": [
+                {"id": str(role.id), "name": role.name}
+                for role in guild.roles
+                if not role.is_default()
+            ],
+            "channels": [
+                {
+                    "id": str(channel.id),
+                    "name": channel.name,
+                    "type": channel.type.name,
+                    "category": channel.category.name if channel.category else None,
+                }
+                for channel in guild.channels
+            ],
+        }
+
+        job.log(
+            f"Fertig — {report.roles_created} Rollen, "
+            f"{report.categories_created} Kategorien, "
+            f"{report.channels_created} Kanäle angelegt",
+            level="success",
+        )
+        for warning in report.warnings:
+            job.log(f"Hinweis: {warning}", level="warn")
+
+        job.state = speedrun.JobState.DONE
+        job.finished = time.time()
+
+    except Exception as exc:
+        LOGGER.exception("Speedrun fehlgeschlagen für guild=%s", guild_id)
+        job.state = speedrun.JobState.FAILED
+        job.error = f"{type(exc).__name__}: {exc}"
+        job.finished = time.time()
+        job.log(f"Fehler: {type(exc).__name__}: {exc}", level="error")
+    finally:
+        bot.active_builds.discard(guild_id)
