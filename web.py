@@ -465,7 +465,21 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", config.PORT)
+
+    # Auf IPv4 *und* IPv6 lauschen.
+    #
+    # Railways privates Netz (<dienst>.railway.internal) ist IPv6-only.
+    # Mit "0.0.0.0" horcht der Server nur auf IPv4, und jeder Aufruf des
+    # University Bots endet in "connection refused" -- im Dashboard als
+    # 502 sichtbar, obwohl beide Dienste laufen. Genau das ist passiert:
+    # /precheck ging (der Hauptbot beantwortet es selbst), /templates
+    # nicht (das muss hierher).
+    #
+    # host=None statt "::": asyncio setzt auf einem "::"-Socket
+    # IPV6_V6ONLY, dann waere IPv4 tot -- und damit der Health-Check und
+    # die oeffentliche Domain. Ohne host legt aiohttp pro Familie einen
+    # eigenen Socket an, also beide.
+    site = web.TCPSite(runner, None, config.PORT)
     await site.start()
 
     LOGGER.info("Webserver auf Port %s", config.PORT)
