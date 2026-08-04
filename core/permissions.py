@@ -234,10 +234,17 @@ def category_overwrites(
     unverified = roles.get(UNVERIFIED)
 
     if visibility is Visibility.GATE:
-        # The only area an unverified member is supposed to see.
-        result[everyone] = _CAN_READ
+        # The only area an unverified member is supposed to see -- and
+        # only to read. They used to get _CAN_TALK here, which let
+        # anybody who had just joined post in the welcome and verify
+        # channels. That is where spam bots go first: they never verify,
+        # so the gate is the one place they can always reach.
+        #
+        # Nothing here needs writing anyway. Verifying is a button, the
+        # rules are a wall of text, the FAQ answers itself.
+        result[everyone] = _READ_ONLY
         if unverified is not None:
-            result[unverified] = _CAN_TALK
+            result[unverified] = _READ_ONLY
         grant(staff_keys, _STAFF_FULL)
 
     elif visibility in {Visibility.PUBLIC, Visibility.MEMBER}:
@@ -284,6 +291,21 @@ def category_overwrites(
     return result
 
 
+# Wie weit ein Bereich offen steht, von offen nach geschlossen. Nur zum
+# Vergleichen gedacht: ein Kanal darf nie offener sein als seine
+# Kategorie.
+_RANK: dict[Visibility, int] = {
+    Visibility.PUBLIC: 0,
+    Visibility.READONLY: 0,   # gleich offen wie public, nur stumm
+    Visibility.ARCHIVE: 0,
+    Visibility.MEMBER: 1,
+    Visibility.GATE: 1,
+    Visibility.VIP: 2,
+    Visibility.STAFF: 3,
+    Visibility.LEADERSHIP: 4,
+}
+
+
 def channel_overwrites(
     guild: discord.Guild,
     category_visibility: Visibility,
@@ -303,6 +325,23 @@ def channel_overwrites(
 
     if channel_visibility is category_visibility:
         return {}
+
+    # The docstring above promised "the stricter of the two" and the code
+    # did not do it: it simply used the channel's own visibility. A
+    # `readonly` channel inside a hidden category therefore *unhid*
+    # itself -- `vip-vorteile` and rp's `akten` were visible to
+    # @everyone, in areas whose entire point is that they are not.
+    #
+    # A channel may narrow what its category allows, never widen it.
+    #
+    # When it would widen, the category wins outright. Combining the two
+    # -- "visible to staff only *and* read-only" -- has no Visibility
+    # value, and inventing one here would mean a second permission model
+    # next to the existing eight. Erring towards the tighter of the two
+    # is the safe direction: a staff channel somebody can write in is a
+    # nuisance, a staff channel everybody can read is a leak.
+    if _RANK[channel_visibility] < _RANK[category_visibility]:
+        channel_visibility = category_visibility
 
     return category_overwrites(
         guild,

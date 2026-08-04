@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import discord
 
+from .permissions import BASE_ROLES
 from .schema import ChannelMode, Template, Widget
 from .small_caps import slugify
 
@@ -194,12 +195,31 @@ def build_handover(
         if (role := roles.get(key)) is not None
     ]
 
+    # Rollen zur Selbstvergabe: die Akzent-Rollen des Templates, also
+    # das, was *nicht* aus der Basisleiter kommt. "Content Creator" oder
+    # "Designer" darf sich jeder selbst geben; "Moderator" offensichtlich
+    # nicht, und "Verified" vergibt die Verify-Schleuse.
+    base_keys = {key for key, *_rest in BASE_ROLES}
+    self_assign = [
+        {
+            "id": str(role.id),
+            "name": role.name,
+            "emoji": spec.emoji or "",
+            "key": spec.key,
+        }
+        for spec in template.roles
+        if spec.key not in base_keys
+        and not spec.tier.is_staff
+        and (role := roles.get(spec.key)) is not None
+    ]
+
     return {
         "template": template.key,
         "guild_id": str(guild.id),
         # Die Rollen, die der Hauptbot direkt einsetzt.
         "roles": role_ids,
         "staff_roles": staff_role_ids,
+        "self_roles": self_assign,
         # Die Kanaele, ebenfalls nach Zweck statt nach Namen.
         "channels": {
             "verify": str(verify_channel.id) if verify_channel else None,
