@@ -2288,6 +2288,203 @@ def minimal() -> dict[str, Any]:
     }
 
 
+def clan() -> dict[str, Any]:
+    return {
+        "key": "clan",
+        "name": "Clan Server",
+        "emoji": "⚔️",
+        "tagline": "Clan Talk, Fight Calls und ein Bereich nur für Mitglieder",
+        "premium": True,
+        "accent": "#DC2626",
+        "description": (
+            "Für Clans und Gilden, die zusammen spielen statt nur zusammen "
+            "zu chatten: fester Kader mit Rängen, Fight Calls vor dem Match, "
+            "Kriegsplanung, Trainingsräume und ein abgeschirmter Bereich, "
+            "den nur Clan-Mitglieder sehen. Aufgebaut wie der Gaming Hub — "
+            "aber alles dreht sich um den Clan, nicht um einzelne Spiele."
+        ),
+        "highlights": [
+            "Clan Talk, Fight Call und War Room als eigene Sprachräume",
+            "Geschlossener Mitglieder-Bereich — nur für den Kader",
+            "Kriegsplanung mit Gegner-Aufklärung und Aufstellung",
+            "Ränge vom Rekruten bis zur Clanleitung",
+        ],
+        "roles": [
+            role("clan_leader", "Clanleiter", "👑", "#DC2626", "leadership"),
+            role("officer", "Offizier", "🎖️", "#EA580C", "moderator"),
+            role("veteran", "Veteran", "🛡️", "#F59E0B", "trusted"),
+            role("clan_member", "Clan Mitglied", "⚔️", "#DC2626", "vip"),
+            role("recruit", "Rekrut", "🌱", "#64748B", "member", hoist=False),
+            role("war_caller", "Fight Caller", "📣", "#8B5CF6", "helper"),
+            role("scout", "Scout", "🔭", "#0EA5E9", "trusted", hoist=False),
+        ],
+        "categories": [
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly",
+                    guide=[
+                        "Schön, dass du da bist.",
+                        "Verifiziere dich nebenan, danach siehst du den gesamten Server.",
+                    ],
+                ),
+                ch("verifizieren", "✅", topic="Hier verifizieren", widget="verify"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly", widget="rules"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly",
+                    guide=[
+                        "Die häufigsten Fragen und ihre Antworten.",
+                        "Ist deine Frage nicht dabei, melde dich beim Team.",
+                    ],
+                ),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen", mode="announce"),
+                ch("clan-news", "🆕", topic="Neuigkeiten aus dem Clan", mode="announce"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben", widget="roles"),
+                ch("kader", "📋", topic="Wer gehört zum Clan?",
+                    guide=[
+                        "Der aktuelle Kader mit Rängen und Zuständigkeiten.",
+                    ],
+                ),
+                ch("erfolge", "🏆", topic="Gewonnene Matches und Turniere", reactions=["🏆"]),
+                ch("partner", "🤝", topic="Befreundete Clans",
+                    guide=[
+                        "Clans und Projekte, mit denen wir zusammenarbeiten.",
+                    ],
+                ),
+            ]),
+            # Der Bewerbungsweg. Ein Clan lebt vom Nachwuchs, und ohne
+            # eigenen Bereich landen Bewerbungen im Hauptchat, wo sie
+            # nach zehn Nachrichten niemand mehr findet.
+            cat("beitreten", "📝", "public", [
+                ch("so-bewirbst-du-dich", "📖", topic="So kommst du in den Clan", visibility="readonly",
+                    guide=[
+                        "Lies die Anforderungen, dann stell dich nebenan vor.",
+                        "Das Team meldet sich bei dir.",
+                    ],
+                ),
+                ch("bewerbungen", "🧾", "forum", topic="Bewirb dich hier"),
+                ch("probezeit", "🌱", topic="Chat für Rekruten in der Probezeit"),
+                ch("vorstellung", "👋", topic="Stell dich kurz vor"),
+            ]),
+            cat("clan chat", "💬", "public", [
+                ch("allgemein", "💭", topic="Der Hauptchat", slowmode=3,
+                    guide=[
+                        "Der Hauptchat für alles, was keinen eigenen Kanal hat.",
+                    ],
+                ),
+                ch("clips-und-bilder", "🎬", topic="Deine besten Momente", mode="media", reactions=["🔥"]),
+                ch("memes", "😂", topic="Nur Memes", mode="media", reactions=["😂"]),
+                ch("builds-und-setups", "🛠️", topic="Ausrüstung, Builds, Einstellungen"),
+                ch("patchnotes", "📄", topic="Was hat sich im Spiel geändert?"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle gehören hierher",
+                    guide=[
+                        "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen.",
+                    ],
+                ),
+            ]),
+            # Das Herzstück: alles rund um den nächsten Kampf.
+            cat("kriegsplanung", "⚔️", "public", [
+                ch("fight-plan", "🗺️", topic="Wie gehen wir das Match an?", mode="threads"),
+                ch("aufstellung", "📋", topic="Wer spielt welche Rolle?"),
+                ch("gegner-aufklaerung", "🔭", topic="Was wissen wir über den Gegner?"),
+                ch("match-termine", "📅", "news", topic="Wann spielen wir?", visibility="readonly", mode="announce"),
+                ch("anwesenheit", "✋", topic="Wer kann wann?", reactions=["✅", "❌"]),
+                ch("nachbesprechung", "📊", topic="Was lief gut, was nicht?", mode="threads"),
+            ]),
+            # Die Sprachkanäle, die dem Clan seinen Namen geben.
+            cat("clan talks", "🔊", "public", [
+                ch("clan-talk", "⚔️", "voice"),
+                ch("clan-talk-2", "⚔️", "voice", user_limit=15),
+                ch("fight-call", "📣", "voice", user_limit=10),
+                ch("fight-call-2", "📣", "voice", user_limit=10),
+                ch("war-room", "🗺️", "voice", user_limit=20),
+                ch("zu-zweit", "👥", "voice", user_limit=2),
+                ch("zu-dritt", "👨‍👩‍👦", "voice", user_limit=3),
+                ch("squad-1", "🛡️", "voice", user_limit=5),
+                ch("squad-2", "🛡️", "voice", user_limit=5),
+                ch("scrim-raum", "🎯", "voice", user_limit=12),
+                ch("kommentar-buehne", "🎙️", "stage"),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("musik", "🎶", "voice"),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("training", "🎯", "public", [
+                ch("trainingsplan", "📅", topic="Wann wird trainiert?", mode="announce"),
+                ch("uebungen", "🔁", topic="Drills und Übungen"),
+                ch("coaching", "🧠", topic="Frag nach Rückmeldung", mode="threads"),
+                ch("aufnahmen", "📼", topic="Mitschnitte zum Auswerten", mode="media"),
+                ch("trainingsraum-1", "🎯", "voice", user_limit=8),
+                ch("trainingsraum-2", "🎯", "voice", user_limit=8),
+            ]),
+            # Nur für den Kader. `member`-Sichtbarkeit heißt: wer die
+            # Verify-Schleuse passiert hat, ist drin -- aber kein Gast
+            # von außen.
+            cat("mitglieder", "🔐", "member", [
+                ch("mitglieder-chat", "🗣️", topic="Nur für den Kader"),
+                ch("interne-absprachen", "📌", topic="Was nicht nach außen gehört"),
+                ch("kasse", "💰", topic="Clan-Kasse und Beiträge"),
+                ch("mitglieder-talk", "🔒", "voice", user_limit=25),
+            ]),
+            # Der Premium-Bereich. `vip`-Sichtbarkeit: unsichtbar für
+            # alle außer VIP, Booster, Partner und das Team. Genau
+            # dafür gibt es diese Stufe schon -- eine eigene zu bauen
+            # hieße, die Rechteregeln ein zweites Mal zu schreiben.
+            cat("premium", "💎", "vip", [
+                ch("premium-chat", "💎", topic="Nur für Premium-Mitglieder"),
+                ch("premium-vorteile", "🎁", topic="Was Premium dir bringt", visibility="readonly",
+                    guide=[
+                        "Deine Vorteile als Premium-Mitglied.",
+                    ],
+                ),
+                ch("premium-wuensche", "💡", topic="Wünsche und Vorschläge", mode="threads"),
+                ch("frueher-zugang", "🚀", topic="Neues zuerst für Premium", mode="announce"),
+                ch("premium-talk", "💎", "voice", user_limit=15),
+                ch("premium-lounge", "🛋️", "voice", user_limit=10),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
+                ch("fehler-melden", "🐛", topic="Probleme auf dem Server melden"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team", mode="announce"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten", widget="checklist"),
+                ch("bewerbungs-sichtung", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Clanleitung"),
+                ch("kader-planung", "🗺️", topic="Wer kommt, wer geht"),
+                ch("clan-kriege", "⚔️", topic="Absprachen mit anderen Clans"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen", mode="log"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte", mode="log"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten", mode="log"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität", mode="log"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen", mode="log"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen", mode="log"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen", mode="log"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse", mode="log"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking", mode="log"),
+                ch("server-logs", "🗃️", topic="Alles Übrige", mode="log"),
+            ]),
+        ],
+    }
+
 TEMPLATES = [
     community,
     rp,
@@ -2302,6 +2499,7 @@ TEMPLATES = [
     music,
     dev,
     minimal,
+    clan,
 ]
 
 

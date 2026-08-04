@@ -173,11 +173,11 @@ COMPACT = {"minimal"}
 
 class TestTemplates:
     def test_expected_templates_exist(self, registry):
-        assert len(registry) == 13
+        assert len(registry) == 14
         assert {t.key for t in registry.free} == {
             "community", "rp", "social", "music", "dev", "minimal",
         }
-        assert len(registry.premium) == 7
+        assert len(registry.premium) == 8
 
     def test_the_free_templates_are_the_promised_ones(self, registry):
         names = {t.name for t in registry.free}

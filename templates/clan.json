@@ -1,0 +1,713 @@
+{
+  "key": "clan",
+  "name": "Clan Server",
+  "emoji": "⚔️",
+  "tagline": "Clan Talk, Fight Calls und ein Bereich nur für Mitglieder",
+  "premium": true,
+  "accent": "#DC2626",
+  "description": "Für Clans und Gilden, die zusammen spielen statt nur zusammen zu chatten: fester Kader mit Rängen, Fight Calls vor dem Match, Kriegsplanung, Trainingsräume und ein abgeschirmter Bereich, den nur Clan-Mitglieder sehen. Aufgebaut wie der Gaming Hub — aber alles dreht sich um den Clan, nicht um einzelne Spiele.",
+  "highlights": [
+    "Clan Talk, Fight Call und War Room als eigene Sprachräume",
+    "Geschlossener Mitglieder-Bereich — nur für den Kader",
+    "Kriegsplanung mit Gegner-Aufklärung und Aufstellung",
+    "Ränge vom Rekruten bis zur Clanleitung"
+  ],
+  "roles": [
+    {
+      "key": "clan_leader",
+      "label": "Clanleiter",
+      "emoji": "👑",
+      "colour": "#DC2626",
+      "tier": "leadership",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "officer",
+      "label": "Offizier",
+      "emoji": "🎖️",
+      "colour": "#EA580C",
+      "tier": "moderator",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "veteran",
+      "label": "Veteran",
+      "emoji": "🛡️",
+      "colour": "#F59E0B",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "clan_member",
+      "label": "Clan Mitglied",
+      "emoji": "⚔️",
+      "colour": "#DC2626",
+      "tier": "vip",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "recruit",
+      "label": "Rekrut",
+      "emoji": "🌱",
+      "colour": "#64748B",
+      "tier": "member",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "war_caller",
+      "label": "Fight Caller",
+      "emoji": "📣",
+      "colour": "#8B5CF6",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "scout",
+      "label": "Scout",
+      "emoji": "🔭",
+      "colour": "#0EA5E9",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "clan-news",
+          "emoji": "🆕",
+          "topic": "Neuigkeiten aus dem Clan",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "kader",
+          "emoji": "📋",
+          "topic": "Wer gehört zum Clan?",
+          "guide": [
+            "Der aktuelle Kader mit Rängen und Zuständigkeiten."
+          ]
+        },
+        {
+          "label": "erfolge",
+          "emoji": "🏆",
+          "topic": "Gewonnene Matches und Turniere",
+          "reactions": [
+            "🏆"
+          ]
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Befreundete Clans",
+          "guide": [
+            "Clans und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "beitreten",
+      "emoji": "📝",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "so-bewirbst-du-dich",
+          "emoji": "📖",
+          "topic": "So kommst du in den Clan",
+          "visibility": "readonly",
+          "guide": [
+            "Lies die Anforderungen, dann stell dich nebenan vor.",
+            "Das Team meldet sich bei dir."
+          ]
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "kind": "forum",
+          "topic": "Bewirb dich hier"
+        },
+        {
+          "label": "probezeit",
+          "emoji": "🌱",
+          "topic": "Chat für Rekruten in der Probezeit"
+        },
+        {
+          "label": "vorstellung",
+          "emoji": "👋",
+          "topic": "Stell dich kurz vor"
+        }
+      ]
+    },
+    {
+      "label": "clan chat",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "allgemein",
+          "emoji": "💭",
+          "topic": "Der Hauptchat",
+          "slowmode": 3,
+          "guide": [
+            "Der Hauptchat für alles, was keinen eigenen Kanal hat."
+          ]
+        },
+        {
+          "label": "clips-und-bilder",
+          "emoji": "🎬",
+          "topic": "Deine besten Momente",
+          "mode": "media",
+          "reactions": [
+            "🔥"
+          ]
+        },
+        {
+          "label": "memes",
+          "emoji": "😂",
+          "topic": "Nur Memes",
+          "mode": "media",
+          "reactions": [
+            "😂"
+          ]
+        },
+        {
+          "label": "builds-und-setups",
+          "emoji": "🛠️",
+          "topic": "Ausrüstung, Builds, Einstellungen"
+        },
+        {
+          "label": "patchnotes",
+          "emoji": "📄",
+          "topic": "Was hat sich im Spiel geändert?"
+        },
+        {
+          "label": "bot-befehle",
+          "emoji": "🤖",
+          "topic": "Bot-Befehle gehören hierher",
+          "guide": [
+            "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "kriegsplanung",
+      "emoji": "⚔️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "fight-plan",
+          "emoji": "🗺️",
+          "topic": "Wie gehen wir das Match an?",
+          "mode": "threads"
+        },
+        {
+          "label": "aufstellung",
+          "emoji": "📋",
+          "topic": "Wer spielt welche Rolle?"
+        },
+        {
+          "label": "gegner-aufklaerung",
+          "emoji": "🔭",
+          "topic": "Was wissen wir über den Gegner?"
+        },
+        {
+          "label": "match-termine",
+          "emoji": "📅",
+          "kind": "news",
+          "topic": "Wann spielen wir?",
+          "visibility": "readonly",
+          "mode": "announce"
+        },
+        {
+          "label": "anwesenheit",
+          "emoji": "✋",
+          "topic": "Wer kann wann?",
+          "reactions": [
+            "✅",
+            "❌"
+          ]
+        },
+        {
+          "label": "nachbesprechung",
+          "emoji": "📊",
+          "topic": "Was lief gut, was nicht?",
+          "mode": "threads"
+        }
+      ]
+    },
+    {
+      "label": "clan talks",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "clan-talk",
+          "emoji": "⚔️",
+          "kind": "voice"
+        },
+        {
+          "label": "clan-talk-2",
+          "emoji": "⚔️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "fight-call",
+          "emoji": "📣",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "fight-call-2",
+          "emoji": "📣",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "war-room",
+          "emoji": "🗺️",
+          "kind": "voice",
+          "user_limit": 20
+        },
+        {
+          "label": "zu-zweit",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 2
+        },
+        {
+          "label": "zu-dritt",
+          "emoji": "👨‍👩‍👦",
+          "kind": "voice",
+          "user_limit": 3
+        },
+        {
+          "label": "squad-1",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "squad-2",
+          "emoji": "🛡️",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "scrim-raum",
+          "emoji": "🎯",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "kommentar-buehne",
+          "emoji": "🎙️",
+          "kind": "stage"
+        },
+        {
+          "label": "chill-ecke",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "musik",
+          "emoji": "🎶",
+          "kind": "voice"
+        },
+        {
+          "label": "abwesend",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "training",
+      "emoji": "🎯",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "trainingsplan",
+          "emoji": "📅",
+          "topic": "Wann wird trainiert?",
+          "mode": "announce"
+        },
+        {
+          "label": "uebungen",
+          "emoji": "🔁",
+          "topic": "Drills und Übungen"
+        },
+        {
+          "label": "coaching",
+          "emoji": "🧠",
+          "topic": "Frag nach Rückmeldung",
+          "mode": "threads"
+        },
+        {
+          "label": "aufnahmen",
+          "emoji": "📼",
+          "topic": "Mitschnitte zum Auswerten",
+          "mode": "media"
+        },
+        {
+          "label": "trainingsraum-1",
+          "emoji": "🎯",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "trainingsraum-2",
+          "emoji": "🎯",
+          "kind": "voice",
+          "user_limit": 8
+        }
+      ]
+    },
+    {
+      "label": "mitglieder",
+      "emoji": "🔐",
+      "visibility": "member",
+      "channels": [
+        {
+          "label": "mitglieder-chat",
+          "emoji": "🗣️",
+          "topic": "Nur für den Kader"
+        },
+        {
+          "label": "interne-absprachen",
+          "emoji": "📌",
+          "topic": "Was nicht nach außen gehört"
+        },
+        {
+          "label": "kasse",
+          "emoji": "💰",
+          "topic": "Clan-Kasse und Beiträge"
+        },
+        {
+          "label": "mitglieder-talk",
+          "emoji": "🔒",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "premium",
+      "emoji": "💎",
+      "visibility": "vip",
+      "channels": [
+        {
+          "label": "premium-chat",
+          "emoji": "💎",
+          "topic": "Nur für Premium-Mitglieder"
+        },
+        {
+          "label": "premium-vorteile",
+          "emoji": "🎁",
+          "topic": "Was Premium dir bringt",
+          "visibility": "readonly",
+          "guide": [
+            "Deine Vorteile als Premium-Mitglied."
+          ]
+        },
+        {
+          "label": "premium-wuensche",
+          "emoji": "💡",
+          "topic": "Wünsche und Vorschläge",
+          "mode": "threads"
+        },
+        {
+          "label": "frueher-zugang",
+          "emoji": "🚀",
+          "topic": "Neues zuerst für Premium",
+          "mode": "announce"
+        },
+        {
+          "label": "premium-talk",
+          "emoji": "💎",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "premium-lounge",
+          "emoji": "🛋️",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "kurze-fragen",
+          "emoji": "⚡",
+          "topic": "Kurze Fragen ohne Ticket"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Probleme auf dem Server melden"
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungs-sichtung",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Clanleitung"
+        },
+        {
+          "label": "kader-planung",
+          "emoji": "🗺️",
+          "topic": "Wer kommt, wer geht"
+        },
+        {
+          "label": "clan-kriege",
+          "emoji": "⚔️",
+          "topic": "Absprachen mit anderen Clans"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}
