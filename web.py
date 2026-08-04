@@ -24,6 +24,7 @@ from core import speedrun
 from core.builder import BuildMode, ServerBuilder
 from core.handover import build_handover
 from core.handshake import is_enabled, read_state
+from core.permissions import BASE_ROLES
 
 if TYPE_CHECKING:
     from bot import ArchitectBot
@@ -31,6 +32,28 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger("architect.web")
 
 __all__ = ["start_web_server"]
+
+
+def _role_total(template) -> int:
+    """Wie viele Rollen dieses Template wirklich anlegt.
+
+    ``len(template.roles)`` zaehlt nur die Akzent-Rollen aus der
+    JSON-Datei. Bei ``extends_base_roles`` -- dem Normalfall -- kommt die
+    Basisleiter aus ``BASE_ROLES`` dazu, also Unverified, Verified,
+    Member, VIP, das Team und der Inhaber. Bei "community" sind das drei
+    gegenueber sechzehn tatsaechlichen Rollen; im Dashboard stand
+    deshalb eine Zahl, die der Nutzer nach dem Bau nicht wiederfand.
+
+    Gerechnet wird wie im ServerBuilder: Basisleiter zuerst, dann die
+    Template-Rollen, doppelte Keys nur einmal.
+    """
+
+    if not template.extends_base_roles:
+        return len(template.roles)
+
+    base_keys = {key for key, *_rest in BASE_ROLES}
+    extra = sum(1 for spec in template.roles if spec.key not in base_keys)
+    return len(base_keys) + extra
 
 
 # --------------------------------------------------------------------------- #
@@ -297,8 +320,30 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
                     "premium": bool(template.premium),
                     "accent": template.accent,
                     "highlights": list(template.highlights),
-                    "role_count": len(template.roles),
+                    # Die *tatsaechliche* Rollenzahl, nicht nur die
+                    # Akzent-Rollen des Templates.
+                    #
+                    # ``len(template.roles)`` sind bei "community" drei --
+                    # angelegt werden aber sechzehn, weil die Basisleiter
+                    # (Unverified bis Inhaber) dazukommt. Im Dashboard
+                    # stand dadurch "3 Rollen" an einem Template, das
+                    # sechzehn baut.
+                    "role_count": _role_total(template),
+                    "accent_role_count": len(template.roles),
                     "category_count": template.category_count,
+                    # Damit die Auswahl zeigen kann, was entsteht,
+                    # statt nur einen Namen.
+                    "channel_count": template.channel_count,
+                    "voice_count": template.voice_count,
+                    "text_count": template.text_count,
+                    "outline": [
+                        {
+                            "label": category.label,
+                            "emoji": category.emoji or "",
+                            "channels": len(category.channels),
+                        }
+                        for category in template.categories
+                    ],
                 }
             )
         return web.json_response({"templates": items})

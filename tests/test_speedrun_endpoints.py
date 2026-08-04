@@ -66,6 +66,13 @@ class _Registry:
         return self._templates.get(key)
 
 
+class _Role:
+    """Eine Akzent-Rolle, so weit die Endpunkte sie anfassen."""
+
+    def __init__(self, key):
+        self.key = key
+
+
 class _Template:
     def __init__(self, key="community", premium=False):
         self.key = key
@@ -76,8 +83,20 @@ class _Template:
         self.premium = premium
         self.accent = "#5865F2"
         self.highlights = ["A", "B"]
-        self.roles = [1, 2, 3]
+        # Rollen tragen einen Key -- `[1, 2, 3]` war eine Abkuerzung,
+        # die beim ersten echten Zugriff auffliegt.
+        self.roles = [_Role("creator"), _Role("event_team"), _Role("designer")]
         self.category_count = 4
+        # Die echte Template-Klasse hat diese Felder; eine Attrappe
+        # ohne sie prueft nichts, sondern stuerzt nur anders ab.
+        # Genau so ist es passiert: `_role_total` las
+        # `extends_base_roles` und bekam einen AttributeError -- HTTP
+        # 500, waehrend der Endpunkt gegen die echte Registry lief.
+        self.extends_base_roles = True
+        self.channel_count = 12
+        self.voice_count = 3
+        self.text_count = 9
+        self.categories = ()
 
 
 class _Empty:
@@ -389,3 +408,93 @@ class TestJobStore:
         for index in range(speedrun.MAX_LINES + 50):
             job.log(f"Zeile {index}")
         assert len(job.lines) == speedrun.MAX_LINES
+
+
+# --------------------------------------------------------------------- #
+# Die Zahlen, die das Dashboard vor dem Start anzeigt
+# --------------------------------------------------------------------- #
+
+
+class TestTemplateNumbers:
+    """Was die Auswahl im Dashboard ueber ein Template behauptet.
+
+    Hier stand eine Zahl, die nach dem Bau niemand wiederfand: bei
+    "community" meldete die Liste drei Rollen, angelegt wurden
+    sechzehn. Gezaehlt wurden nur die Akzent-Rollen aus der JSON-Datei
+    -- die Basisleiter (Unverified bis Inhaber) kommt im ServerBuilder
+    dazu und fehlte in der Rechnung.
+    """
+
+    def test_role_count_includes_the_base_ladder(self):
+        import web
+        from core.permissions import BASE_ROLES
+        from core.registry import TemplateRegistry
+
+        registry = TemplateRegistry(BASE_DIR / "templates").load()
+        base_keys = {key for key, *_rest in BASE_ROLES}
+
+        for template in registry.all:
+            counted = web._role_total(template)
+            expected = len(base_keys) + sum(
+                1 for spec in template.roles if spec.key not in base_keys
+            )
+            assert counted == expected, (
+                f"{template.key}: gemeldet {counted}, angelegt {expected}"
+            )
+            # Und die Zahl muss groesser sein als die reine JSON-Liste,
+            # sonst wurde die Basisleiter wieder vergessen.
+            assert counted > len(template.roles), (
+                f"{template.key}: {counted} ist nicht mehr als die "
+                f"{len(template.roles)} Akzent-Rollen -- die Basisleiter fehlt"
+            )
+
+    def test_a_template_without_the_ladder_counts_only_its_own(self):
+        """Ohne ``extends_base_roles`` darf nichts dazugerechnet werden."""
+
+        import web
+
+        class Fake:
+            extends_base_roles = False
+            roles = (1, 2, 3)
+
+        assert web._role_total(Fake()) == 3
+
+    @pytest.mark.asyncio
+    async def test_the_listing_carries_what_the_dashboard_shows(self, tmp_path):
+        """Kanalzahlen und Gliederung muessen mitkommen."""
+
+        from aiohttp.test_utils import TestClient, TestServer
+
+        import web as web_module
+        from core.registry import TemplateRegistry
+
+        registry = TemplateRegistry(BASE_DIR / "templates").load()
+        template = registry.get("community")
+
+        bot = Bot(tmp_path)
+        bot.registry = registry
+
+        config.PARTNER_HANDSHAKE_SECRET = TOKEN
+        runner = await web_module.start_web_server(bot)
+        try:
+            async with TestClient(TestServer(runner.app)) as client:
+                response = await client.get(
+                    "/internal/speedrun/templates",
+                    headers={"X-Partner-Token": TOKEN},
+                )
+                assert response.status == 200
+                body = await response.json()
+
+            entry = next(t for t in body["templates"] if t["key"] == "community")
+
+            assert entry["role_count"] == web_module._role_total(template)
+            assert entry["channel_count"] == template.channel_count
+            assert entry["voice_count"] == template.voice_count
+            assert entry["text_count"] == template.text_count
+            # Die Gliederung: eine Zeile je Kategorie, mit Kanalzahl.
+            assert len(entry["outline"]) == template.category_count
+            assert sum(c["channels"] for c in entry["outline"]) == (
+                template.channel_count
+            )
+        finally:
+            await runner.cleanup()
