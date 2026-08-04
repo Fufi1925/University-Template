@@ -344,6 +344,11 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
                         }
                         for category in template.categories
                     ],
+                    # Was diese Vorlage hergibt. Ohne die Auskunft bot
+                    # das Dashboard alle Schritte an, auch die, die
+                    # diese Vorlage nie baut -- und der Nutzer erfuhr
+                    # erst im Bericht, dass sein Haken nichts bewirkte.
+                    "capabilities": template.capabilities,
                 }
             )
         return web.json_response({"templates": items})

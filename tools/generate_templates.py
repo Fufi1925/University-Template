@@ -1913,6 +1913,381 @@ def esports() -> dict[str, Any]:
     }
 
 
+def music() -> dict[str, Any]:
+    return {
+        "key": "music",
+        "name": "Musik & DJ",
+        "emoji": "🎵",
+        "tagline": "Hörsessions, eigene Tracks und Bühnenabende",
+        "premium": False,
+        "accent": "#A855F7",
+        "description": (
+            "Für Musikserver: gemeinsame Hörsessions, ein Bereich für eigene "
+            "Produktionen mit Rückmeldungen, Bühnenabende für Live-Sets und "
+            "getrennte Räume nach Genre. Der Zählkanal fehlt hier bewusst — "
+            "auf einem Musikserver zählt niemand."
+        ),
+        "highlights": [
+            "Bühne für Live-Sets und Hörabende",
+            "Eigene Produktionen mit strukturierter Rückmeldung",
+            "Sprachräume nach Genre getrennt",
+            "Vollständige Log-Suite inklusive Voice-Logs",
+        ],
+        "roles": [
+            role("dj", "DJ", "🎧", "#A855F7", "trusted"),
+            role("producer", "Producer", "🎹", "#7C3AED", "trusted"),
+            role("vocalist", "Vocalist", "🎤", "#EC4899", "trusted", hoist=False),
+            role("kurator", "Kurator", "📻", "#F59E0B", "helper"),
+        ],
+        "categories": [
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly",
+                    guide=[
+                        "Schön, dass du da bist.",
+                        "Verifiziere dich nebenan, danach siehst du den gesamten Server.",
+                    ],
+                ),
+                ch("verifizieren", "✅", topic="Hier verifizieren", widget="verify"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly", widget="rules"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly",
+                    guide=[
+                        "Die häufigsten Fragen und ihre Antworten.",
+                        "Ist deine Frage nicht dabei, melde dich beim Team.",
+                    ],
+                ),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen", mode="announce"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates", mode="announce"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben", widget="roles"),
+                ch("partner", "🤝", topic="Unsere Partner",
+                    guide=[
+                        "Server und Projekte, mit denen wir zusammenarbeiten.",
+                    ],
+                ),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?",
+                    guide=[
+                        "Wer zum Team gehört und wofür zuständig ist.",
+                    ],
+                ),
+            ]),
+            cat("musik", "🎵", "public", [
+                ch("was-laeuft-gerade", "🎶", topic="Was hörst du gerade?"),
+                ch("empfehlungen", "⭐", topic="Empfehlungen und Entdeckungen", reactions=["⭐"]),
+                ch("playlisten", "📻", topic="Geteilte Playlisten", mode="media"),
+                ch("neuerscheinungen", "🆕", topic="Neue Alben und Singles"),
+                ch("konzerte", "🎫", topic="Konzerte und Festivals"),
+                ch("liedtexte", "📝", topic="Texte und ihre Bedeutung"),
+                ch("musik-quiz", "❓", topic="Rate den Song", reactions=["🎵"]),
+            ]),
+            cat("eigene-musik", "🎹", "public", [
+                ch("eigene-tracks", "🎼", topic="Zeig deine Produktionen", slowmode=120, mode="media", reactions=["🔥"]),
+                ch("rueckmeldungen", "💡", topic="Konstruktive Kritik zu Tracks", mode="threads"),
+                ch("zusammenarbeit", "🤝", topic="Wer sucht wen für ein Projekt?"),
+                ch("technik-hilfe", "🔧", topic="DAWs, Plugins, Aufnahmetechnik"),
+                ch("stimmen-gesucht", "🎤", topic="Vocalisten und Features"),
+            ]),
+            cat("buehne", "🎤", "public", [
+                ch("buehnen-plan", "📅", "news", topic="Wann spielt wer?", visibility="readonly", mode="announce"),
+                ch("buehnen-chat", "💬", topic="Chat während der Sets"),
+                ch("hauptbuehne", "🎪", "stage"),
+                ch("offene-buehne", "🎙️", "stage"),
+                ch("hoersession", "🎧", "voice", user_limit=25),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("sprachkanaele", "🔊", "public", [
+                ch("allgemeiner-talk", "🎙️", "voice"),
+                ch("elektro", "🎛️", "voice", user_limit=15),
+                ch("rock-und-metal", "🎸", "voice", user_limit=15),
+                ch("hip-hop", "🎤", "voice", user_limit=15),
+                ch("klassik-und-jazz", "🎻", "voice", user_limit=10),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("uebungsraum", "🥁", "voice", user_limit=5),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("community", "💬", "public", [
+                ch("allgemein", "💭", topic="Der Hauptchat", slowmode=3,
+                    guide=[
+                        "Der Hauptchat für alles, was keinen eigenen Kanal hat.",
+                    ],
+                ),
+                ch("bilder-und-clips", "🖼️", topic="Bilder, Clips, Fundstücke", mode="media"),
+                ch("memes", "😂", topic="Nur Memes", mode="media", reactions=["😂"]),
+                ch("sonstiges", "🌙", topic="Alles, was sonst nirgends passt"),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle gehören hierher",
+                    guide=[
+                        "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen.",
+                    ],
+                ),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team", mode="announce"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten", widget="checklist"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen", mode="log"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte", mode="log"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten", mode="log"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität", mode="log"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen", mode="log"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen", mode="log"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen", mode="log"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse", mode="log"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking", mode="log"),
+                ch("server-logs", "🗃️", topic="Alles Übrige", mode="log"),
+            ]),
+        ],
+    }
+
+
+def dev() -> dict[str, Any]:
+    return {
+        "key": "dev",
+        "name": "Entwickler & Open Source",
+        "emoji": "💻",
+        "tagline": "Code-Hilfe, Projekte und Code-Reviews",
+        "premium": False,
+        "accent": "#22C55E",
+        "description": (
+            "Für Entwickler-Communities: nach Sprachen getrennte Hilfe-Foren, "
+            "ein Bereich für eigene Projekte, Code-Reviews und Pair-Programming "
+            "mit Bildschirmfreigabe. Ohne Zählkanal und ohne Event-Bereich — "
+            "hier wird gearbeitet, nicht gefeiert."
+        ),
+        "highlights": [
+            "Hilfe-Foren getrennt nach Sprache und Stack",
+            "Code-Review-Bereich mit Threads pro Anfrage",
+            "Pair-Programming-Räume mit Bildschirmfreigabe",
+            "Ticket-Panel für längere Anliegen",
+        ],
+        "roles": [
+            role("maintainer", "Maintainer", "🔑", "#22C55E", "helper"),
+            role("contributor", "Contributor", "🛠️", "#16A34A", "trusted"),
+            role("reviewer", "Reviewer", "🔍", "#0EA5E9", "helper"),
+            role("frontend", "Frontend", "🎨", "#EC4899", "member", hoist=False),
+            role("backend", "Backend", "⚙️", "#64748B", "member", hoist=False),
+            role("devops", "DevOps", "☁️", "#F59E0B", "member", hoist=False),
+        ],
+        "categories": [
+            cat("willkommen", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen! Verifiziere dich, um den Server zu sehen.", visibility="readonly",
+                    guide=[
+                        "Schön, dass du da bist.",
+                        "Verifiziere dich nebenan, danach siehst du den gesamten Server.",
+                    ],
+                ),
+                ch("verifizieren", "✅", topic="Hier verifizieren", widget="verify"),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly", widget="rules"),
+                ch("haeufige-fragen", "❔", topic="Häufig gestellte Fragen", visibility="readonly",
+                    guide=[
+                        "Die häufigsten Fragen und ihre Antworten.",
+                        "Ist deine Frage nicht dabei, melde dich beim Team.",
+                    ],
+                ),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", "news", topic="Wichtige Ankündigungen", mode="announce"),
+                ch("neuigkeiten", "🆕", topic="Server- und Bot-Updates", mode="announce"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben", widget="roles"),
+                ch("projekt-vorstellung", "📦", topic="Womit beschäftigen wir uns?",
+                    guide=[
+                        "Die Projekte, um die es auf diesem Server geht.",
+                    ],
+                ),
+                ch("team-vorstellung", "👥", topic="Wer gehört zum Team?",
+                    guide=[
+                        "Wer zum Team gehört und wofür zuständig ist.",
+                    ],
+                ),
+            ]),
+            cat("hilfe", "🛟", "public", [
+                ch("so-fragst-du-richtig", "📖", topic="So bekommst du schnell Hilfe", visibility="readonly",
+                    guide=[
+                        "Zeig deinen Code, die Fehlermeldung und was du schon versucht hast.",
+                        "Alles, was länger dauert, gehört in ein Ticket.",
+                    ],
+                ),
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
+                ch("hilfe-allgemein", "❓", "forum", topic="Allgemeine Fragen"),
+                ch("hilfe-web", "🌐", "forum", topic="HTML, CSS, JavaScript, Frameworks"),
+                ch("hilfe-python", "🐍", "forum", topic="Python und sein Umfeld"),
+                ch("hilfe-datenbanken", "🗄️", "forum", topic="SQL, Schema-Fragen, Abfragen"),
+                ch("hilfe-devops", "☁️", "forum", topic="Deployment, Docker, CI"),
+                ch("kurze-fragen", "⚡", topic="Einzeiler ohne Forum-Beitrag"),
+            ]),
+            cat("projekte", "📦", "public", [
+                ch("projekt-vorstellen", "🚀", topic="Stell dein Projekt vor", slowmode=300, mode="media", reactions=["🚀"]),
+                ch("code-review", "🔍", topic="Bitte um Durchsicht", mode="threads"),
+                ch("mitstreiter-gesucht", "🤝", topic="Wer sucht wen für ein Projekt?"),
+                ch("bibliotheken", "📚", topic="Nützliche Bibliotheken und Werkzeuge"),
+                ch("fehler-melden", "🐛", "forum", topic="Fehler in unseren Projekten"),
+                ch("funktionswuensche", "💡", "forum", topic="Wünsche einreichen", reactions=["👍", "👎"]),
+            ]),
+            cat("austausch", "💬", "public", [
+                ch("allgemein", "💭", topic="Der Hauptchat", slowmode=3,
+                    guide=[
+                        "Der Hauptchat für alles, was keinen eigenen Kanal hat.",
+                    ],
+                ),
+                ch("arbeitsplatz", "🖥️", topic="Zeig deinen Aufbau", mode="media"),
+                ch("stellenangebote", "💼", topic="Jobs und Aufträge", slowmode=600),
+                ch("lesestoff", "📰", topic="Artikel und Vorträge"),
+                ch("memes", "😂", topic="Nur Memes", mode="media", reactions=["😂"]),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle gehören hierher",
+                    guide=[
+                        "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen.",
+                    ],
+                ),
+            ]),
+            cat("sprachen", "🌍", "public", [
+                ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
+                ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
+            ]),
+            cat("sprach-talks", "🗣️", "public", [
+                ch("deutsch-talk", "🇩🇪", "voice"),
+                ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
+            ]),
+            cat("arbeitsraeume", "🔊", "public", [
+                ch("allgemeiner-talk", "🎙️", "voice"),
+                ch("pair-programming-1", "👥", "voice", user_limit=2),
+                ch("pair-programming-2", "👥", "voice", user_limit=2),
+                ch("bildschirm-teilen", "🖥️", "voice", user_limit=8),
+                ch("stilles-arbeiten", "🤫", "voice", user_limit=20),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team", mode="announce"),
+                ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten", widget="checklist"),
+                ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
+                ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("team-talk", "🎙️", "voice", user_limit=15),
+            ]),
+            cat("leitung", "👑", "leadership", [
+                ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
+                ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("leitungs-talk", "🔐", "voice", user_limit=10),
+            ]),
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen", mode="log"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte", mode="log"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten", mode="log"),
+                ch("sprach-logs", "🔊", topic="Voice-Aktivität", mode="log"),
+                ch("rollen-logs", "🏷️", topic="Rollenänderungen", mode="log"),
+                ch("kanal-logs", "🗂️", topic="Kanaländerungen", mode="log"),
+                ch("social-logs", "📱", topic="Social-Media-Feeds und Erwähnungen", mode="log"),
+                ch("bot-logs", "🤖", topic="Bot-Ereignisse", mode="log"),
+                ch("einladungs-logs", "🔗", topic="Einladungs-Tracking", mode="log"),
+                ch("server-logs", "🗃️", topic="Alles Übrige", mode="log"),
+            ]),
+        ],
+    }
+
+
+def minimal() -> dict[str, Any]:
+    return {
+        "key": "minimal",
+        "name": "Kleiner Server",
+        "emoji": "🌱",
+        "tagline": "Nur das Nötigste — für Freundeskreise und den Anfang",
+        "premium": False,
+        "accent": "#14B8A6",
+        "description": (
+            "Bewusst klein: keine Verify-Schleuse, kein Ticket-System, keine "
+            "Rollen-Vergabe. Ein Regelkanal, ein paar Chats, ein paar "
+            "Sprachräume und ein knapper Log-Bereich. Für Freundeskreise und "
+            "alle, die mit fünfzehn Kanälen auskommen statt mit neunzig."
+        ),
+        "highlights": [
+            "Keine Verify-Schleuse — jeder ist sofort dabei",
+            "Nur vier Log-Kanäle statt zehn",
+            "Wenige, klar benannte Kanäle statt einer langen Liste",
+            "Lässt sich später jederzeit erweitern",
+        ],
+        "roles": [
+            role("stammgast", "Stammgast", "🌿", "#14B8A6", "trusted", hoist=False),
+        ],
+        "categories": [
+            # Kein Verify-Widget: dieser Server soll ohne Schleuse
+            # laufen. Die Gate-Kategorie bleibt trotzdem, weil der
+            # Willkommenskanal dort steht -- der Hauptbot findet die
+            # Begruessung ueber genau diese Kategorie.
+            cat("start", "🚪", "gate", [
+                ch("willkommen", "👋", topic="Willkommen auf dem Server", visibility="readonly",
+                    guide=[
+                        "Schön, dass du da bist.",
+                        "Lies kurz die Regeln, dann leg einfach los.",
+                    ],
+                ),
+                ch("regeln", "📜", topic="Serverregeln", visibility="readonly", widget="rules"),
+            ]),
+            cat("information", "📌", "readonly", [
+                ch("ankuendigungen", "📢", topic="Wichtige Ankündigungen", mode="announce"),
+            ]),
+            cat("chat", "💬", "public", [
+                ch("allgemein", "💭", topic="Der Hauptchat",
+                    guide=[
+                        "Der Hauptchat für alles, was keinen eigenen Kanal hat.",
+                    ],
+                ),
+                ch("bilder-und-clips", "🖼️", topic="Bilder, Clips, Fundstücke", mode="media"),
+                ch("memes", "😂", topic="Nur Memes", mode="media", reactions=["😂"]),
+                ch("bot-befehle", "🤖", topic="Bot-Befehle gehören hierher",
+                    guide=[
+                        "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen.",
+                    ],
+                ),
+            ]),
+            cat("sprachkanaele", "🔊", "public", [
+                ch("allgemeiner-talk", "🎙️", "voice"),
+                ch("zu-zweit", "👥", "voice", user_limit=2),
+                ch("chill-ecke", "☕", "voice", user_limit=10),
+                ch("abwesend", "💤", "voice"),
+            ]),
+            cat("team", "🛡️", "staff", [
+                ch("team-chat", "💼", topic="Interner Teamchat"),
+                ch("team-talk", "🎙️", "voice", user_limit=10),
+            ]),
+            # Nur die vier Logs, die man auf einem kleinen Server
+            # wirklich liest. Zehn Log-Kanaele fuer fuenfzehn Leute
+            # waeren mehr Logs als Chats.
+            cat("logs", "📜", "staff", [
+                ch("mod-logs", "🔨", topic="Moderationsaktionen", mode="log"),
+                ch("mitglieder-logs", "👥", topic="Beitritte und Austritte", mode="log"),
+                ch("nachrichten-logs", "✏️", topic="Bearbeitete und gelöschte Nachrichten", mode="log"),
+                ch("server-logs", "🗃️", topic="Alles Übrige", mode="log"),
+            ]),
+        ],
+    }
+
+
 TEMPLATES = [
     community,
     rp,
@@ -1924,6 +2299,9 @@ TEMPLATES = [
     creator,
     support,
     esports,
+    music,
+    dev,
+    minimal,
 ]
 
 

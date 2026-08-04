@@ -1,0 +1,555 @@
+{
+  "key": "music",
+  "name": "Musik & DJ",
+  "emoji": "🎵",
+  "tagline": "Hörsessions, eigene Tracks und Bühnenabende",
+  "premium": false,
+  "accent": "#A855F7",
+  "description": "Für Musikserver: gemeinsame Hörsessions, ein Bereich für eigene Produktionen mit Rückmeldungen, Bühnenabende für Live-Sets und getrennte Räume nach Genre. Der Zählkanal fehlt hier bewusst — auf einem Musikserver zählt niemand.",
+  "highlights": [
+    "Bühne für Live-Sets und Hörabende",
+    "Eigene Produktionen mit strukturierter Rückmeldung",
+    "Sprachräume nach Genre getrennt",
+    "Vollständige Log-Suite inklusive Voice-Logs"
+  ],
+  "roles": [
+    {
+      "key": "dj",
+      "label": "DJ",
+      "emoji": "🎧",
+      "colour": "#A855F7",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "producer",
+      "label": "Producer",
+      "emoji": "🎹",
+      "colour": "#7C3AED",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "vocalist",
+      "label": "Vocalist",
+      "emoji": "🎤",
+      "colour": "#EC4899",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "kurator",
+      "label": "Kurator",
+      "emoji": "📻",
+      "colour": "#F59E0B",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "neuigkeiten",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        },
+        {
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "musik",
+      "emoji": "🎵",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "was-laeuft-gerade",
+          "emoji": "🎶",
+          "topic": "Was hörst du gerade?"
+        },
+        {
+          "label": "empfehlungen",
+          "emoji": "⭐",
+          "topic": "Empfehlungen und Entdeckungen",
+          "reactions": [
+            "⭐"
+          ]
+        },
+        {
+          "label": "playlisten",
+          "emoji": "📻",
+          "topic": "Geteilte Playlisten",
+          "mode": "media"
+        },
+        {
+          "label": "neuerscheinungen",
+          "emoji": "🆕",
+          "topic": "Neue Alben und Singles"
+        },
+        {
+          "label": "konzerte",
+          "emoji": "🎫",
+          "topic": "Konzerte und Festivals"
+        },
+        {
+          "label": "liedtexte",
+          "emoji": "📝",
+          "topic": "Texte und ihre Bedeutung"
+        },
+        {
+          "label": "musik-quiz",
+          "emoji": "❓",
+          "topic": "Rate den Song",
+          "reactions": [
+            "🎵"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "eigene-musik",
+      "emoji": "🎹",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "eigene-tracks",
+          "emoji": "🎼",
+          "topic": "Zeig deine Produktionen",
+          "slowmode": 120,
+          "mode": "media",
+          "reactions": [
+            "🔥"
+          ]
+        },
+        {
+          "label": "rueckmeldungen",
+          "emoji": "💡",
+          "topic": "Konstruktive Kritik zu Tracks",
+          "mode": "threads"
+        },
+        {
+          "label": "zusammenarbeit",
+          "emoji": "🤝",
+          "topic": "Wer sucht wen für ein Projekt?"
+        },
+        {
+          "label": "technik-hilfe",
+          "emoji": "🔧",
+          "topic": "DAWs, Plugins, Aufnahmetechnik"
+        },
+        {
+          "label": "stimmen-gesucht",
+          "emoji": "🎤",
+          "topic": "Vocalisten und Features"
+        }
+      ]
+    },
+    {
+      "label": "buehne",
+      "emoji": "🎤",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "buehnen-plan",
+          "emoji": "📅",
+          "kind": "news",
+          "topic": "Wann spielt wer?",
+          "visibility": "readonly",
+          "mode": "announce"
+        },
+        {
+          "label": "buehnen-chat",
+          "emoji": "💬",
+          "topic": "Chat während der Sets"
+        },
+        {
+          "label": "hauptbuehne",
+          "emoji": "🎪",
+          "kind": "stage"
+        },
+        {
+          "label": "offene-buehne",
+          "emoji": "🎙️",
+          "kind": "stage"
+        },
+        {
+          "label": "hoersession",
+          "emoji": "🎧",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "sprachkanaele",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "allgemeiner-talk",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "elektro",
+          "emoji": "🎛️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "rock-und-metal",
+          "emoji": "🎸",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "hip-hop",
+          "emoji": "🎤",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "klassik-und-jazz",
+          "emoji": "🎻",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "chill-ecke",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "uebungsraum",
+          "emoji": "🥁",
+          "kind": "voice",
+          "user_limit": 5
+        },
+        {
+          "label": "abwesend",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "community",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "allgemein",
+          "emoji": "💭",
+          "topic": "Der Hauptchat",
+          "slowmode": 3,
+          "guide": [
+            "Der Hauptchat für alles, was keinen eigenen Kanal hat."
+          ]
+        },
+        {
+          "label": "bilder-und-clips",
+          "emoji": "🖼️",
+          "topic": "Bilder, Clips, Fundstücke",
+          "mode": "media"
+        },
+        {
+          "label": "memes",
+          "emoji": "😂",
+          "topic": "Nur Memes",
+          "mode": "media",
+          "reactions": [
+            "😂"
+          ]
+        },
+        {
+          "label": "sonstiges",
+          "emoji": "🌙",
+          "topic": "Alles, was sonst nirgends passt"
+        },
+        {
+          "label": "bot-befehle",
+          "emoji": "🤖",
+          "topic": "Bot-Befehle gehören hierher",
+          "guide": [
+            "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "kurze-fragen",
+          "emoji": "⚡",
+          "topic": "Kurze Fragen ohne Ticket"
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

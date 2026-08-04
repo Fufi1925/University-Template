@@ -222,10 +222,31 @@ class TestCounting:
 # --------------------------------------------------------------------------- #
 
 class TestShippedContent:
+    # "minimal" ist bewusst ohne Schleuse: ein Freundeskreis-Server,
+    # auf dem jeder sofort dabei ist. Wer hier eintraegt, entscheidet
+    # sich dafuer; eine *andere* Vorlage ohne Verify bleibt ein Fehler.
+    WITHOUT_VERIFY: ClassVar[set[str]] = {"minimal"}
+
     def test_every_template_has_a_verify_widget(self, registry):
         for template in registry:
             widgets = {c.widget for _, c in template.iter_channels()}
+            if template.key in self.WITHOUT_VERIFY:
+                assert Widget.VERIFY not in widgets, (
+                    f"{template.key} steht als 'ohne Verify' eingetragen, "
+                    "hat aber eins — dann gehört es aus der Liste raus"
+                )
+                # Und die Vorlage muss das auch melden, sonst bietet
+                # das Dashboard den Verify-Schritt an und er läuft ins
+                # Leere.
+                assert not template.capabilities["verify"], (
+                    f"{template.key} meldet Verify, hat aber keins"
+                )
+                continue
             assert Widget.VERIFY in widgets, f"{template.key} ohne Verify-Button"
+            assert template.capabilities["verify"], (
+                f"{template.key} hat Verify, meldet es aber nicht — "
+                "das Dashboard böte den Schritt nicht an"
+            )
 
     def test_every_template_has_rules_widget(self, registry):
         for template in registry:

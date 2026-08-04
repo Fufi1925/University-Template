@@ -1,0 +1,181 @@
+{
+  "key": "minimal",
+  "name": "Kleiner Server",
+  "emoji": "🌱",
+  "tagline": "Nur das Nötigste — für Freundeskreise und den Anfang",
+  "premium": false,
+  "accent": "#14B8A6",
+  "description": "Bewusst klein: keine Verify-Schleuse, kein Ticket-System, keine Rollen-Vergabe. Ein Regelkanal, ein paar Chats, ein paar Sprachräume und ein knapper Log-Bereich. Für Freundeskreise und alle, die mit fünfzehn Kanälen auskommen statt mit neunzig.",
+  "highlights": [
+    "Keine Verify-Schleuse — jeder ist sofort dabei",
+    "Nur vier Log-Kanäle statt zehn",
+    "Wenige, klar benannte Kanäle statt einer langen Liste",
+    "Lässt sich später jederzeit erweitern"
+  ],
+  "roles": [
+    {
+      "key": "stammgast",
+      "label": "Stammgast",
+      "emoji": "🌿",
+      "colour": "#14B8A6",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "start",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen auf dem Server",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Lies kurz die Regeln, dann leg einfach los."
+          ]
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "chat",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "allgemein",
+          "emoji": "💭",
+          "topic": "Der Hauptchat",
+          "guide": [
+            "Der Hauptchat für alles, was keinen eigenen Kanal hat."
+          ]
+        },
+        {
+          "label": "bilder-und-clips",
+          "emoji": "🖼️",
+          "topic": "Bilder, Clips, Fundstücke",
+          "mode": "media"
+        },
+        {
+          "label": "memes",
+          "emoji": "😂",
+          "topic": "Nur Memes",
+          "mode": "media",
+          "reactions": [
+            "😂"
+          ]
+        },
+        {
+          "label": "bot-befehle",
+          "emoji": "🤖",
+          "topic": "Bot-Befehle gehören hierher",
+          "guide": [
+            "Bot-Befehle gehören hierher, damit sie den Hauptchat nicht zumüllen."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sprachkanaele",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "allgemeiner-talk",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "zu-zweit",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 2
+        },
+        {
+          "label": "chill-ecke",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "abwesend",
+          "emoji": "💤",
+          "kind": "voice"
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

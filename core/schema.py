@@ -386,6 +386,64 @@ class Template:
             for channel in category.channels:
                 yield category, channel
 
+    @property
+    def capabilities(self) -> dict[str, bool]:
+        """Was diese Vorlage hergibt -- pro Schritt des University Bots.
+
+        Der Hauptbot richtet nach dem Bau Verify, Tickets, Logs und den
+        Rest ein. Manches davon braucht einen Kanal, den *diese*
+        Vorlage anlegen muss: ohne Verify-Kanal keine Schleuse, ohne
+        Ticket-Panel keine Tickets.
+
+        Bisher hat das Dashboard alle dreizehn Schritte angeboten,
+        egal welche Vorlage gewaehlt war. Bei neun von zehn standen
+        dadurch Schalter auf "an" fuer Sachen, die diese Vorlage nie
+        baut -- ``rp`` hat keinen Rollen-Kanal, ``business`` kein
+        Ticket-Panel, und einen Zaehl-Kanal hat nur ``community``. Wer
+        sie anliess, bekam hinterher im Bericht "Uebersprungen" und
+        keine Erklaerung, warum etwas eingeschaltet war, das gar nicht
+        gehen konnte.
+
+        Diese Auskunft entsteht hier, wo die Template-Definition
+        vorliegt -- der Hauptbot koennte sie nicht erraten.
+
+        Schritte ohne Kanalbedarf (Anti-Nuke, Level, Automod,
+        Einladungs-Log) stehen bewusst nicht drin: sie gehen immer.
+        """
+
+        widgets: set[str] = set()
+        modes: set[str] = set()
+        has_voice = False
+        has_log = False
+
+        for _category, spec in self.iter_channels():
+            if spec.widget is not Widget.NONE:
+                widgets.add(spec.widget.value)
+            modes.add(spec.mode.value)
+            if spec.mode is ChannelMode.LOG:
+                has_log = True
+            if spec.kind.is_voice_like:
+                has_voice = True
+
+        return {
+            "verify": Widget.VERIFY.value in widgets,
+            "rules": Widget.RULES.value in widgets,
+            "selfroles": Widget.ROLES.value in widgets,
+            "tickets": Widget.TICKET.value in widgets,
+            "counting": ChannelMode.COUNTING.value in modes,
+            "logging": has_log,
+            # Join to Create braucht einen Sprachkanal. Welcher es wird,
+            # entscheidet die Uebergabe -- hier zaehlt nur, ob es
+            # ueberhaupt einen gibt.
+            "j2c": has_voice,
+            # Die Begruessung haengt am Willkommens-Kanal, und den hat
+            # jede Vorlage in ihrer Gate-Kategorie.
+            "welcome": any(
+                category.visibility is Visibility.GATE
+                for category in self.categories
+            ),
+        }
+
     # ---------------------------------------------------------------- parse --
     @classmethod
     def parse(cls, data: Mapping[str, Any], *, source: str = "<memory>") -> Template:

@@ -93,6 +93,14 @@ class _Template:
         # `extends_base_roles` und bekam einen AttributeError -- HTTP
         # 500, waehrend der Endpunkt gegen die echte Registry lief.
         self.extends_base_roles = True
+        # Die echte Template-Klasse hat diese Eigenschaft; ohne sie
+        # stuerzt der Endpunkt gegen die Attrappe anders ab als gegen
+        # das Original -- und der Test prueft dann nichts.
+        self.capabilities = {
+            "verify": True, "rules": True, "selfroles": True,
+            "tickets": True, "counting": False, "logging": True,
+            "j2c": True, "welcome": True,
+        }
         self.channel_count = 12
         self.voice_count = 3
         self.text_count = 9

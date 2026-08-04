@@ -159,15 +159,32 @@ class TestSchema:
 # Shipped templates
 # --------------------------------------------------------------------------- #
 
+# Vorlagen, die bewusst klein sind und deshalb von den Mindestmassen
+# unten ausgenommen werden.
+#
+# "minimal" ist der Gegenentwurf zu allen anderen: kein Verify, keine
+# Tickets, keine Rollen-Vergabe, vier Log-Kanaele statt zehn und kein
+# Sprachbereich. Genau dafuer gibt es sie -- fuer Freundeskreise, die
+# mit fuenfzehn Kanaelen auskommen statt mit neunzig. Sie hier
+# einzutragen ist eine Entscheidung; eine *andere* Vorlage, die
+# durchfaellt, bleibt ein Fehler.
+COMPACT = {"minimal"}
+
+
 class TestTemplates:
     def test_expected_templates_exist(self, registry):
-        assert len(registry) == 10
-        assert {t.key for t in registry.free} == {"community", "rp", "social"}
+        assert len(registry) == 13
+        assert {t.key for t in registry.free} == {
+            "community", "rp", "social", "music", "dev", "minimal",
+        }
         assert len(registry.premium) == 7
 
-    def test_three_free_templates_are_the_promised_ones(self, registry):
+    def test_the_free_templates_are_the_promised_ones(self, registry):
         names = {t.name for t in registry.free}
-        assert names == {"Community Discord", "RP Server", "Social Lounge"}
+        assert names == {
+            "Community Discord", "RP Server", "Social Lounge",
+            "Musik & DJ", "Entwickler & Open Source", "Kleiner Server",
+        }
 
     def test_within_discord_limits(self, registry):
         for template in registry:
@@ -175,16 +192,44 @@ class TestTemplates:
             assert template.channel_count <= 500, template.key
 
     def test_every_template_is_substantial(self, registry):
+        """Eine Vorlage muss einen Server tragen -- ausser den kompakten.
+
+        Die Untergrenze faellt fuer "dev" von 65 auf 55: der Server hat
+        keinen Event-Bereich und keine Kreativzone, weil dort
+        gearbeitet und nicht gefeiert wird. 61 Kanaele sind fuer eine
+        Entwickler-Community reichlich; die 65 waren an den grossen
+        Community-Vorlagen gemessen.
+        """
+
         for template in registry:
-            assert template.channel_count >= 65, f"{template.key} zu klein"
+            if template.key in COMPACT:
+                continue
+            assert template.channel_count >= 55, f"{template.key} zu klein"
             assert template.voice_count >= 12, f"{template.key} zu wenig Voice"
+
+    def test_the_compact_templates_stay_compact(self, registry):
+        """Sonst waechst "minimal" unbemerkt zu einer normalen Vorlage."""
+
+        for key in COMPACT:
+            template = registry.get(key)
+            assert template is not None, key
+            assert template.channel_count <= 30, (
+                f"{key} hat {template.channel_count} Kanaele -- "
+                "das ist keine kompakte Vorlage mehr"
+            )
 
     def test_language_area_is_german_and_english_only(self, registry):
         """Der Sprachbereich enthält bewusst nur Deutsch und English."""
 
         for template in registry:
             categories = [c for c in template.categories if c.label == "sprachen"]
-            assert categories, f"{template.key} hat keinen Sprachbereich"
+            if template.key in COMPACT:
+                # Kompakte Vorlagen haben keinen Sprachbereich. Hat eine
+                # doch einen, muss er trotzdem stimmen.
+                if not categories:
+                    continue
+            else:
+                assert categories, f"{template.key} hat keinen Sprachbereich"
 
             labels = {ch.label for c in categories for ch in c.channels}
             assert labels == {"deutsch", "english"}, (
@@ -266,12 +311,29 @@ class TestTemplates:
                 )
 
     def test_every_template_has_full_log_suite(self, registry):
+        """Jede Vorlage protokolliert -- kompakte knapper.
+
+        "minimal" bekommt vier Log-Kanaele statt zehn. Zehn Log-Kanaele
+        fuer einen Freundeskreis waeren mehr Logs als Chats, und was
+        niemand liest, wird auch nicht gelesen, wenn etwas passiert.
+        Die beiden wichtigsten -- Moderation und Beitritte -- sind auch
+        dort Pflicht.
+        """
+
         for template in registry:
             logs = [c for c in template.categories if c.label == "logs"]
             assert logs, f"{template.key} hat keine Logs"
             names = {ch.label for ch in logs[0].channels}
-            assert "social-logs" in names, template.key
             assert "mod-logs" in names, template.key
+            assert "mitglieder-logs" in names, template.key
+
+            if template.key in COMPACT:
+                assert len(names) >= 4, (
+                    f"{template.key}: nur {len(names)} Log-Kanäle"
+                )
+                continue
+
+            assert "social-logs" in names, template.key
             assert len(names) >= 10, f"{template.key}: nur {len(names)} Log-Kanäle"
 
     def test_log_categories_are_private(self, registry):
@@ -524,15 +586,25 @@ class TestComponentsV2:
 
         components = list(self._walk(StartView(_FakeBot(registry), premium=False).to_components()))
         select = next(c for c in components if c.get("type") == 3)
-        assert len(select["options"]) == 3
-        assert {o["value"] for o in select["options"]} == {"community", "rp", "social"}
+        assert {o["value"] for o in select["options"]} == {
+            "community", "rp", "social", "music", "dev", "minimal",
+        }
 
     def test_premium_select_lists_everything(self, registry):
         from ui.views import StartView
 
         components = list(self._walk(StartView(_FakeBot(registry), premium=True).to_components()))
         select = next(c for c in components if c.get("type") == 3)
-        assert len(select["options"]) == 10
+        assert len(select["options"]) == len(registry)
+
+        # Discord nimmt hoechstens 25 Optionen je Auswahlmenue. Bei 13
+        # Vorlagen ist noch Luft, aber die naechste waechst still
+        # hinein -- und dann antwortet Discord mit 400 statt mit einer
+        # Liste.
+        assert len(select["options"]) <= 25, (
+            f"{len(select['options'])} Vorlagen — Discord erlaubt 25 je "
+            "Auswahlmenü. Ab hier braucht die Auswahl Seiten."
+        )
 
     def test_select_options_within_limits(self, registry):
         from ui.views import StartView

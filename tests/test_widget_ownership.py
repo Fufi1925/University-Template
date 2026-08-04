@@ -129,26 +129,41 @@ class TestWidgetsSitOnChannelsThatCanHoldThem:
     def test_the_templates_offer_a_ticket_channel(self):
         """Ohne Ticket-Widget bleibt »channels.tickets« leer.
 
-        Der Speedrun überspringt den Ticket-Schritt dann stumm — genau
+        Früher übersprang der Speedrun den Ticket-Schritt dann stumm —
         das war die Meldung „Ticket-Kanal kam nicht“.
+
+        Inzwischen meldet jede Vorlage über ``capabilities``, was sie
+        hergibt, und das Dashboard bietet den Schritt gar nicht erst
+        an. Eine Vorlage ohne Ticket-Panel ist damit kein Fehler mehr,
+        sondern eine Entscheidung — aber sie muss hier eingetragen
+        sein, sonst ist es ein Versehen.
         """
 
         registry = TemplateRegistry(config.TEMPLATE_DIR).load()
 
-        without = [
+        without = {
             template.key
             for template in registry.all
             if not any(
                 spec.widget is Widget.TICKET
                 for _category, spec in template.iter_channels()
             )
-        ]
-        # business ist bewusst ohne: ein Firmen-Server regelt Support
-        # über eigene Kanäle, nicht über ein Ticket-Panel.
-        assert without == ["business"], (
-            f"ohne Ticket-Kanal: {without} — dort läuft der Ticket-Schritt "
-            "des Speedruns ins Leere"
+        }
+        # business: ein Firmen-Server regelt Support über eigene Kanäle.
+        # minimal:  bewusst klein -- kein Ticket-System, keine Verify-
+        #           Schleuse, keine Rollen-Vergabe.
+        expected = {"business", "minimal"}
+        assert without == expected, (
+            f"ohne Ticket-Kanal: {sorted(without)}, erwartet: {sorted(expected)}"
         )
+
+        # Und was kein Panel hat, darf es auch nicht behaupten.
+        for template in registry.all:
+            if template.key in without:
+                assert not template.capabilities["tickets"], (
+                    f"{template.key} meldet Tickets, hat aber kein Panel — "
+                    "das Dashboard böte den Schritt an, und er liefe ins Leere"
+                )
 
 
 class TestTheTemplateBotKeepsItsHandsOff:
