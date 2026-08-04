@@ -128,6 +128,7 @@ def build_handover(
     welcome_channel = None
     counting_channel = None
     j2c_channel = None
+    invite_log_channel = None
     log_channels: dict[str, str] = {}
 
     for category_spec, spec in template.iter_channels():
@@ -150,6 +151,11 @@ def build_handover(
             category = LOG_CATEGORY_BY_SLUG.get(slugify(spec.display_name))
             if category:
                 log_channels[category] = str(channel.id)
+            # Der Einladungs-Log hat im University Bot keine Log-Kategorie
+            # (er kommt aus einem eigenen Modul), aber einen Kanal braucht
+            # er trotzdem. Deshalb getrennt gemerkt statt weggeworfen.
+            if slugify(spec.display_name) == "einladungs-logs":
+                invite_log_channel = channel
 
         if spec.mode is ChannelMode.ANNOUNCE and announce_channel is None:
             announce_channel = channel
@@ -230,6 +236,9 @@ def build_handover(
             "welcome": str(welcome_channel.id) if welcome_channel else None,
             "counting": str(counting_channel.id) if counting_channel else None,
             "j2c": str(j2c_channel.id) if j2c_channel else None,
+            "invite_log": (
+                str(invite_log_channel.id) if invite_log_channel else None
+            ),
         },
         "log_channels": log_channels,
         # Und alles im Rohzustand, damit das Dashboard eine Liste zeigen
