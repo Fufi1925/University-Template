@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -61,6 +62,14 @@ class Job:
 
     guild_id: int
     template_key: str
+    # Eindeutige Kennung dieses Laufs.
+    #
+    # Ohne sie kann das Dashboard "fertig" nicht von "fertig, aber das
+    # war ein anderer Lauf" unterscheiden. Ein Job bleibt 15 Minuten
+    # abrufbar; wer danach den Reiter oeffnet, sieht einen erledigten
+    # Bau und wuerde die Uebergabe erneut ausloesen, ohne etwas
+    # gestartet zu haben.
+    run_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     state: JobState = JobState.RUNNING
     step: int = 0
     total: int = 0
@@ -86,6 +95,7 @@ class Job:
         """
         return {
             "guild_id": str(self.guild_id),
+            "run_id": self.run_id,
             "template": self.template_key,
             "state": self.state.value,
             "step": self.step,
@@ -128,6 +138,31 @@ class JobStore:
         """
         self._tasks[guild_id] = task
         task.add_done_callback(lambda _t: self._tasks.pop(guild_id, None))
+
+    def cancel(self, guild_id: int) -> bool:
+        """Einen laufenden Bau abbrechen.
+
+        Der Server bleibt dabei halb gebaut stehen -- das laesst sich
+        nicht vermeiden, Discord kennt kein Zurueck. Ein Abbruch ist
+        trotzdem noetig: haengt der Bau (Rate-Limit, Netzproblem), steht
+        der Reiter sonst fuer immer auf "laeuft", und ein zweiter
+        Versuch ist gesperrt.
+        """
+
+        job = self._jobs.get(guild_id)
+        if job is None or job.state is not JobState.RUNNING:
+            return False
+
+        task = self._tasks.get(guild_id)
+        if task is not None and not task.done():
+            task.cancel()
+
+        job.state = JobState.FAILED
+        job.error = "Abgebrochen."
+        job.finished = time.time()
+        job.log("Abgebrochen — der Server bleibt so, wie er jetzt ist.",
+                level="warn")
+        return True
 
     def _prune(self) -> None:
         now = time.time()

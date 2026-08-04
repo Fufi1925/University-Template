@@ -431,7 +431,36 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
         )
         speedrun.STORE.attach(guild_id, task)
 
-        return web.json_response({"status": "started", "guild_id": str(guild_id)})
+        # run_id mitgeben: nur damit kann das Dashboard spaeter
+        # erkennen, ob der Bau, den es sieht, auch der ist, den es
+        # gestartet hat.
+        return web.json_response(
+            {"status": "started", "guild_id": str(guild_id), "run_id": job.run_id}
+        )
+
+    async def speedrun_cancel(request: web.Request) -> web.Response:
+        """Einen laufenden Bau abbrechen.
+
+        Der Server bleibt halb gebaut stehen; das steht auch so im Log.
+        Ohne diesen Weg haengt ein blockierter Bau fuer immer und
+        sperrt jeden zweiten Versuch.
+        """
+
+        error = _check_partner(request)
+        if error is not None:
+            return error
+
+        raw_guild = request.match_info.get("guild_id", "")
+        if not raw_guild.isdigit():
+            return web.json_response({"error": "guild_id fehlt."}, status=400)
+
+        guild_id = int(raw_guild)
+        stopped = speedrun.STORE.cancel(guild_id)
+        # Auch die Sperre loesen, sonst bleibt der Server als
+        # "wird gerade gebaut" markiert.
+        bot.active_builds.discard(guild_id)
+
+        return web.json_response({"cancelled": stopped})
 
     async def speedrun_status(request: web.Request) -> web.Response:
         """Fortschritt abfragen. ``since`` = schon gelesene Zeilen."""
@@ -464,6 +493,7 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
     app.router.add_post("/internal/speedrun/precheck", speedrun_precheck)
     app.router.add_get("/internal/speedrun/templates", speedrun_templates)
     app.router.add_post("/internal/speedrun/start", speedrun_start)
+    app.router.add_post("/internal/speedrun/{guild_id}/cancel", speedrun_cancel)
     app.router.add_get("/internal/speedrun/{guild_id}", speedrun_status)
 
     runner = web.AppRunner(app)
