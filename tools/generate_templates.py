@@ -93,6 +93,31 @@ def cat(
     }
 
 
+# Der Sprachkanal, aus dem "Join to Create" eigene Raeume macht.
+#
+# Zwei Fehler haengen daran, und beide waren echt:
+#
+#   1. Die Uebergabe an den University Bot suchte einen Kanal mit dem
+#      Slug "allgemeiner-talk". Neun der vierzehn Vorlagen haben keinen
+#      -- clan, gaming, rp, social, business, creator, esports, study
+#      und support. Bei denen meldete ``capabilities["j2c"]`` trotzdem
+#      True (es reichte *irgendein* Sprachkanal), das Dashboard bot den
+#      Schalter an, und der Nutzer las hinterher im Bericht
+#      "Uebersprungen — channels.j2c fehlt".
+#
+#   2. Wo es den Kanal gab, war die Wahl trotzdem falsch. Der Hub
+#      verschiebt jeden, der ihn betritt, sofort in einen frisch
+#      angelegten Raum -- man kann sich darin nicht unterhalten. Ein
+#      Kanal namens "allgemeiner talk", in dem nie jemand ankommt, ist
+#      genau die Art Ueberraschung, die niemand mit dem Bot in
+#      Verbindung bringt.
+#
+# Deshalb ein eigener Kanal mit sprechendem Namen, in jeder Vorlage,
+# immer als erster seiner Kategorie: dort sucht man ihn.
+def j2c_channel() -> dict[str, Any]:
+    return ch("eigenen-talk-erstellen", "➕", "voice", user_limit=1)
+
+
 def role(
     key: str,
     label: str,
@@ -215,6 +240,7 @@ def community() -> dict[str, Any]:
                 ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
             ]),
             cat("sprachkanaele", "🔊", "public", [
+                j2c_channel(),
                 ch("allgemeiner-talk", "🎙️", "voice"),
                 ch("chill-ecke", "☕", "voice", user_limit=10),
                 ch("musik", "🎶", "voice"),
@@ -391,6 +417,7 @@ def rp() -> dict[str, Any]:
                 ch("werbung", "📺", topic="Werbung für dein Unternehmen", slowmode=600),
             ]),
             cat("rp talks", "🎙️", "public", [
+                j2c_channel(),
                 ch("stadt-1", "🏙️", "voice"),
                 ch("stadt-2", "🌆", "voice"),
                 ch("stadt-3", "🌃", "voice"),
@@ -580,6 +607,7 @@ def social() -> dict[str, Any]:
                 ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
             ]),
             cat("sprachkanaele", "🔊", "public", [
+                j2c_channel(),
                 ch("treffpunkt-1", "🎙️", "voice"),
                 ch("treffpunkt-2", "🎙️", "voice"),
                 ch("treffpunkt-3", "🎙️", "voice"),
@@ -776,6 +804,7 @@ def gaming() -> dict[str, Any]:
                 ch("streams", "🟣", topic="Wer streamt gerade?"),
             ]),
             cat("squad talks", "🔊", "public", [
+                j2c_channel(),
                 ch("lobby", "🎙️", "voice"),
                 ch("zu-zweit-1", "👥", "voice", user_limit=2),
                 ch("zu-zweit-2", "👥", "voice", user_limit=2),
@@ -968,6 +997,7 @@ def anime() -> dict[str, Any]:
                 ch("gaming-talk", "🕹️", "voice", user_limit=10),
             ]),
             cat("sprachkanaele", "🔊", "public", [
+                j2c_channel(),
                 ch("allgemeiner-talk", "🎙️", "voice"),
                 ch("chill-ecke", "☕", "voice", user_limit=10),
                 ch("musik", "🎶", "voice"),
@@ -1151,6 +1181,7 @@ def business() -> dict[str, Any]:
                 ch("kunden-gespraech", "📞", "voice", user_limit=10),
             ]),
             cat("besprechungen", "🗓️", "member", [
+                j2c_channel(),
                 ch("protokolle", "📝", topic="Besprechungsprotokolle"),
                 ch("tagesordnung", "📌", topic="Tagesordnung"),
                 ch("tages-abstimmung", "☀️", "voice", user_limit=20),
@@ -1322,6 +1353,7 @@ def study() -> dict[str, Any]:
                 ),
             ]),
             cat("lernraeume", "🔇", "public", [
+                j2c_channel(),
                 ch("stillarbeit-1", "🤫", "voice"),
                 ch("stillarbeit-2", "🤫", "voice"),
                 ch("pomodoro-25", "🍅", "voice"),
@@ -1511,6 +1543,7 @@ def creator() -> dict[str, Any]:
                 ch("kooperations-talk", "🎙️", "voice", user_limit=10),
             ]),
             cat("studio", "🔊", "public", [
+                j2c_channel(),
                 ch("aufnahme-1", "🔴", "voice", user_limit=4),
                 ch("aufnahme-2", "🔴", "voice", user_limit=4),
                 ch("podcast", "🎙️", "voice", user_limit=6),
@@ -1671,6 +1704,7 @@ def support() -> dict[str, Any]:
                 ch("bekannte-probleme", "⚠️", topic="Bekannte Probleme"),
             ]),
             cat("sprechstunde", "🎙️", "public", [
+                j2c_channel(),
                 ch("warteschlange", "⏳", "voice"),
                 ch("support-raum-1", "🧑‍💻", "voice", user_limit=3),
                 ch("support-raum-2", "🧑‍💻", "voice", user_limit=3),
@@ -1805,6 +1839,7 @@ def esports() -> dict[str, Any]:
                 ch("spielplan", "📅", topic="Kommende Spiele", mode="announce"),
             ]),
             cat("fanbereich", "💛", "public", [
+                j2c_channel(),
                 ch("allgemein", "💬", topic="Fan-Chat",
                     guide=[
                         "Der Hauptchat für alles, was keinen eigenen Kanal hat.",
@@ -2005,6 +2040,7 @@ def music() -> dict[str, Any]:
                 ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
             ]),
             cat("sprachkanaele", "🔊", "public", [
+                j2c_channel(),
                 ch("allgemeiner-talk", "🎙️", "voice"),
                 ch("elektro", "🎛️", "voice", user_limit=15),
                 ch("rock-und-metal", "🎸", "voice", user_limit=15),
@@ -2174,6 +2210,7 @@ def dev() -> dict[str, Any]:
                 ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
             ]),
             cat("arbeitsraeume", "🔊", "public", [
+                j2c_channel(),
                 ch("allgemeiner-talk", "🎙️", "voice"),
                 ch("pair-programming-1", "👥", "voice", user_limit=2),
                 ch("pair-programming-2", "👥", "voice", user_limit=2),
@@ -2266,6 +2303,7 @@ def minimal() -> dict[str, Any]:
                 ),
             ]),
             cat("sprachkanaele", "🔊", "public", [
+                j2c_channel(),
                 ch("allgemeiner-talk", "🎙️", "voice"),
                 ch("zu-zweit", "👥", "voice", user_limit=2),
                 ch("chill-ecke", "☕", "voice", user_limit=10),
@@ -2392,6 +2430,7 @@ def clan() -> dict[str, Any]:
             ]),
             # Die Sprachkanäle, die dem Clan seinen Namen geben.
             cat("clan talks", "🔊", "public", [
+                j2c_channel(),
                 ch("clan-talk", "⚔️", "voice"),
                 ch("clan-talk-2", "⚔️", "voice", user_limit=15),
                 ch("fight-call", "📣", "voice", user_limit=10),

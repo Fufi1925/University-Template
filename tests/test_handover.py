@@ -305,3 +305,102 @@ class TestHandover:
         guild, template, builder = await _build(registry)
         handover = build_handover(guild, template, builder.created_roles)
         assert json.loads(json.dumps(handover)) == handover
+
+
+@pytest.mark.asyncio
+class TestJoinToCreate:
+    """Der Kanal, aus dem der Hauptbot eigene Sprachraeume macht.
+
+    Hier hing ein Fehler, der neun der vierzehn Vorlagen betraf.
+
+    ``Template.capabilities["j2c"]`` meldete True, sobald die Vorlage
+    *irgendeinen* Sprachkanal hatte. Die Uebergabe suchte aber genau
+    einen Kanal mit dem Slug ``allgemeiner-talk`` -- und den haben
+    clan, gaming, rp, social, business, creator, esports, study und
+    support nie angelegt. Das Dashboard bot den Schalter also an, der
+    Nutzer liess ihn an, und im Bericht stand hinterher
+    "Uebersprungen — channels.j2c fehlt".
+
+    Und wo es den Kanal gab, war die Wahl trotzdem falsch: der Hub
+    verschiebt jeden, der ihn betritt, sofort in einen neuen Raum. Der
+    "allgemeine Talk" war damit ein Kanal, in dem sich niemand
+    unterhalten konnte.
+    """
+
+    async def test_every_template_delivers_the_channel(self, registry):
+        """Was capabilities verspricht, muss die Uebergabe einloesen."""
+
+        for template in registry:
+            guild = FakeGuild()
+            builder = ServerBuilder(guild, template)
+            await builder.apply(BuildMode.EXTEND, write_intros=False)
+            handover = build_handover(guild, template, builder.created_roles)
+
+            promised = bool(template.capabilities["j2c"])
+            delivered = bool(handover["channels"]["j2c"])
+
+            assert promised, f"{template.key}: bietet kein J2C an"
+            assert delivered, f"{template.key}: J2C versprochen, kein Kanal"
+            assert promised == delivered, template.key
+
+    async def test_it_points_at_the_dedicated_channel(self, registry):
+        """Nicht irgendein Sprachkanal -- der eine, der dafuer da ist."""
+
+        from core.handover import J2C_SLUG
+
+        for template in registry:
+            guild = FakeGuild()
+            builder = ServerBuilder(guild, template)
+            await builder.apply(BuildMode.EXTEND, write_intros=False)
+            handover = build_handover(guild, template, builder.created_roles)
+
+            channel_id = handover["channels"]["j2c"]
+            channel = next(c for c in guild.channels if str(c.id) == channel_id)
+
+            assert slugify(channel.name) == J2C_SLUG, (
+                f"{template.key}: J2C zeigt auf '{channel.name}'"
+            )
+
+    async def test_it_is_not_a_conversation_channel(self, registry):
+        """Der Hub schluckt jeden, der ihn betritt.
+
+        Deshalb darf er nicht der allgemeine Talk sein -- ein Kanal
+        mit diesem Namen, in dem nie jemand ankommt, ist genau die Art
+        Ueberraschung, die niemand mit dem Bot in Verbindung bringt.
+        """
+
+        for template in registry:
+            guild = FakeGuild()
+            builder = ServerBuilder(guild, template)
+            await builder.apply(BuildMode.EXTEND, write_intros=False)
+            handover = build_handover(guild, template, builder.created_roles)
+
+            channel_id = handover["channels"]["j2c"]
+            channel = next(c for c in guild.channels if str(c.id) == channel_id)
+
+            assert slugify(channel.name) != "allgemeiner-talk", (
+                f"{template.key}: der allgemeine Talk waere unbenutzbar"
+            )
+
+    async def test_the_generator_and_the_handover_agree(self, registry):
+        """Beide Seiten muessen denselben Namen meinen.
+
+        Der Kanal entsteht in ``tools/generate_templates.py``, gesucht
+        wird er in ``core/handover.py``. Driften die auseinander,
+        findet die Uebergabe nichts -- und genau das war der Fehler.
+        """
+
+        from core.handover import J2C_SLUG
+
+        for template in registry:
+            matches = [
+                spec
+                for _category, spec in template.iter_channels()
+                if slugify(spec.display_name) == J2C_SLUG
+            ]
+            assert len(matches) == 1, (
+                f"{template.key}: {len(matches)} Kanaele heissen {J2C_SLUG}"
+            )
+            assert matches[0].kind.is_voice_like, (
+                f"{template.key}: der J2C-Kanal ist kein Sprachkanal"
+            )

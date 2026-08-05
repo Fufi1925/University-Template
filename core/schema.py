@@ -411,10 +411,16 @@ class Template:
         Einladungs-Log) stehen bewusst nicht drin: sie gehen immer.
         """
 
+        # Erst hier importieren: ``core.handover`` zieht ``discord``
+        # nach, und ``schema`` wird auch von Werkzeugen geladen, die
+        # ohne die Bibliothek auskommen sollen.
+        from .handover import J2C_SLUG
+        from .small_caps import slugify
+
         widgets: set[str] = set()
         modes: set[str] = set()
-        has_voice = False
         has_log = False
+        has_j2c = False
 
         for _category, spec in self.iter_channels():
             if spec.widget is not Widget.NONE:
@@ -422,8 +428,8 @@ class Template:
             modes.add(spec.mode.value)
             if spec.mode is ChannelMode.LOG:
                 has_log = True
-            if spec.kind.is_voice_like:
-                has_voice = True
+            if spec.kind.is_voice_like and slugify(spec.display_name) == J2C_SLUG:
+                has_j2c = True
 
         return {
             "verify": Widget.VERIFY.value in widgets,
@@ -432,10 +438,20 @@ class Template:
             "tickets": Widget.TICKET.value in widgets,
             "counting": ChannelMode.COUNTING.value in modes,
             "logging": has_log,
-            # Join to Create braucht einen Sprachkanal. Welcher es wird,
-            # entscheidet die Uebergabe -- hier zaehlt nur, ob es
-            # ueberhaupt einen gibt.
-            "j2c": has_voice,
+            # Join to Create braucht *den* Sprachkanal, aus dem der
+            # Hauptbot eigene Raeume macht -- nicht irgendeinen.
+            #
+            # Vorher stand hier ``has_voice``, also "hat die Vorlage
+            # ueberhaupt Sprachkanaele". Das war zu grosszuegig: die
+            # Uebergabe sucht einen ganz bestimmten Kanal, und neun der
+            # vierzehn Vorlagen hatten ihn nicht. Gemeldet wurde
+            # trotzdem True, das Dashboard stellte den Schalter auf
+            # "an", und im Bericht stand hinterher "Uebersprungen".
+            #
+            # Eine Faehigkeit zu melden, die der Bau nicht einloest, ist
+            # schlimmer als sie wegzulassen: der Nutzer haekelt etwas
+            # an und erfaehrt erst am Ende, dass es nie gehen konnte.
+            "j2c": has_j2c,
             # Die Begruessung haengt am Willkommens-Kanal, und den hat
             # jede Vorlage in ihrer Gate-Kategorie.
             "welcome": any(

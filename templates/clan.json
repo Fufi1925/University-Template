@@ -305,6 +305,12 @@
       "visibility": "public",
       "channels": [
         {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
           "label": "clan-talk",
           "emoji": "⚔️",
           "kind": "voice"

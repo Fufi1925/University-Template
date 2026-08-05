@@ -29,7 +29,18 @@ from .permissions import BASE_ROLES
 from .schema import ChannelMode, Template, Widget
 from .small_caps import slugify
 
-__all__ = ["LOG_CATEGORY_BY_SLUG", "build_handover"]
+__all__ = ["J2C_SLUG", "LOG_CATEGORY_BY_SLUG", "build_handover"]
+
+
+# Der Kanal, aus dem "Join to Create" eigene Sprachraeume macht.
+#
+# Der Name steht hier und in ``tools/generate_templates.py`` -- beide
+# muessen zusammenpassen, sonst findet die Uebergabe nichts. Genau das
+# war der Fehler: gesucht wurde "allgemeiner-talk", und den haben neun
+# der vierzehn Vorlagen nie angelegt.
+#
+# ``tests/test_handover.py`` prueft die Verbindung fuer jede Vorlage.
+J2C_SLUG = "eigenen-talk-erstellen"
 
 
 # Welcher Log-Kanal zu welcher Kategorie des University Bots gehoert.
@@ -167,12 +178,22 @@ def build_handover(
         if spec.mode is ChannelMode.COUNTING and counting_channel is None:
             counting_channel = channel
 
-        # Ein Sprachkanal fuer "Join to Create". Der erste allgemeine
-        # Talk ist der naheliegende: dort landen Leute ohnehin zuerst.
+        # Der Sprachkanal fuer "Join to Create".
+        #
+        # Frueher stand hier "allgemeiner-talk", und das war doppelt
+        # falsch. Erstens haben neun der vierzehn Vorlagen keinen Kanal
+        # mit diesem Namen -- clan, gaming, rp und die anderen kamen
+        # ohne J2C aus dem Bau, obwohl das Dashboard den Schalter
+        # angeboten hatte. Zweitens war die Wahl auch dort verkehrt, wo
+        # es ihn gab: der Hub verschiebt jeden, der ihn betritt, sofort
+        # in einen neuen Raum. Der "allgemeine Talk" war damit ein
+        # Kanal, in dem sich niemand unterhalten konnte.
+        #
+        # Jetzt bringt jede Vorlage einen eigenen Kanal dafuer mit.
         if (
             j2c_channel is None
             and spec.kind.is_voice_like
-            and slugify(spec.display_name) == "allgemeiner-talk"
+            and slugify(spec.display_name) == J2C_SLUG
         ):
             j2c_channel = channel
 

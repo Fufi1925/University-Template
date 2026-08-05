@@ -353,6 +353,12 @@
       "visibility": "public",
       "channels": [
         {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
           "label": "stillarbeit-1",
           "emoji": "🤫",
           "kind": "voice"
