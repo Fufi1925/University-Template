@@ -1,0 +1,544 @@
+{
+  "key": "food",
+  "name": "Kochen & Genuss",
+  "emoji": "🍳",
+  "tagline": "Rezepte, Backabende und Koch-Duelle",
+  "premium": true,
+  "accent": "#EF4444",
+  "description": "Für alle, die gerne kochen, backen und genießen: Rezepte als Threads, getrennte Kanäle für Backen, Grillen, Desserts und Getränke, Koch-Duelle mit Abstimmung, eine Foto-Galerie für gelungene Gerichte — und gemeinsame Koch- und Backabende in den Sprachräumen.",
+  "highlights": [
+    "Koch-Duelle mit Abstimmung und Siegerehrung",
+    "Foto-Galerie für gelungene Gerichte",
+    "Eigene Bereiche für Backen, Grillen und Getränke",
+    "Gemeinsame Koch- und Backabende per Voice"
+  ],
+  "roles": [
+    {
+      "key": "hobbykoch",
+      "label": "Hobbykoch",
+      "emoji": "👨‍🍳",
+      "colour": "#EF4444",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "backfee",
+      "label": "Backfee",
+      "emoji": "🧁",
+      "colour": "#EC4899",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "grillmeister",
+      "label": "Grillmeister",
+      "emoji": "🥩",
+      "colour": "#EA580C",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "kuechenchef",
+      "label": "Kuechenchef",
+      "emoji": "👩‍🍳",
+      "colour": "#B91C1C",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "neuigkeiten",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        },
+        {
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
+        },
+        {
+          "label": "rezept-der-woche",
+          "emoji": "⭐",
+          "topic": "Das Rezept der Woche",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "kueche",
+      "emoji": "🍳",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "rezepte",
+          "emoji": "📖",
+          "topic": "Rezepte teilen",
+          "mode": "threads"
+        },
+        {
+          "label": "backen",
+          "emoji": "🧁",
+          "topic": "Kuchen, Brot und Co"
+        },
+        {
+          "label": "grillen",
+          "emoji": "🔥",
+          "topic": "Feuer und Rauch"
+        },
+        {
+          "label": "desserts",
+          "emoji": "🍰",
+          "topic": "Süßes zum Schluss"
+        },
+        {
+          "label": "getraenke",
+          "emoji": "🍹",
+          "topic": "Cocktails und Co"
+        },
+        {
+          "label": "fruehstueck",
+          "emoji": "🍳",
+          "topic": "Der beste Start in den Tag"
+        }
+      ]
+    },
+    {
+      "label": "koch-duelle",
+      "emoji": "🏆",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "themen-wochen",
+          "emoji": "🎯",
+          "kind": "news",
+          "topic": "Das aktuelle Thema",
+          "visibility": "readonly",
+          "mode": "announce"
+        },
+        {
+          "label": "abstimmung",
+          "emoji": "📊",
+          "topic": "Wer kocht am besten?",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        },
+        {
+          "label": "ergebnisse",
+          "emoji": "🎉",
+          "topic": "Gewinner und Rezepte",
+          "visibility": "readonly",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "genuss-fotos",
+      "emoji": "📸",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gerichte",
+          "emoji": "🍽️",
+          "topic": "Zeig dein Ergebnis",
+          "mode": "media",
+          "reactions": [
+            "⭐"
+          ]
+        },
+        {
+          "label": "fail-des-tages",
+          "emoji": "😅",
+          "topic": "Wenn es nicht klappt",
+          "mode": "media"
+        },
+        {
+          "label": "restaurant-tipps",
+          "emoji": "🍴",
+          "topic": "Wo schmeckt es?"
+        },
+        {
+          "label": "einkaufstipps",
+          "emoji": "🛒",
+          "topic": "Zutaten und Märkte"
+        }
+      ]
+    },
+    {
+      "label": "ernaehrung",
+      "emoji": "🥗",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gesund-kochen",
+          "emoji": "🥗",
+          "topic": "Leicht und ausgewogen"
+        },
+        {
+          "label": "vegetarisch",
+          "emoji": "🌱",
+          "topic": "Ohne Fleisch"
+        },
+        {
+          "label": "vegan",
+          "emoji": "🥦",
+          "topic": "Pflanzlich unterwegs"
+        },
+        {
+          "label": "allergien",
+          "emoji": "⚠️",
+          "topic": "Unverträglichkeiten und Austausch"
+        }
+      ]
+    },
+    {
+      "label": "koch-talks",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "koch-talk",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "gemeinsam-kochen",
+          "emoji": "🍲",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "back-abend",
+          "emoji": "🧁",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "grill-abend",
+          "emoji": "🔥",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "kaffeeklatsch",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

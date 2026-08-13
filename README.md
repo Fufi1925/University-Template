@@ -1,7 +1,7 @@
 # 🏛️ Discord Architect
 
 Ein Discord-Bot, der komplette Server-Strukturen aus fertigen Vorlagen baut —
-**14 Templates, 1138 Kanäle, 269 Voice-Räume** — komplett auf Deutsch, in
+**24 Templates, 1812 Kanäle, 399 Voice-Räume** — komplett auf Deutsch, in
 Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 
 ```
@@ -12,26 +12,38 @@ Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 
 ## Was der Bot macht
 
-Nach `/template start` erscheint ein Menü mit sechs kostenlosen Vorlagen.
-Ein Klick auf „Premium freischalten" öffnet ein Key-Fenster; nach Eingabe
-des Keys stehen acht weitere Vorlagen zur Verfügung.
+Nach `/template start` erscheint ein Menü mit fünf kostenlosen Vorlagen —
+jede als eigene Karte mit Kennzahlen. Darunter sitzt der Knopf **„Jetzt mehr
+Templates mit Premium freischalten": Der Bot schickt dir per Direktnachricht
+einen persönlichen Key, den du im Key-Fenster einlöst. Danach stehen alle
+19 Premium-Vorlagen im Menü.
 
 | | Template | Kategorien | Kanäle | Voice |
 |---|---|---:|---:|---:|
 | 🆓 | **Community Discord** — der Allrounder | 15 | 95 | 22 |
+| 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 97 | 23 |
+| 🆓 | **Musik & DJ** — Hörsessions, Tracks, Bühnenabende | 13 | 67 | 18 |
 | 🆓 | **Entwickler & Open Source** — Code-Hilfe, Projekte | 11 | 62 | 14 |
 | 🆓 | **Kleiner Server** — nur das Nötigste | 6 | 18 | 6 |
-| 🆓 | **Musik & DJ** — Hörsessions, Tracks, Bühnenabende | 13 | 67 | 18 |
-| 🆓 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 102 | 28 |
-| 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 97 | 23 |
+| 💎 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 102 | 28 |
 | 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 101 | 27 |
 | 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 17 | 98 | 23 |
 | 💎 | **Study & University** — Fächer, Pomodoro-Räume | 16 | 98 | 20 |
-| 💎 | **Creator Studio** — Inhalte planen, produzieren | 15 | 85 | 17 |
-| 💎 | **Support Center** — Tickets, Eskalation | 13 | 69 | 15 |
-| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 84 | 16 |
-| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 76 | 14 |
 | 💎 | **Clan Server** — Clan Talk, Fight Calls | 15 | 86 | 26 |
+| 💎 | **Creator Studio** — Inhalte planen, produzieren | 15 | 85 | 17 |
+| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 76 | 14 |
+| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 84 | 16 |
+| 💎 | **Support Center** — Tickets, Eskalation | 13 | 69 | 15 |
+| 💎 | **Fitness & Sport** — Trainingspläne, Challenges | 13 | 69 | 13 |
+| 💎 | **Haustiere & Tierwelt** — Hunde, Katzen, Aquaristik | 13 | 69 | 13 |
+| 💎 | **Wissenschaft & Technik** — Diskutieren, experimentieren | 13 | 69 | 13 |
+| 💎 | **Bücher & Geschichten** — Lesekreise, Schreibwerkstatt | 13 | 68 | 13 |
+| 💎 | **Film & Serien** — Bewertungen, Watch-Partys | 14 | 68 | 13 |
+| 💎 | **Reisen & Abenteuer** — Berichte, Planung, Mitreisende | 13 | 68 | 13 |
+| 💎 | **Finanzen & Krypto** — Märkte verstehen | 13 | 67 | 13 |
+| 💎 | **Sammeln & Tauschen** — Karten, Münzen, Modelle | 13 | 67 | 13 |
+| 💎 | **Kochen & Genuss** — Rezepte, Koch-Duelle | 13 | 65 | 13 |
+| 💎 | **Kunst & Kreativ** — Werke zeigen, Feedback holen | 13 | 64 | 13 |
 
 Jeder Textkanal bekommt eine **angeheftete Startnachricht**, die seinen Zweck
 erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
@@ -43,7 +55,7 @@ Alle Befehle sind Slash-Commands unter einer Gruppe:
 | Befehl | Wirkung |
 |---|---|
 | `/template start` | öffnet das Vorlagen-Menü (Auswählen, Ansehen, Anwenden) |
-| `/template list` | zeigt alle 14 Vorlagen mit Kategorien, Kanälen und Rollen |
+| `/template list` | zeigt alle 24 Vorlagen mit Kategorien, Kanälen und Rollen |
 | `/template löschen [vorlage]` | macht eine Vorlage rückgängig — oder leert den Server komplett (Wipe). Beides erst nach Bestätigung |
 | `/template ai` | fragt Name und Beschreibung ab und stellt daraus eine Vorlage zusammen (regelbasiert, ohne externe API) |
 | `/template regeln` | öffnet den Regelwerk-Assistenten |
@@ -428,16 +440,28 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 `/health` liefert Live-Status:
 
 ```json
-{"status":"online","guilds":3,"templates":14,"channels":1138,"active_builds":0}
+{"status":"online","guilds":3,"templates":24,"channels":1812,"active_builds":0}
 ```
 
 ---
 
 ## Premium
 
-Der Key wird über `PREMIUM_KEY` gesetzt. Es gibt **keinen Standardwert**: ohne
-gesetzte Variable lässt sich Premium schlicht nicht freischalten, und der Bot
-weist beim Start darauf hin. Ein im Quelltext hinterlegter Key wäre keiner —
+Premium läuft über **zwei Wege**:
+
+**1 · Persönlicher Key per Direktnachricht** *(der neue Standardweg)*. Ein
+Klick auf „Jetzt mehr Templates mit Premium freischalten" im Startmenü
+schickt dem Nutzer eine DM mit einem persönlichen Key. Der Key wird im
+Key-Fenster eingelöst und ist an das Konto gebunden, einmalig verwendbar und
+sieben Tage gültig. Ein neuer Klick ersetzt den alten Key — niemand kann sich
+einen Vorrat anlegen. Gespeichert wird nur der Hash des Keys, nie der
+Klartext; der Klartext existiert ausschließlich in der Direktnachricht.
+Sind die DMs eines Nutzers geschlossen, erklärt der Bot das und bietet den
+Knopf „Key eingeben" als Ausweg an.
+
+**2 · Master-Key der Serverleitung.** Der Key wird über `PREMIUM_KEY`
+gesetzt. Es gibt **keinen Standardwert**: ohne gesetzte Variable weist der
+Bot beim Start darauf hin. Ein im Quelltext hinterlegter Key wäre keiner —
 er stünde in jedem Klon dieses Repositories.
 
 ```bash
@@ -511,7 +535,7 @@ ui/
   rules.py              Regelwerk-Assistent und Baukasten
   management.py         /template list, löschen und ai (Listen-, Lösch- und Formular-Views)
 
-templates/*.json        Die 14 Vorlagen — reine Daten
+templates/*.json        Die 24 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
@@ -574,7 +598,7 @@ Die Testsuite prüft unter anderem:
 
 - **Components V2** — jede View wird zu echtem API-Payload serialisiert und
   gegen Discords Limits geprüft (40 Komponenten, 4.000 Zeichen, 25 Select-Optionen)
-- **Bau-Simulation** — alle 14 Templates werden gegen ein nachgebildetes Guild
+- **Bau-Simulation** — alle 24 Templates werden gegen ein nachgebildetes Guild
   gebaut; geprüft werden Idempotenz, Wipe-Verhalten und dass private
   Kategorien für `@everyone` unsichtbar sind
 - **Berechtigungen** — dass jede Stufe eine Obermenge der vorherigen ist und

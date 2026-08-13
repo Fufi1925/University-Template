@@ -1,0 +1,545 @@
+{
+  "key": "art",
+  "name": "Kunst & Kreativ",
+  "emoji": "🎨",
+  "tagline": "Werke zeigen, Feedback holen, gemeinsam zeichnen",
+  "premium": true,
+  "accent": "#EC4899",
+  "description": "Ein Atelier für alle: Kunstwerke, Skizzen, digitale Kunst, Fotografie und Handwerk in getrennten Kanälen, strukturiertes Feedback per Thread, Themen-Wettbewerbe mit Abstimmung, eine virtuelle Galerie und gemeinsame Zeichenabende in den Sprachräumen.",
+  "highlights": [
+    "Getrennte Kanäle für jede Kunstform",
+    "Feedback-Threads und Tutorials",
+    "Themen-Wettbewerbe mit Community-Abstimmung",
+    "Virtuelle Galerie und gemeinsame Zeichenabende"
+  ],
+  "roles": [
+    {
+      "key": "kuenstler",
+      "label": "Kuenstler",
+      "emoji": "🎨",
+      "colour": "#EC4899",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "illustrator",
+      "label": "Illustrator",
+      "emoji": "🖌️",
+      "colour": "#DB2777",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "fotograf_k",
+      "label": "Fotograf",
+      "emoji": "📷",
+      "colour": "#8B5CF6",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "kurator",
+      "label": "Kurator",
+      "emoji": "🏛️",
+      "colour": "#F59E0B",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "neuigkeiten",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        },
+        {
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
+        },
+        {
+          "label": "ausstellungen",
+          "emoji": "🖼️",
+          "topic": "Aktuelle Ausstellungen",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "werkstatt",
+      "emoji": "🎨",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "kunstwerke",
+          "emoji": "🖼️",
+          "topic": "Zeig deine Werke",
+          "slowmode": 120,
+          "mode": "media",
+          "reactions": [
+            "⭐"
+          ]
+        },
+        {
+          "label": "skizzen",
+          "emoji": "✏️",
+          "topic": "Schnelle Skizzen",
+          "mode": "media"
+        },
+        {
+          "label": "digitale-kunst",
+          "emoji": "💻",
+          "topic": "Zeichnen am Rechner",
+          "mode": "media"
+        },
+        {
+          "label": "fotografie",
+          "emoji": "📷",
+          "topic": "Bilder mit der Kamera",
+          "mode": "media"
+        },
+        {
+          "label": "handwerk",
+          "emoji": "🧵",
+          "topic": "Nähen, Töpfern, Holz"
+        },
+        {
+          "label": "basteln",
+          "emoji": "✂️",
+          "topic": "Bastelideen und Anleitungen"
+        }
+      ]
+    },
+    {
+      "label": "rueckmeldung",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "kritik",
+          "emoji": "💡",
+          "topic": "Konstruktive Rückmeldung",
+          "mode": "threads"
+        },
+        {
+          "label": "techniken",
+          "emoji": "🛠️",
+          "topic": "Material und Methoden"
+        },
+        {
+          "label": "tutorials",
+          "emoji": "🎓",
+          "topic": "Schritt für Schritt"
+        },
+        {
+          "label": "auftraege",
+          "emoji": "💼",
+          "topic": "Auftragsarbeiten",
+          "slowmode": 600
+        }
+      ]
+    },
+    {
+      "label": "wettbewerbe",
+      "emoji": "🏆",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "themen-wettbewerb",
+          "emoji": "🎯",
+          "kind": "news",
+          "topic": "Das aktuelle Thema",
+          "visibility": "readonly",
+          "mode": "announce"
+        },
+        {
+          "label": "abstimmung",
+          "emoji": "📊",
+          "topic": "Stimme ab",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        },
+        {
+          "label": "gewinner",
+          "emoji": "🎉",
+          "topic": "Die Gewinner",
+          "visibility": "readonly",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "gemeinsam",
+      "emoji": "👥",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gemeinsam-zeichnen",
+          "emoji": "👥",
+          "topic": "Zeichenabende planen"
+        },
+        {
+          "label": "kunst-tausch",
+          "emoji": "🔁",
+          "topic": "Werke tauschen"
+        },
+        {
+          "label": "galerie",
+          "emoji": "🖼️",
+          "topic": "Virtuelle Galerie",
+          "visibility": "readonly",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "atelier-talks",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "atelier-talk",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "zeichnen-gemeinsam",
+          "emoji": "✏️",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "kritik-runde",
+          "emoji": "💬",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "podcast-hoeren",
+          "emoji": "🎧",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "chill-ecke",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,42 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.3.0] — 2026-08-14
+
+### Hinzugefügt
+
+- **Zehn neue Premium-Vorlagen** (alle über den Generator erzeugt, mit
+  Gate, Sprachbereich, Ticket-Panel, Rollenvergabe, Checkliste und
+  voller Log-Suite): Fitness & Sport, Haustiere & Tierwelt, Kochen &
+  Genuss, Reisen & Abenteuer, Kunst & Kreativ, Bücher & Geschichten,
+  Film & Serien, Wissenschaft & Technik, Finanzen & Krypto und Sammeln
+  & Tauschen. Zusammen 24 Vorlagen, 1812 Kanäle, 399 Voice-Räume.
+- **Persönliche Premium-Keys per DM.** „Jetzt mehr Templates mit
+  Premium freischalten" schickt einen persönlichen, einmaligen,
+  7 Tage gültigen Key per Direktnachricht; eingelöst wird er im
+  Key-Fenster. Der Key ist an das Konto gebunden, ein neuer Klick
+  ersetzt alte offene Keys, gespeichert wird nur der SHA-256-Hash.
+  Sind die DMs geschlossen, erklärt der Bot das und bietet den Knopf
+  „Key eingeben" an. Der Master-Key (`PREMIUM_KEY`) bleibt gültig.
+- **Neues Startmenü.** Die kostenlosen Vorlagen stehen als eigene
+  Karten mit dem Akzent ihrer Vorlage; die Premium-Sektion zeigt
+  gesperrt nur eine Vorschau mit dem Freischalt-Knopf und nach dem
+  Unlock alle Vorlagen. Kopf mit Kennzahlen über der Liste.
+- **Backup aufgewertet:** `/template backup erstellen` nennt jetzt
+  Rollen- und Kanalzahlen in der Antwort, legt `BACKUP_DIR` beim Start
+  an (mit Log, ob das Volume greift) und übersteht eine abgelaufene
+  Interaktion — das Backup liegt dann trotzdem auf der Platte.
+
+### Geändert
+
+- **Premium-Verteilung neu:** fünf Vorlagen bleiben kostenlos
+  (Community, Social Lounge, Musik & DJ, Entwickler, Kleiner Server),
+  der **RP Server ist jetzt Premium** — insgesamt 5 kostenlos,
+  19 Premium.
+- Der AI-Assistent kennt die zehn neuen Themen (Fitness, Haustiere,
+  Kochen, Reisen, Kunst, Bücher, Film, Wissenschaft, Finanzen,
+  Sammeln) und kann sie zu Vorlagen kombinieren.
+
 ## [3.2.0] — 2026-08-14
 
 ### Hinzugefügt

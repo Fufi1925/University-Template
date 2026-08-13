@@ -804,7 +804,10 @@ class TestBackupCommand:
         assert interaction.response.deferred, "Der Befehl hat nicht zuerst geantwortet"
         view, file = interaction.followup.sent[0]
         assert file is not None
-        assert "Backup erstellt" in rendered(view)
+        text = rendered(view)
+        assert "Backup erstellt" in text
+        assert "Rollen: 1" in text, "Die Zusammenfassung nennt keine Zahlen"
+        assert "Kanäle: 1" in text
 
         backups = list(tmp_path.glob("backup-*.json"))
         assert len(backups) == 1

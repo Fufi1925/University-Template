@@ -19,6 +19,7 @@ from config import (
 )
 from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
 from core.permissions import BASE_ROLES
+from core.premium import PERSONAL_KEY_TTL
 from core.rulesets import RULESETS
 from core.schema import Template
 
@@ -88,7 +89,10 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         # self.key ist das Label; der eingegebene Text liegt in dessen component.
         supplied = field_value(self.key)
 
-        if not self.bot.premium.verify(supplied):
+        # Zwei gueltige Wege: der Master-Key der Serverleitung oder ein
+        # persoenlicher Einmal-Key aus der DM. Persoenliche Keys sind an
+        # das Konto gebunden — der Key eines anderen hilft hier nichts.
+        if not self.bot.premium.redeem_key(supplied, user_id=interaction.user.id):
             LOGGER.info(
                 "Ungültiger Premium-Key von user=%s guild=%s",
                 interaction.user.id,
@@ -163,10 +167,44 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
             )
 
 
+def _premium_dm_content(key: str) -> str:
+    """Die Direktnachricht mit dem persoenlichen Key.
+
+    Bewusst reiner Text statt Components V2: eine DM mit genau einer
+    Information braucht keinen Container. Der Key steht nur hier — in
+    keiner Antwort, in keinem Kanal, in keiner Datei.
+    """
+
+    days = PERSONAL_KEY_TTL // 86400
+    return (
+        "## Dein Premium-Key\n"
+        f"> `{key}`\n"
+        f"Dieser Key ist **{days} Tage** gültig und nur für dein Konto.\n"
+        "Gib ihn im geöffneten Fenster ein — danach stehen dir alle "
+        "Premium-Vorlagen offen.\n"
+        "-# Gib den Key niemals weiter: er funktioniert nur bei dir."
+    )
+
+
+class _ManualKeyButton(ui.Button["ui.LayoutView"]):
+    """Oeffnet das Key-Fenster auch ohne DM — z. B. fuer Master-Keys."""
+
+    def __init__(self, bot: ArchitectBot) -> None:
+        super().__init__(
+            label="Key eingeben",
+            style=discord.ButtonStyle.primary,
+            custom_id="architect:premium:manual",
+        )
+        self.bot = bot
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_modal(PremiumModal(self.bot))
+
+
 class PremiumButton(ui.Button["ui.LayoutView"]):
     def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(
-            label="Premium freischalten",
+            label="Jetzt mehr Templates mit Premium freischalten",
             style=discord.ButtonStyle.secondary,
             # App-Emoji wenn uebertragen, sonst der Unicode-Diamant. Ein
             # fehlendes Emoji darf den Knopf nicht kaputt machen.
@@ -190,7 +228,36 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
                 ephemeral=True,
             )
             return
+
+        # Der Key kommt per DM — und wird danach im Fenster eingeloest.
+        key = self.bot.premium.issue_key(interaction.user.id)
+        try:
+            await interaction.user.send(_premium_dm_content(key))
+        except (discord.Forbidden, discord.HTTPException):
+            await interaction.response.send_message(
+                view=notice(
+                    "Deine DMs sind geschlossen",
+                    "Ich konnte dir deinen Premium-Key nicht als "
+                    "Direktnachricht senden. Aktiviere DMs in deinen "
+                    "Privatsphäre-Einstellungen und klicke erneut — oder "
+                    "nutze den Knopf **Key eingeben**, wenn du bereits "
+                    "einen Key von der Serverleitung hast.",
+                    tone="error",
+                    extra=[_manual_key_row(self.bot)],
+                ),
+                ephemeral=True,
+            )
+            return
+
         await interaction.response.send_modal(PremiumModal(self.bot))
+
+
+def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
+    """Die Knopfzeile fuer den Fall, dass die DM nicht zugestellt wurde."""
+
+    row = ui.ActionRow()
+    row.add_item(_ManualKeyButton(bot))
+    return row
 
 
 # --------------------------------------------------------------------------- #
@@ -866,7 +933,18 @@ class TemplateSelect(ui.Select["StartView"]):
 
 
 class StartView(ui.LayoutView):
-    """The screen behind ``/template start``."""
+    """The screen behind ``/template start``.
+
+    Aufbau: Kopf mit Kennzahlen, die kostenlosen Vorlagen als Karten —
+    jede mit dem Akzent ihrer Vorlage —, darunter die Premium-Sektion.
+    Solange sie gesperrt ist, steht dort nur eine Vorschau mit dem
+    Freischalt-Knopf. Ganz unten das Auswahlmenue.
+
+    Eine harte Grenze praegt das Layout: Discord zaehlt Container samt
+    Inhalt gegen das Limit von 40 Komponenten je Nachricht. Einzelne
+    Karten fuer alle 19 Premium-Vorlagen wuerden es sprengen, deshalb
+    stehen die Premium-Vorlagen in einem gemeinsamen goldenen Container.
+    """
 
     def __init__(self, bot: ArchitectBot, *, premium: bool) -> None:
         super().__init__(timeout=None)
@@ -878,68 +956,86 @@ class StartView(ui.LayoutView):
         available = registry.available_to(premium=premium)
         totals = registry.totals
 
-        container = ui.Container(
+        # --- Kopf ---------------------------------------------------------
+        header = ui.Container(
             accent_colour=discord.Colour(COLOR_PREMIUM if premium else COLOR_BRAND)
         )
-
-        container.add_item(
-            ui.TextDisplay(f"## {BRAND_NAME}\n-# {BRAND_TAGLINE}")
-        )
-        container.add_item(RULE())
-
-        # --- kostenlos -----------------------------------------------------
-        container.add_item(ui.TextDisplay("**Kostenlos**"))
-        container.add_item(
+        header.add_item(ui.TextDisplay(f"## {BRAND_NAME}\n-# {BRAND_TAGLINE}"))
+        header.add_item(RULE())
+        header.add_item(
             ui.TextDisplay(
                 quote(
-                    *(
-                        f"{t.emoji}  **{t.name}** — {t.tagline}\n"
-                        f"-# {t.category_count} Kategorien  ·  "
-                        f"{t.channel_count} Kanäle  ·  {t.voice_count} Sprachkanäle"
-                        for t in free
-                    )
+                    f"{totals['templates']} Vorlagen  ·  "
+                    f"{totals['categories']} Kategorien  ·  "
+                    f"{totals['channels']} Kanäle",
+                    f"{len(free)} kostenlos  ·  "
+                    f"{len(locked)} mit Premium"
+                    + ("  ·  freigeschaltet" if premium else ""),
                 )
             )
         )
+        self.add_item(header)
+
+        # --- kostenlos: jede Vorlage als eigene Karte ---------------------
+        self.add_item(ui.TextDisplay(f"**Kostenlos**  ·  {len(free)} Vorlagen"))
+        for template in free:
+            card = ui.Container(accent_colour=discord.Colour(template.accent))
+            card.add_item(
+                ui.TextDisplay(
+                    f"{template.emoji}  **{template.name}**\n"
+                    f"-# {template.tagline}\n"
+                    f"-# {template.category_count} Kategorien  ·  "
+                    f"{template.channel_count} Kanäle  ·  "
+                    f"{template.voice_count} Sprachkanäle"
+                )
+            )
+            self.add_item(card)
 
         # --- premium -------------------------------------------------------
         if locked:
-            container.add_item(SPACE())
-            container.add_item(
-                ui.TextDisplay(
-                    "**Premium**"
-                    + ("  ·  freigeschaltet" if premium else f"  ·  {len(locked)} weitere")
-                )
-            )
-            container.add_item(
-                ui.TextDisplay(
-                    quote(
-                        *(
-                            f"{t.emoji}  **{t.name}** — {t.tagline}"
-                            if premium
-                            else f"{t.emoji}  {t.name} — {t.tagline}"
+            self.add_item(SPACE())
+            premium_box = ui.Container(accent_colour=discord.Colour(COLOR_PREMIUM))
+            if premium:
+                premium_box.add_item(
+                    ui.TextDisplay(
+                        f"**Premium**  ·  {len(locked)} Vorlagen  ·  freigeschaltet\n"
+                        + "\n".join(
+                            f"{t.emoji}  **{t.name}** — {t.tagline}\n"
+                            f"-# {t.category_count} Kategorien  ·  "
+                            f"{t.channel_count} Kanäle  ·  "
+                            f"{t.voice_count} Sprachkanäle"
                             for t in locked
                         )
                     )
                 )
-            )
+            else:
+                preview = " · ".join(t.name for t in locked[:4])
+                premium_box.add_item(
+                    ui.TextDisplay(
+                        f"**Premium**  ·  {len(locked)} Vorlagen\n"
+                        + quote(
+                            f"🔒  {preview} …",
+                            "-# Nach dem Freischalten stehen alle Vorlagen "
+                            "in diesem Menü — und du erhältst deinen Key "
+                            "per Direktnachricht.",
+                        )
+                    )
+                )
+            self.add_item(premium_box)
 
-        container.add_item(RULE())
+        self.add_item(RULE())
 
-        # --- selector ------------------------------------------------------
+        # --- Auswahl und Freischaltung ------------------------------------
         select_row = ui.ActionRow()
         select_row.add_item(TemplateSelect(bot, available, premium=premium))
-        container.add_item(select_row)
+        self.add_item(select_row)
 
         if not premium:
             button_row = ui.ActionRow()
             button_row.add_item(PremiumButton(bot))
-            container.add_item(button_row)
+            self.add_item(button_row)
 
-        container.add_item(
-            footer(f"{totals['templates']} Vorlagen  ·  Vorschau vor dem Anwenden")
-        )
-        self.add_item(container)
+        self.add_item(footer("Vorlage wählen — Vorschau vor dem Anwenden"))
 
 
 def build_start_view(bot: ArchitectBot, *, premium: bool) -> StartView:

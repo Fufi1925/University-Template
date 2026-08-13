@@ -46,6 +46,15 @@ class FakeUser:
         self.id = user_id
         self.display_name = "Testerin"
         self.guild_permissions = type("P", (), {"manage_guild": manage_guild})()
+        #: Nachrichten, die der Bot diesem Nutzer per DM geschickt hat.
+        self.dms: list[str] = []
+        #: Fehler, den der DM-Versand werfen soll (DMs geschlossen).
+        self.dm_raises: Exception | None = None
+
+    async def send(self, content: str | None = None, **kwargs) -> None:
+        if self.dm_raises is not None:
+            raise self.dm_raises
+        self.dms.append(content or "")
 
 
 class FakeGuild:
@@ -374,7 +383,7 @@ def submit_key(bot: FakeBot, value: str):
 # --------------------------------------------------------------------------- #
 
 class TestPremiumButton:
-    async def test_opens_the_modal_for_new_users(self, bot):
+    async def test_sends_the_key_by_dm_and_opens_the_modal(self, bot):
         from ui.views import PremiumButton
 
         interaction = FakeInteraction()
@@ -382,6 +391,14 @@ class TestPremiumButton:
 
         assert interaction.response.modals, "Es wurde kein Key-Fenster geoeffnet"
         assert not interaction.response.sent
+
+        user = interaction.user
+        assert user.dms, "Der Key wurde nicht per DM geschickt"
+        dm = user.dms[0]
+        assert "Premium-Key" in dm
+        # Die DM traegt genau einen Key — und den kann man direkt einloesen.
+        key = dm.split("`")[1]
+        assert bot.premium.redeem_key(key, user_id=user.id)
 
     async def test_tells_existing_users_they_already_have_it(self, bot):
         """Ein zweites Key-Fenster waere nur verwirrend."""
@@ -395,7 +412,57 @@ class TestPremiumButton:
         await PremiumButton(bot).callback(interaction)
 
         assert not interaction.response.modals
+        assert not user.dms, "Wer Premium hat, braucht keinen neuen Key"
         assert "Bereits freigeschaltet" in all_text(interaction)
+
+    async def test_closed_dms_fall_back_to_a_notice_with_button(self, bot):
+        from ui.views import PremiumButton
+
+        user = FakeUser()
+        user.dm_raises = discord.Forbidden(
+            type("R", (), {"status": 403, "reason": "Forbidden"})(), "DMs zu"
+        )
+
+        interaction = FakeInteraction(user=user)
+        await PremiumButton(bot).callback(interaction)
+
+        assert not interaction.response.modals
+        text = all_text(interaction)
+        assert "DMs sind geschlossen" in text
+        assert "Key eingeben" in text, "Der manuelle Ausweg fehlt"
+
+    async def test_a_dm_error_never_leaks_the_key(self, bot):
+        """Auch bei kaputtem DM-Versand steht der Key in keinem Kanal.
+
+        Keys tragen im Klartext die Form ``ABCD-EFGH-…`` — solche Gruppen
+        duerfen in keiner Antwort auftauchen, nur in der DM.
+        """
+
+        import re
+
+        from ui.views import PremiumButton
+
+        user = FakeUser()
+        user.dm_raises = discord.HTTPException(
+            type("R", (), {"status": 500, "reason": "kaputt"})(), "kaputt"
+        )
+
+        interaction = FakeInteraction(user=user)
+        await PremiumButton(bot).callback(interaction)
+
+        text = all_text(interaction)
+        assert not re.search(r"\b[A-Za-z0-9]{4}(?:-[A-Za-z0-9]{4}){3,}\b", text)
+
+    async def test_the_manual_button_opens_the_modal(self, bot):
+        from ui.views import _manual_key_row
+
+        row = _manual_key_row(bot)
+        button = row.children[0] if hasattr(row, "children") else row.items[0]
+
+        interaction = FakeInteraction()
+        await button.callback(interaction)
+
+        assert interaction.response.modals
 
 
 # --------------------------------------------------------------------------- #

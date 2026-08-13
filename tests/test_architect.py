@@ -173,16 +173,16 @@ COMPACT = {"minimal"}
 
 class TestTemplates:
     def test_expected_templates_exist(self, registry):
-        assert len(registry) == 14
+        assert len(registry) == 24
         assert {t.key for t in registry.free} == {
-            "community", "rp", "social", "music", "dev", "minimal",
+            "community", "social", "music", "dev", "minimal",
         }
-        assert len(registry.premium) == 8
+        assert len(registry.premium) == 19
 
     def test_the_free_templates_are_the_promised_ones(self, registry):
         names = {t.name for t in registry.free}
         assert names == {
-            "Community Discord", "RP Server", "Social Lounge",
+            "Community Discord", "Social Lounge",
             "Musik & DJ", "Entwickler & Open Source", "Kleiner Server",
         }
 
@@ -581,13 +581,52 @@ class TestComponentsV2:
         buttons = [c for c in components if c.get("type") == 2]
         assert not any("Sichere dir" in (b.get("label") or "") for b in buttons)
 
+    def test_free_templates_render_as_their_own_cards(self, registry):
+        """Jede kostenlose Vorlage bekommt ihren eigenen Container."""
+
+        from ui.views import StartView
+
+        payload = StartView(_FakeBot(registry), premium=False).to_components()
+        containers = [c for c in payload if c.get("type") == 17]
+
+        # Kopf + Premium-Vorschau + eine Karte je kostenloser Vorlage.
+        assert len(containers) == 2 + len(registry.free)
+
+    def test_the_premium_section_lists_every_template_when_unlocked(self, registry):
+        from ui.views import StartView
+
+        text = "\n".join(
+            component["content"]
+            for component in self._walk(
+                StartView(_FakeBot(registry), premium=True).to_components()
+            )
+            if component.get("type") == 10
+        )
+        for template in registry.premium:
+            assert template.name in text, f"{template.name} fehlt in der Premium-Sektion"
+
+    def test_the_locked_section_only_teases(self, registry):
+        """Gesperrt zeigt die Sektion eine Vorschau, nicht alle Namen."""
+
+        from ui.views import StartView
+
+        text = "\n".join(
+            component["content"]
+            for component in self._walk(
+                StartView(_FakeBot(registry), premium=False).to_components()
+            )
+            if component.get("type") == 10
+        )
+        hidden = max(t.name for t in registry.premium)
+        assert hidden not in text, f"'{hidden}' steht schon vor dem Unlock im Menue"
+
     def test_free_select_only_lists_free_templates(self, registry):
         from ui.views import StartView
 
         components = list(self._walk(StartView(_FakeBot(registry), premium=False).to_components()))
         select = next(c for c in components if c.get("type") == 3)
         assert {o["value"] for o in select["options"]} == {
-            "community", "rp", "social", "music", "dev", "minimal",
+            "community", "social", "music", "dev", "minimal",
         }
 
     def test_premium_select_lists_everything(self, registry):
@@ -597,10 +636,9 @@ class TestComponentsV2:
         select = next(c for c in components if c.get("type") == 3)
         assert len(select["options"]) == len(registry)
 
-        # Discord nimmt hoechstens 25 Optionen je Auswahlmenue. Bei 13
-        # Vorlagen ist noch Luft, aber die naechste waechst still
-        # hinein -- und dann antwortet Discord mit 400 statt mit einer
-        # Liste.
+        # Discord nimmt hoechstens 25 Optionen je Auswahlmenue. Bei 24
+        # Vorlagen ist die Grenze fast erreicht — die naechste Vorlage
+        # braucht ein zweites Auswahlmenue.
         assert len(select["options"]) <= 25, (
             f"{len(select['options'])} Vorlagen — Discord erlaubt 25 je "
             "Auswahlmenü. Ab hier braucht die Auswahl Seiten."

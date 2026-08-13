@@ -129,6 +129,20 @@ class ArchitectBot(commands.Bot):
         # beim Mounten nur den Host-Pfad, nicht den Pfad im Container.
         self.premium.log_storage_state()
 
+        # Der Backup-Ordner wird beim Start angelegt — wer das Volume in
+        # Railway vergessen hat, merkt es sofort statt beim ersten Backup.
+        from config import BACKUP_DIR
+
+        try:
+            BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+            LOGGER.info("Backups landen in %s", BACKUP_DIR)
+        except OSError:
+            LOGGER.warning(
+                "Backup-Ordner %s ist nicht beschreibbar — "
+                "/template backup erstellen wird fehlschlagen.",
+                BACKUP_DIR,
+            )
+
         if not self.premium.is_configured and not self.licence.is_configured:
             # Nur warnen, wenn *beide* Wege fehlen. Wer Lizenzen ueber den
             # University Bot bezieht, braucht keinen Master-Key — die alte
@@ -458,7 +472,7 @@ async def backup_erstellen(interaction: discord.Interaction) -> None:
     """Serverstruktur als JSON-Datei sichern."""
 
     from config import BACKUP_DIR
-    from core.backup import save_backup
+    from core.backup import capture_backup, save_backup
 
     guild = interaction.guild
     if guild is None:  # pragma: no cover - die Gruppe ist guild_only
@@ -467,6 +481,9 @@ async def backup_erstellen(interaction: discord.Interaction) -> None:
     await interaction.response.defer(thinking=True, ephemeral=True)
 
     try:
+        # Erst der Schnappschuss (liefert die Zahlen fuer die Antwort),
+        # dann die Datei — beides aus derselben Datenquelle.
+        payload = capture_backup(guild)
         path = await save_backup(guild, BACKUP_DIR)
     except OSError as exc:
         await interaction.followup.send(
@@ -474,22 +491,32 @@ async def backup_erstellen(interaction: discord.Interaction) -> None:
                 "Backup fehlgeschlagen",
                 f"Die Datei konnte nicht geschrieben werden: {exc}",
                 tone="error",
+                hint="Prüfe, ob BACKUP_DIR beschreibbar ist — auf Railway "
+                "gehört der Pfad auf ein Volume.",
             ),
             ephemeral=True,
         )
         return
 
-    await interaction.followup.send(
-        view=notice(
-            "Backup erstellt",
-            f"**{path.name}** — Rollen, Kategorien, Kanäle und "
-            "Berechtigungen dieses Servers.",
-            tone="success",
-            hint=f"Serverseitig liegt eine Kopie unter `{BACKUP_DIR}`.",
-        ),
-        file=discord.File(path, filename=path.name),
-        ephemeral=True,
+    view = notice(
+        "Backup erstellt",
+        f"**{path.name}**\n"
+        f"Rollen: {len(payload['roles'])}  ·  Kanäle: {len(payload['channels'])}",
+        tone="success",
+        hint=f"Serverseitig liegt eine Kopie unter `{BACKUP_DIR}`.",
     )
+    try:
+        await interaction.followup.send(
+            view=view,
+            file=discord.File(path, filename=path.name),
+            ephemeral=True,
+        )
+    except (discord.NotFound, discord.HTTPException):  # pragma: no cover
+        # Interaktion abgelaufen — das Backup selbst ist fertig und liegt
+        # auf der Platte. Nur die Zustellung ist gescheitert.
+        LOGGER.warning(
+            "Backup %s geschrieben, aber die Antwort kam nicht mehr an", path.name
+        )
 
 
 bot.tree.add_command(template_group)

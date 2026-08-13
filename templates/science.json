@@ -1,0 +1,548 @@
+{
+  "key": "science",
+  "name": "Wissenschaft & Technik",
+  "emoji": "🔬",
+  "tagline": "Diskutieren, experimentieren, verstehen",
+  "premium": true,
+  "accent": "#06B6D4",
+  "description": "Für Neugierige: ein Kanal pro Fachrichtung, eine Diskussionsrunde mit eingeordneten Studien, Neuigkeiten aus Forschung und Technik, eine Werkbank für Experimente, Eigenbauten und 3D-Druck — und Fachvorträge auf der Bühne. Experimente nur mit Sicherheitshinweis.",
+  "highlights": [
+    "Kanäle für sechs Fachrichtungen",
+    "Studien einordnen statt Schlagzeilen teilen",
+    "Werkbank für Experimente, Eigenbau und 3D-Druck",
+    "Fachvorträge auf der Bühne"
+  ],
+  "roles": [
+    {
+      "key": "forscher",
+      "label": "Forscher",
+      "emoji": "🔬",
+      "colour": "#06B6D4",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "ingenieur",
+      "label": "Ingenieur",
+      "emoji": "⚙️",
+      "colour": "#0891B2",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "mentor",
+      "label": "Mentor",
+      "emoji": "🧑‍🏫",
+      "colour": "#16A34A",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "neuigkeiten",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        },
+        {
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
+        },
+        {
+          "label": "forschungs-news",
+          "emoji": "📰",
+          "topic": "Neues aus der Forschung",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "diskussion",
+      "emoji": "💬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "wissenschafts-talk",
+          "emoji": "💬",
+          "topic": "Diskutieren und staunen"
+        },
+        {
+          "label": "studien",
+          "emoji": "📑",
+          "topic": "Studien einordnen"
+        },
+        {
+          "label": "kontroversen",
+          "emoji": "⚖️",
+          "topic": "Streitfragen mit Anstand",
+          "slowmode": 30,
+          "mode": "threads"
+        },
+        {
+          "label": "fragen",
+          "emoji": "❓",
+          "topic": "Fragen ohne Scheu"
+        }
+      ]
+    },
+    {
+      "label": "faecher",
+      "emoji": "🔬",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "physik",
+          "emoji": "⚛️",
+          "topic": "Physik"
+        },
+        {
+          "label": "chemie",
+          "emoji": "🧪",
+          "topic": "Chemie"
+        },
+        {
+          "label": "biologie",
+          "emoji": "🧬",
+          "topic": "Biologie"
+        },
+        {
+          "label": "astronomie",
+          "emoji": "🔭",
+          "topic": "Astronomie"
+        },
+        {
+          "label": "mathematik",
+          "emoji": "➗",
+          "topic": "Mathematik"
+        },
+        {
+          "label": "informatik",
+          "emoji": "💻",
+          "topic": "Informatik"
+        }
+      ]
+    },
+    {
+      "label": "technik",
+      "emoji": "⚙️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "gadgets",
+          "emoji": "📱",
+          "topic": "Neue Geräte"
+        },
+        {
+          "label": "ki",
+          "emoji": "🤖",
+          "topic": "Künstliche Intelligenz"
+        },
+        {
+          "label": "robotik",
+          "emoji": "🦾",
+          "topic": "Maschinen, die sich bewegen"
+        },
+        {
+          "label": "raumfahrt",
+          "emoji": "🚀",
+          "topic": "Raketen und Missionen"
+        },
+        {
+          "label": "energie",
+          "emoji": "⚡",
+          "topic": "Strom, Wärme, Zukunft"
+        },
+        {
+          "label": "umwelt",
+          "emoji": "🌱",
+          "topic": "Klima und Ökosysteme"
+        }
+      ]
+    },
+    {
+      "label": "werkbank",
+      "emoji": "🛠️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "experimente",
+          "emoji": "🧫",
+          "topic": "Selbst ausprobieren",
+          "guide": [
+            "Nur mit Sicherheitshinweis und gesundem Menschenverstand."
+          ]
+        },
+        {
+          "label": "eigenbau",
+          "emoji": "🛠️",
+          "topic": "Selbst gebaut",
+          "mode": "media",
+          "reactions": [
+            "⭐"
+          ]
+        },
+        {
+          "label": "werkzeuge",
+          "emoji": "🔧",
+          "topic": "Geräte und Hilfsmittel"
+        },
+        {
+          "label": "3d-druck",
+          "emoji": "🖨️",
+          "topic": "Drucken und Konstruieren"
+        },
+        {
+          "label": "projekte",
+          "emoji": "📦",
+          "topic": "Gemeinsame Projekte"
+        }
+      ]
+    },
+    {
+      "label": "labor-talks",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "labor-talk",
+          "emoji": "🎙️",
+          "kind": "voice"
+        },
+        {
+          "label": "experiment-raum",
+          "emoji": "🧪",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "beobachtungs-raum",
+          "emoji": "🔭",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "lerngruppe",
+          "emoji": "👥",
+          "kind": "voice",
+          "user_limit": 8
+        },
+        {
+          "label": "fachvortrag",
+          "emoji": "🎤",
+          "kind": "stage"
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

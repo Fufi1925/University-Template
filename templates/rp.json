@@ -3,7 +3,7 @@
   "name": "RP Server",
   "emoji": "🎭",
   "tagline": "Roleplay mit Fraktionen, Behörden und Wirtschaft",
-  "premium": false,
+  "premium": true,
   "accent": "#9333EA",
   "description": "Ein durchgeplanter Roleplay-Server auf Deutsch. Die Reihenfolge ist bewusst gewählt: Flughafen und Verify zuerst, dann Regelwerke, RP-Start, Fraktionen, Behörden und Wirtschaft. Dazu abgeschirmte Team-, Büro- und Log-Bereiche.",
   "highlights": [

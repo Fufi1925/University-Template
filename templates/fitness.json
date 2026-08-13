@@ -1,0 +1,562 @@
+{
+  "key": "fitness",
+  "name": "Fitness & Sport",
+  "emoji": "🏋️",
+  "tagline": "Trainingspläne, Challenges und gemeinsame Ziele",
+  "premium": true,
+  "accent": "#16A34A",
+  "description": "Für alle, die trainieren statt nur darüber zu reden: ein Kanal pro Trainingsart, Formchecks per Video, eine Challenge-Verwaltung mit Anmeldung und Ergebnissen, Ernährung und ein Sprachbereich für gemeinsame Workouts — vom Solo-Lauf bis zum Gruppen-Training.",
+  "highlights": [
+    "Formcheck-Kanal: Technik per Video bewerten lassen",
+    "Monats-Challenges mit Anmeldung und Ergebnissen",
+    "Eigene Bereiche für Kraft, Ausdauer und Mobility",
+    "Workout- und Coaching-Sprachräume"
+  ],
+  "roles": [
+    {
+      "key": "sportler",
+      "label": "Sportler",
+      "emoji": "🏅",
+      "colour": "#16A34A",
+      "tier": "trusted",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "trainer",
+      "label": "Trainer",
+      "emoji": "🧑‍🏫",
+      "colour": "#15803D",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    },
+    {
+      "key": "ernaehrungscoach",
+      "label": "Ernaehrungscoach",
+      "emoji": "🥗",
+      "colour": "#65A30D",
+      "tier": "trusted",
+      "hoist": false,
+      "mentionable": false
+    },
+    {
+      "key": "challenge_team",
+      "label": "Challenge Team",
+      "emoji": "🏆",
+      "colour": "#CA8A04",
+      "tier": "helper",
+      "hoist": true,
+      "mentionable": false
+    }
+  ],
+  "categories": [
+    {
+      "label": "willkommen",
+      "emoji": "🚪",
+      "visibility": "gate",
+      "channels": [
+        {
+          "label": "willkommen",
+          "emoji": "👋",
+          "topic": "Willkommen! Verifiziere dich, um den Server zu sehen.",
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist.",
+            "Verifiziere dich nebenan, danach siehst du den gesamten Server."
+          ]
+        },
+        {
+          "label": "verifizieren",
+          "emoji": "✅",
+          "topic": "Hier verifizieren",
+          "widget": "verify"
+        },
+        {
+          "label": "regeln",
+          "emoji": "📜",
+          "topic": "Serverregeln",
+          "visibility": "readonly",
+          "widget": "rules"
+        },
+        {
+          "label": "haeufige-fragen",
+          "emoji": "❔",
+          "topic": "Häufig gestellte Fragen",
+          "visibility": "readonly",
+          "guide": [
+            "Die häufigsten Fragen und ihre Antworten.",
+            "Ist deine Frage nicht dabei, melde dich beim Team."
+          ]
+        }
+      ]
+    },
+    {
+      "label": "information",
+      "emoji": "📌",
+      "visibility": "readonly",
+      "channels": [
+        {
+          "label": "ankuendigungen",
+          "emoji": "📢",
+          "kind": "news",
+          "topic": "Wichtige Ankündigungen",
+          "mode": "announce"
+        },
+        {
+          "label": "neuigkeiten",
+          "emoji": "🆕",
+          "topic": "Server- und Bot-Updates",
+          "mode": "announce"
+        },
+        {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
+          "label": "partner",
+          "emoji": "🤝",
+          "topic": "Unsere Partner",
+          "guide": [
+            "Server und Projekte, mit denen wir zusammenarbeiten."
+          ]
+        },
+        {
+          "label": "team-vorstellung",
+          "emoji": "👥",
+          "topic": "Wer gehört zum Team?",
+          "guide": [
+            "Wer zum Team gehört und wofür zuständig ist."
+          ]
+        },
+        {
+          "label": "wochenplan",
+          "emoji": "📅",
+          "topic": "Die Trainingswoche"
+        }
+      ]
+    },
+    {
+      "label": "training",
+      "emoji": "🏋️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "trainingsplaene",
+          "emoji": "🗒️",
+          "kind": "forum",
+          "topic": "Pläne und Routinen"
+        },
+        {
+          "label": "krafttraining",
+          "emoji": "🏋️",
+          "topic": "Kraft und Muskeln"
+        },
+        {
+          "label": "ausdauer",
+          "emoji": "🏃",
+          "topic": "Laufen, Rad, Schwimmen"
+        },
+        {
+          "label": "mobilitaet",
+          "emoji": "🧘",
+          "topic": "Beweglichkeit und Yoga"
+        },
+        {
+          "label": "formcheck",
+          "emoji": "📹",
+          "topic": "Video zur Technikbewertung",
+          "mode": "media"
+        },
+        {
+          "label": "fortschritt",
+          "emoji": "📈",
+          "topic": "Vorher-Nachher und Messwerte",
+          "mode": "media",
+          "reactions": [
+            "⭐"
+          ]
+        },
+        {
+          "label": "erfolge",
+          "emoji": "🎉",
+          "topic": "Persönliche Bestleistungen",
+          "reactions": [
+            "🎉"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "ernaehrung",
+      "emoji": "🥗",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "rezepte",
+          "emoji": "🍽️",
+          "topic": "Rezepte für Training und Alltag"
+        },
+        {
+          "label": "mahlzeiten-planung",
+          "emoji": "📋",
+          "topic": "Wochenpläne und Mealprep"
+        },
+        {
+          "label": "supplemente",
+          "emoji": "💊",
+          "topic": "Sinn und Unsinn von Supplementen"
+        },
+        {
+          "label": "trinkprotokoll",
+          "emoji": "💧",
+          "topic": "Wasser und Elektrolyte"
+        }
+      ]
+    },
+    {
+      "label": "challenges",
+      "emoji": "🏆",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "monats-challenge",
+          "emoji": "🎯",
+          "kind": "news",
+          "topic": "Die aktuelle Challenge",
+          "visibility": "readonly",
+          "mode": "announce"
+        },
+        {
+          "label": "anmeldung",
+          "emoji": "📝",
+          "topic": "Zur Challenge anmelden"
+        },
+        {
+          "label": "team-challenges",
+          "emoji": "👥",
+          "topic": "Gemeinsam an den Start"
+        },
+        {
+          "label": "ergebnisse",
+          "emoji": "📊",
+          "topic": "Wochenergebnisse",
+          "visibility": "readonly",
+          "mode": "announce"
+        }
+      ]
+    },
+    {
+      "label": "sportarten",
+      "emoji": "⚽",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "laufen",
+          "emoji": "🏃",
+          "topic": "Laufrunden und Marathons"
+        },
+        {
+          "label": "radfahren",
+          "emoji": "🚴",
+          "topic": "Rennrad und Mountainbike"
+        },
+        {
+          "label": "schwimmen",
+          "emoji": "🏊",
+          "topic": "Bahn ziehen"
+        },
+        {
+          "label": "mannschaftssport",
+          "emoji": "⚽",
+          "topic": "Fußball, Volleyball und mehr"
+        },
+        {
+          "label": "kampfsport",
+          "emoji": "🥋",
+          "topic": "Boxen, Judo, BJJ"
+        },
+        {
+          "label": "klettern",
+          "emoji": "🧗",
+          "topic": "Halle und Fels"
+        }
+      ]
+    },
+    {
+      "label": "trainings-raeume",
+      "emoji": "🔊",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "eigenen-talk-erstellen",
+          "emoji": "➕",
+          "kind": "voice",
+          "user_limit": 1
+        },
+        {
+          "label": "trainings-talk",
+          "emoji": "🎧",
+          "kind": "voice"
+        },
+        {
+          "label": "workout-raum",
+          "emoji": "💪",
+          "kind": "voice",
+          "user_limit": 6
+        },
+        {
+          "label": "gruppen-workout",
+          "emoji": "🏋️",
+          "kind": "voice",
+          "user_limit": 12
+        },
+        {
+          "label": "coaching-raum",
+          "emoji": "🧑‍🏫",
+          "kind": "voice",
+          "user_limit": 4
+        },
+        {
+          "label": "pausen-talk",
+          "emoji": "☕",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sprachen",
+      "emoji": "🌍",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch",
+          "emoji": "🇩🇪",
+          "topic": "Deutschsprachiger Chat — die Hauptsprache",
+          "slowmode": 3
+        },
+        {
+          "label": "english",
+          "emoji": "🇬🇧",
+          "topic": "English speaking chat",
+          "slowmode": 3
+        }
+      ]
+    },
+    {
+      "label": "sprach-talks",
+      "emoji": "🗣️",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "deutsch-talk",
+          "emoji": "🇩🇪",
+          "kind": "voice"
+        },
+        {
+          "label": "english-talk",
+          "emoji": "🇬🇧",
+          "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "team",
+      "emoji": "🛡️",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "team-chat",
+          "emoji": "💼",
+          "topic": "Interner Teamchat"
+        },
+        {
+          "label": "team-ankuendigungen",
+          "emoji": "📣",
+          "topic": "Ankündigungen fürs Team",
+          "mode": "announce"
+        },
+        {
+          "label": "aufgaben",
+          "emoji": "📋",
+          "topic": "Aufgaben und Zuständigkeiten",
+          "widget": "checklist"
+        },
+        {
+          "label": "bewerbungen",
+          "emoji": "🧾",
+          "topic": "Eingehende Bewerbungen",
+          "mode": "threads"
+        },
+        {
+          "label": "meldungen",
+          "emoji": "🚨",
+          "topic": "Gemeldete Vorfälle"
+        },
+        {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
+          "label": "team-talk",
+          "emoji": "🎙️",
+          "kind": "voice",
+          "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
+        }
+      ]
+    },
+    {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
+      "label": "logs",
+      "emoji": "📜",
+      "visibility": "staff",
+      "channels": [
+        {
+          "label": "mod-logs",
+          "emoji": "🔨",
+          "topic": "Moderationsaktionen",
+          "mode": "log"
+        },
+        {
+          "label": "mitglieder-logs",
+          "emoji": "👥",
+          "topic": "Beitritte und Austritte",
+          "mode": "log"
+        },
+        {
+          "label": "nachrichten-logs",
+          "emoji": "✏️",
+          "topic": "Bearbeitete und gelöschte Nachrichten",
+          "mode": "log"
+        },
+        {
+          "label": "sprach-logs",
+          "emoji": "🔊",
+          "topic": "Voice-Aktivität",
+          "mode": "log"
+        },
+        {
+          "label": "rollen-logs",
+          "emoji": "🏷️",
+          "topic": "Rollenänderungen",
+          "mode": "log"
+        },
+        {
+          "label": "kanal-logs",
+          "emoji": "🗂️",
+          "topic": "Kanaländerungen",
+          "mode": "log"
+        },
+        {
+          "label": "social-logs",
+          "emoji": "📱",
+          "topic": "Social-Media-Feeds und Erwähnungen",
+          "mode": "log"
+        },
+        {
+          "label": "bot-logs",
+          "emoji": "🤖",
+          "topic": "Bot-Ereignisse",
+          "mode": "log"
+        },
+        {
+          "label": "einladungs-logs",
+          "emoji": "🔗",
+          "topic": "Einladungs-Tracking",
+          "mode": "log"
+        },
+        {
+          "label": "server-logs",
+          "emoji": "🗃️",
+          "topic": "Alles Übrige",
+          "mode": "log"
+        }
+      ]
+    }
+  ]
+}

@@ -195,6 +195,6 @@ class TestAccessors:
 
         totals = registry.totals
 
-        assert totals["templates"] == 14
+        assert totals["templates"] == 24
         assert totals["channels"] > 500
         assert totals["voice"] < totals["channels"]

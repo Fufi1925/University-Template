@@ -7,21 +7,58 @@ Security notes:
   or prefix through timing differences.
 * Writes are atomic (``os.replace``) so a crash mid-write cannot corrupt the
   store and revoke everybody's access.
+
+Zusaetzlich vergibt der Bot **persoenliche Einmal-Keys**: Im Startmenue
+schickt „Jetzt mehr Templates mit Premium freischalten" dem Nutzer per DM
+einen Key, den er im Key-Fenster einloest. Auch diese Keys landen nie im
+Klartext auf der Platte — gespeichert wird nur ihr SHA-256-Hash, gebunden
+an das Konto, mit Ablaufdatum und einmaliger Verwendung.
 """
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import json
 import logging
 import os
+import secrets
 import threading
+import time
 from collections.abc import Iterable
 from pathlib import Path
 
 LOGGER = logging.getLogger("architect.premium")
 
-__all__ = ["PremiumStore"]
+__all__ = ["PERSONAL_KEY_TTL", "PremiumStore"]
+
+#: Wie lange ein per DM ausgegebener Key gueltig bleibt. Lang genug, dass
+#: niemand in Zeitnot geraet, kurz genug, dass herumliegende Keys wertlos
+#: werden.
+PERSONAL_KEY_TTL = 7 * 24 * 3600
+
+
+def _normalise_key(candidate: str) -> str:
+    """Einen Key auf eine Vergleichsform bringen.
+
+    Bindestriche und Leerzeichen sind nur Formatierung — wer den Key aus
+    der DM kopiert, bekommt die Gruppen mit, wer ihn abtippt, laesst sie
+    vielleicht weg. Beides meint denselben Key.
+    """
+
+    return candidate.strip().casefold().replace("-", "").replace(" ", "")
+
+
+def _digest(normalised: str) -> str:
+    """SHA-256 eines normalisierten Keys — nur das wird gespeichert."""
+
+    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
+
+
+def _format_key(raw: str) -> str:
+    """Einen rohen Key in lesbare Vierergruppen bringen: ``ABCD-EFGH-…``."""
+
+    return "-".join(raw[i : i + 4] for i in range(0, len(raw), 4))
 
 
 class PremiumStore:
@@ -44,6 +81,8 @@ class PremiumStore:
         self._lock = threading.Lock()
         self._users: set[tuple[int, int]] = set()
         self._guilds: set[int] = set()
+        #: Digest -> {user, issued, expires}. Nur Hashes, nie Klartext.
+        self._pending: dict[str, dict] = {}
         self._load()
 
     # ------------------------------------------------------------ storage ---
@@ -124,6 +163,73 @@ class PremiumStore:
             if hmac.compare_digest(supplied.casefold(), key.strip().casefold()):
                 matched = True
         return matched
+
+    # ------------------------------------------------------- personal keys --
+    def issue_key(self, user_id: int) -> str:
+        """Einen persoenlichen Einmal-Key fuer ``user_id`` ausgeben.
+
+        Der Key kommt per DM beim Nutzer an und wird im Key-Fenster
+        eingeloest. Gespeichert wird nur sein Hash — der Klartext existiert
+        ausschliesslich in der Direktnachricht.
+
+        Ein neuer Key ersetzt die offenen Keys desselben Kontos: niemand
+        soll sich durch wiederholtes Klicken einen Vorrat anlegen koennen.
+        """
+
+        # 24 Hex-Zeichen = 96 Bit Zufall, vier Vierergruppen. Bewusst Hex
+        # statt urlsafe Base64: deren Alphabet enthaelt Bindestriche, und
+        # die sind hier der Trenner — ein Key mit Trennern im Alphabet
+        # waere unlesbar.
+        raw = secrets.token_hex(12)
+        normalised = _normalise_key(raw)
+        now = time.time()
+        with self._lock:
+            self._pending = {
+                digest: entry
+                for digest, entry in self._pending.items()
+                if entry["user"] != user_id and entry["expires"] > now
+            }
+            self._pending[_digest(normalised)] = {
+                "user": int(user_id),
+                "issued": int(now),
+                "expires": int(now + PERSONAL_KEY_TTL),
+            }
+            self._persist()
+        return _format_key(raw)
+
+    def redeem_key(self, candidate: str, *, user_id: int) -> bool:
+        """Einen eingegebenen Key einloesen.
+
+        Zwei Wege, in dieser Reihenfolge:
+
+        1. Der konfigurierte Master-Key — der klassische Weg, bei dem die
+           Serverleitung einen Key ausgibt.
+        2. Ein persoenlicher Einmal-Key: er muss existieren, zu **diesem**
+           Konto gehoeren, noch nicht abgelaufen sein — und wird beim
+           Einloesen verbraucht. Ein weitergegebener Key hilft dem
+           Empfaenger also nichts.
+        """
+
+        if self.verify(candidate):
+            return True
+
+        digest = _digest(_normalise_key(candidate))
+        with self._lock:
+            entry = self._pending.get(digest)
+            if entry is None or entry["user"] != int(user_id):
+                return False
+            if time.time() > entry["expires"]:
+                return False
+            del self._pending[digest]
+            self._persist()
+        return True
+
+    @property
+    def pending_key_count(self) -> int:
+        """Wie viele Einmal-Keys derzeit offen sind — fuer Tests und Status."""
+
+        with self._lock:
+            return len(self._pending)
 
     # -------------------------------------------------------------- state ---
     def has_access(self, guild_id: int | None, user_id: int) -> bool:
@@ -207,12 +313,25 @@ class PremiumStore:
                 except (TypeError, ValueError):
                     continue
 
+            for digest, entry in (raw.get("pending", {}) or {}).items():
+                try:
+                    user = int(entry["user"])
+                    expires = float(entry["expires"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                self._pending[str(digest)] = {
+                    "user": user,
+                    "issued": float(entry.get("issued", 0)),
+                    "expires": expires,
+                }
+
         LOGGER.info("%d Premium-Freischaltungen geladen", len(self._users))
 
     def _persist(self) -> None:
         payload = {
             "users": sorted([list(pair) for pair in self._users]),
             "guilds": sorted(self._guilds),
+            "pending": dict(sorted(self._pending.items())),
         }
         tmp = self.path.with_suffix(self.path.suffix + ".tmp")
         try:
