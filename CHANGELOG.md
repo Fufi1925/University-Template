@@ -3,6 +3,33 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.5.0] — 2026-08-14
+
+### Hinzugefügt
+
+- **7-Tage-Premium mit Ablaufdatum.** Ein persönlicher Key schaltet
+  Premium jetzt für genau sieben Tage frei (`grant(…, expires_at=…)`).
+  Nach Ablauf fällt die Freischaltung beim ersten Zugriff von selbst weg;
+  das Ablaufdatum übersteht einen Neustart. Master-Keys bleiben
+  dauerhaft. Die Freischalt-Nachricht zeigt „· 7 Tage".
+- **Meldung an den University Bot.** Beim Einlösen eines persönlichen
+  Keys meldet der Bot den Grant an `POST /api/v1/premium/grant`
+  (X-Partner-Token, mit `user_id`, `guild_id`, `expires_at`,
+  `duration_days`) — das Gegenstück zur bestehenden `check`-Abfrage.
+  Damit kann das Dashboard des University Bots „7 Tage Premium"
+  anzeigen. Die Meldung wirft nie: schlägt sie fehl, gilt Premium lokal
+  trotzdem, und der Bot warnt im Log.
+
+### Geändert
+
+- `PremiumStore.redeem_key()` meldet jetzt, was eingelöst wurde
+  (`"master"`, `"personal"` oder `None`), statt nur Ja/Nein zu sagen.
+- Befristete Freischaltungen lösen `PREMIUM_UNLOCKS_GUILD` bewusst
+  nicht aus — ein persönlicher 7-Tage-Key gehört einem Konto, nicht
+  einer ganzen Community.
+- `revoke_user` räumt auch befristete Freischaltungen ab;
+  `unlock_count` zählt sie mit.
+
 ## [3.4.0] — 2026-08-14
 
 ### Hinzugefügt

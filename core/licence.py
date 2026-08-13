@@ -118,3 +118,63 @@ class LicenceClient:
         # Nutzers ohne Premium erneut an.
         self._cache[user_id] = (now + CACHE_TTL, granted)
         return granted
+
+    async def report_grant(
+        self,
+        user_id: int,
+        *,
+        guild_id: int | None,
+        expires_at: float,
+        duration_days: int,
+    ) -> bool:
+        """Meldet dem University Bot eine Einloesung fuer dessen Dashboard.
+
+        Der University Bot weiss nichts von den persoenlichen Keys dieses
+        Bots — ohne diese Meldung stuende im Dashboard kein Premium.
+        Vertrag (Gegenstueck zur ``check``-Abfrage):
+
+            POST <MAIN_BOT_URL>/api/v1/premium/grant
+            X-Partner-Token: <PREMIUM_PARTNER_TOKEN>
+            {user_id, guild_id, expires_at (Unix-Sekunden), duration_days}
+
+        Mit ``expires_at`` zeigt das Dashboard „7 Tage Premium" statt
+        eines unbefristeten Eintrags.
+
+        Wirft nie: schlaegt die Meldung fehl, gilt die Freischaltung
+        lokal trotzdem — nur das Dashboard weiss dann nichts davon.
+        """
+
+        if not self.is_configured:
+            return False
+
+        url = f"{self.base_url}/api/v1/premium/grant"
+        payload = {
+            "user_id": str(user_id),
+            "guild_id": str(guild_id) if guild_id is not None else None,
+            "expires_at": int(expires_at),
+            "duration_days": int(duration_days),
+        }
+        try:
+            timeout = aiohttp.ClientTimeout(total=TIMEOUT)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                    url, json=payload, headers={"X-Partner-Token": self.token}
+                ) as response:
+                    if response.status == 200:
+                        LOGGER.info(
+                            "Premium-Meldung an den University Bot: "
+                            "user=%s für %d Tage",
+                            user_id,
+                            duration_days,
+                        )
+                        return True
+                    LOGGER.warning(
+                        "Premium-Meldung abgelehnt (HTTP %s) — stimmt "
+                        "PREMIUM_PARTNER_TOKEN auf beiden Seiten?",
+                        response.status,
+                    )
+        except aiohttp.ClientError as exc:
+            LOGGER.warning("Premium-Meldung fehlgeschlagen: %s", exc)
+        except Exception as exc:
+            LOGGER.warning("Premium-Meldung unerwartet fehlgeschlagen: %s", exc)
+        return False

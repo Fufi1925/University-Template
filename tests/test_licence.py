@@ -58,9 +58,16 @@ class FakeSession:
         self.response = response
         self.error = error
         self.calls: list[tuple[str, dict]] = []
+        self.posts: list[tuple[str, dict, dict]] = []
 
     def get(self, url, headers=None, **kwargs):
         self.calls.append((url, headers or {}))
+        if self.error is not None:
+            raise self.error
+        return self.response
+
+    def post(self, url, *, json=None, headers=None, **kwargs):
+        self.posts.append((url, json or {}, headers or {}))
         if self.error is not None:
             raise self.error
         return self.response
@@ -283,3 +290,61 @@ class TestCache:
         await client.has_premium(USER)
 
         assert len(session.calls) == 2, "der Zwischenspeicher laeuft nie ab"
+
+
+class TestReportGrant:
+    """Die Meldung ans Dashboard: '7 Tage Premium' statt stiller Unlock."""
+
+    async def test_a_grant_is_posted_with_token_and_expiry(self, patched):
+        session = patched(FakeSession(FakeResponse(200)))
+        client = LicenceClient("https://bot.example", "geheim")
+
+        assert await client.report_grant(
+            USER, guild_id=111, expires_at=1_800_000_000, duration_days=7
+        ) is True
+
+        url, payload, headers = session.posts[0]
+        assert url == "https://bot.example/api/v1/premium/grant"
+        assert headers.get("X-Partner-Token") == "geheim"
+        assert payload == {
+            "user_id": str(USER),
+            "guild_id": "111",
+            "expires_at": 1_800_000_000,
+            "duration_days": 7,
+        }
+
+    async def test_a_direct_message_grant_has_no_guild(self, patched):
+        session = patched(FakeSession(FakeResponse(200)))
+        client = LicenceClient("https://bot.example", "geheim")
+
+        await client.report_grant(USER, guild_id=None, expires_at=1, duration_days=7)
+
+        assert session.posts[0][1]["guild_id"] is None
+
+    @pytest.mark.parametrize("status", [401, 403, 500, 503])
+    async def test_a_rejected_report_is_false_not_fatal(self, patched, status):
+        patched(FakeSession(FakeResponse(status)))
+        client = LicenceClient("https://bot.example", "geheim")
+
+        assert await client.report_grant(
+            USER, guild_id=None, expires_at=1, duration_days=7
+        ) is False
+
+    async def test_a_network_error_is_false_not_fatal(self, patched):
+        import aiohttp
+
+        patched(FakeSession(error=aiohttp.ClientError("keine Verbindung")))
+        client = LicenceClient("https://bot.example", "geheim")
+
+        assert await client.report_grant(
+            USER, guild_id=None, expires_at=1, duration_days=7
+        ) is False
+
+    async def test_unconfigured_reports_nothing(self, patched):
+        session = patched(FakeSession(FakeResponse(200)))
+        client = LicenceClient("", "")
+
+        assert await client.report_grant(
+            USER, guild_id=None, expires_at=1, duration_days=7
+        ) is False
+        assert session.posts == []

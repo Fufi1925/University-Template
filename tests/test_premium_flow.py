@@ -136,10 +136,36 @@ class FakeInteraction:
         ]
 
 
+class FakeLicence:
+    """Merkt sich, was dem University Bot gemeldet wurde."""
+
+    def __init__(self) -> None:
+        self.reported: list[dict] = []
+
+    async def report_grant(
+        self,
+        user_id: int,
+        *,
+        guild_id: int | None = None,
+        expires_at: float | None = None,
+        duration_days: int | None = None,
+    ) -> bool:
+        self.reported.append(
+            {
+                "user_id": user_id,
+                "guild_id": guild_id,
+                "expires_at": expires_at,
+                "duration_days": duration_days,
+            }
+        )
+        return True
+
+
 class FakeBot:
     def __init__(self, registry: TemplateRegistry, store: PremiumStore) -> None:
         self.registry = registry
         self.premium = store
+        self.licence = FakeLicence()
         self.active_builds: set[int] = set()
 
     async def has_premium(self, interaction_or_ctx) -> bool:
@@ -609,6 +635,70 @@ class TestPremiumModal:
         await submit_key(bot, KEY).on_submit(FakeInteraction(guild=None, user=user))
 
         assert bot.premium.has_access(None, user.id)
+
+    async def test_a_personal_key_grants_seven_days_and_is_reported(self, bot):
+        """Der Weg aus der DM: 7 Tage Premium, sichtbar fuer den University Bot."""
+
+        from core.premium import PERSONAL_KEY_TTL
+
+        user = FakeUser(5)
+        guild = FakeGuild()
+        personal = bot.premium.issue_key(user.id)
+
+        import time
+
+        before = time.time()
+        await submit_key(bot, personal).on_submit(
+            FakeInteraction(guild=guild, user=user)
+        )
+        after = time.time()
+
+        assert bot.premium.has_access(guild.id, user.id)
+        expires = bot.premium.access_expires(guild.id, user.id)
+        assert expires is not None, "Persoenliche Keys muessen ein Ablaufdatum haben"
+        assert before + PERSONAL_KEY_TTL <= expires <= after + PERSONAL_KEY_TTL
+
+        assert len(bot.licence.reported) == 1, "Der Grant wurde nicht gemeldet"
+        report = bot.licence.reported[0]
+        assert report["user_id"] == user.id
+        assert report["guild_id"] == guild.id
+        assert report["duration_days"] == 7
+        assert int(report["expires_at"]) == int(expires)
+
+    async def test_the_unlock_screen_mentions_the_seven_days(self, bot):
+        user = FakeUser(5)
+        personal = bot.premium.issue_key(user.id)
+
+        interaction = FakeInteraction(guild=FakeGuild(), user=user)
+        await submit_key(bot, personal).on_submit(interaction)
+
+        assert "7 Tage" in all_text(interaction)
+
+    async def test_master_key_grants_permanently_without_a_report(self, bot):
+        """Der Master-Key bleibt dauerhaft — und gehoert nicht ins Dashboard."""
+
+        interaction = FakeInteraction()
+        await submit_key(bot, KEY).on_submit(interaction)
+
+        assert bot.premium.has_access(interaction.guild.id, interaction.user.id)
+        assert bot.premium.access_expires(interaction.guild.id, interaction.user.id) is None
+        assert bot.licence.reported == [], "Der Master-Key wurde gemeldet"
+
+    async def test_a_failed_report_does_not_block_the_unlock(self, bot, monkeypatch):
+        """Ist der University Bot nicht erreichbar, gilt Premium lokal trotzdem."""
+
+        async def broken(*args, **kwargs):
+            return False
+
+        monkeypatch.setattr(bot.licence, "report_grant", broken)
+
+        user = FakeUser(5)
+        personal = bot.premium.issue_key(user.id)
+        interaction = FakeInteraction(guild=FakeGuild(), user=user)
+        await submit_key(bot, personal).on_submit(interaction)
+
+        assert bot.premium.has_access(interaction.guild.id, user.id)
+        assert "Premium freigeschaltet" in all_text(interaction)
 
 
 # --------------------------------------------------------------------------- #

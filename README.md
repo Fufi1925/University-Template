@@ -458,6 +458,24 @@ der Klartext existiert ausschließlich in der Direktnachricht. Sind die DMs
 eines Nutzers geschlossen, erklärt der Bot das und bietet den Knopf
 „Key eingeben" als Ausweg an.
 
+**Sichtbar im Dashboard des University Bots.** Beim Einlösen eines
+persönlichen Keys meldet dieser Bot die Freischaltung an den University Bot
+— mit Ablaufdatum und Laufzeit in Tagen:
+
+```
+POST <MAIN_BOT_URL>/api/v1/premium/grant
+X-Partner-Token: <PREMIUM_PARTNER_TOKEN>
+{"user_id": "...", "guild_id": "...", "expires_at": 1787269251, "duration_days": 7}
+```
+
+Der University Bot kann damit im Dashboard „7 Tage Premium" anzeigen —
+`expires_at` sagt ihm, wann es vorbei ist. Die Freischaltung gilt hier
+lokal ab Einlösung genau diese sieben Tage; nach Ablauf fällt sie von
+selbst weg. Schlägt die Meldung fehl (University Bot nicht erreichbar,
+Token falsch), gilt Premium lokal trotzdem — nur das Dashboard weiß dann
+nichts davon, und dieser Bot warnt im Log. Der Master-Key bleibt
+dauerhaft und wird nicht gemeldet.
+
 > **Ehrlich gesagt:** Der Bot kann den TikTok-Follow technisch nicht prüfen —
 > Discord und TikTok sprechen nicht miteinander, und die TikTok-API verlangt
 > eine Partnerfreigabe. Die Bestätigung läuft deshalb über den Knopf

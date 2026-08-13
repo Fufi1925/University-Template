@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
 from typing import TYPE_CHECKING
 
 import discord
@@ -91,10 +92,12 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         # self.key ist das Label; der eingegebene Text liegt in dessen component.
         supplied = field_value(self.key)
 
-        # Zwei gueltige Wege: der Master-Key der Serverleitung oder ein
-        # persoenlicher Einmal-Key aus der DM. Persoenliche Keys sind an
-        # das Konto gebunden — der Key eines anderen hilft hier nichts.
-        if not self.bot.premium.redeem_key(supplied, user_id=interaction.user.id):
+        # Zwei gueltige Wege: der Master-Key der Serverleitung (dauerhaft)
+        # oder ein persoenlicher Einmal-Key aus der DM (7 Tage).
+        # Persoenliche Keys sind an das Konto gebunden — der Key eines
+        # anderen hilft hier nichts.
+        kind = self.bot.premium.redeem_key(supplied, user_id=interaction.user.id)
+        if kind is None:
             LOGGER.info(
                 "Ungültiger Premium-Key von user=%s guild=%s",
                 interaction.user.id,
@@ -113,9 +116,27 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
             return
 
         guild_id = interaction.guild.id if interaction.guild else None
-        self.bot.premium.grant(guild_id, interaction.user.id)
+
+        # Persoenliche Keys laufen nach sieben Tagen ab — und werden dem
+        # University Bot gemeldet, damit dessen Dashboard „7 Tage Premium"
+        # zeigt. Die Meldung darf die Freischaltung nie verhindern: ist
+        # der University Bot nicht erreichbar, gilt sie lokal trotzdem.
+        expires_at: float | None = None
+        if kind == "personal":
+            expires_at = time.time() + PERSONAL_KEY_TTL
+            await self.bot.licence.report_grant(
+                interaction.user.id,
+                guild_id=guild_id,
+                expires_at=expires_at,
+                duration_days=PERSONAL_KEY_TTL // 86400,
+            )
+
+        self.bot.premium.grant(guild_id, interaction.user.id, expires_at=expires_at)
         LOGGER.info(
-            "Premium freigeschaltet für user=%s guild=%s", interaction.user.id, guild_id
+            "Premium freigeschaltet für user=%s guild=%s (%s)",
+            interaction.user.id,
+            guild_id,
+            "7 Tage" if expires_at else "dauerhaft",
         )
 
         unlocked = self.bot.registry.premium
@@ -125,6 +146,7 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
                 "### Premium freigeschaltet\n"
                 f"-# {len(unlocked)} zusätzliche Vorlagen für "
                 f"{interaction.user.display_name}"
+                + ("  ·  7 Tage" if expires_at is not None else "")
             )
         )
         container.add_item(RULE())

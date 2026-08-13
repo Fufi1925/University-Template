@@ -81,6 +81,10 @@ class PremiumStore:
         self._lock = threading.Lock()
         self._users: set[tuple[int, int]] = set()
         self._guilds: set[int] = set()
+        #: (guild, user) -> Ablaufzeitpunkt. Persoenliche Keys sind nach
+        #: sieben Tagen vorbei; Master-Keys bleiben dauerhaft und stehen
+        #: deshalb in ``_users``, nicht hier.
+        self._expiring: dict[tuple[int, int], float] = {}
         #: Digest -> {user, issued, expires}. Nur Hashes, nie Klartext.
         self._pending: dict[str, dict] = {}
         self._load()
@@ -197,32 +201,36 @@ class PremiumStore:
             self._persist()
         return _format_key(raw)
 
-    def redeem_key(self, candidate: str, *, user_id: int) -> bool:
+    def redeem_key(self, candidate: str, *, user_id: int) -> str | None:
         """Einen eingegebenen Key einloesen.
 
         Zwei Wege, in dieser Reihenfolge:
 
         1. Der konfigurierte Master-Key — der klassische Weg, bei dem die
-           Serverleitung einen Key ausgibt.
+           Serverleitung einen Key ausgibt. Gilt dauerhaft.
         2. Ein persoenlicher Einmal-Key: er muss existieren, zu **diesem**
            Konto gehoeren, noch nicht abgelaufen sein — und wird beim
            Einloesen verbraucht. Ein weitergegebener Key hilft dem
            Empfaenger also nichts.
+
+        Gibt ``\"master\"``, ``\"personal\"`` oder ``None`` zurueck — der
+        Aufrufer entscheidet daran, ob die Freischaltung ein Ablaufdatum
+        bekommt und an den University Bot gemeldet wird.
         """
 
         if self.verify(candidate):
-            return True
+            return "master"
 
         digest = _digest(_normalise_key(candidate))
         with self._lock:
             entry = self._pending.get(digest)
             if entry is None or entry["user"] != int(user_id):
-                return False
+                return None
             if time.time() > entry["expires"]:
-                return False
+                return None
             del self._pending[digest]
             self._persist()
-        return True
+        return "personal"
 
     @property
     def pending_key_count(self) -> int:
@@ -236,18 +244,63 @@ class PremiumStore:
         with self._lock:
             if guild_id is not None and guild_id in self._guilds:
                 return True
-            return (guild_id or 0, user_id) in self._users
+            key = (guild_id or 0, user_id)
+            if key in self._users:
+                return True
 
-    def grant(self, guild_id: int | None, user_id: int) -> None:
+            expires = self._expiring.get(key)
+            if expires is None:
+                return False
+            if time.time() >= expires:
+                # Abgelaufene Freischaltungen fallen beim ersten Anfassen
+                # weg — ohne eigenen Aufraeumlauf.
+                del self._expiring[key]
+                self._persist()
+                return False
+            return True
+
+    def access_expires(self, guild_id: int | None, user_id: int) -> float | None:
+        """Wann laeuft die Freischaltung ab — ``None`` heisst dauerhaft.
+
+        Das Dashboard des University Bots zeigt auf dieser Grundlage
+        „7 Tage Premium" statt eines unbefristeten Freischalters.
+        """
+
         with self._lock:
-            self._users.add((guild_id or 0, user_id))
-            if self.guild_wide and guild_id is not None:
-                self._guilds.add(guild_id)
+            return self._expiring.get((guild_id or 0, user_id))
+
+    def grant(
+        self,
+        guild_id: int | None,
+        user_id: int,
+        *,
+        expires_at: float | None = None,
+    ) -> None:
+        """Freischalten — dauerhaft, oder mit Ablaufdatum.
+
+        ``expires_at`` ist ein Unix-Zeitstempel. Persoenliche Keys laufen
+        nach sieben Tagen ab; Master-Keys bleiben dauerhaft. Eine
+        befristete Freischaltung schaltet bewusst **nicht** den ganzen
+        Server frei — sie gehoert einem Konto, nicht einer Community.
+        """
+
+        with self._lock:
+            key = (guild_id or 0, user_id)
+            if expires_at is None:
+                self._users.add(key)
+                self._expiring.pop(key, None)
+                if self.guild_wide and guild_id is not None:
+                    self._guilds.add(guild_id)
+            else:
+                self._users.discard(key)
+                self._expiring[key] = expires_at
             self._persist()
 
     def revoke(self, guild_id: int | None, user_id: int) -> None:
         with self._lock:
-            self._users.discard((guild_id or 0, user_id))
+            key = (guild_id or 0, user_id)
+            self._users.discard(key)
+            self._expiring.pop(key, None)
             self._persist()
 
     def revoke_user(self, user_id: int) -> int:
@@ -266,9 +319,12 @@ class PremiumStore:
         user_id = int(user_id)
         with self._lock:
             gone = {pair for pair in self._users if pair[1] == user_id}
+            gone |= {pair for pair in self._expiring if pair[1] == user_id}
             if not gone:
                 return 0
             self._users -= gone
+            for pair in gone:
+                self._expiring.pop(pair, None)
 
             # guild_wide: eine Freischaltung galt fuer den ganzen Server.
             # Sie muss mit, sonst behaelt der Server Premium, obwohl
@@ -283,7 +339,7 @@ class PremiumStore:
     @property
     def unlock_count(self) -> int:
         with self._lock:
-            return len(self._users)
+            return len(self._users) + len(self._expiring)
 
     # ---------------------------------------------------------------- i/o ---
     def _load(self) -> None:
@@ -325,13 +381,23 @@ class PremiumStore:
                     "expires": expires,
                 }
 
-        LOGGER.info("%d Premium-Freischaltungen geladen", len(self._users))
+            for entry in raw.get("expires", []) or []:
+                try:
+                    guild_id, user_id, expires = entry
+                    self._expiring[(int(guild_id), int(user_id))] = float(expires)
+                except (TypeError, ValueError):
+                    continue
+
+        LOGGER.info("%d Premium-Freischaltungen geladen", self.unlock_count)
 
     def _persist(self) -> None:
         payload = {
             "users": sorted([list(pair) for pair in self._users]),
             "guilds": sorted(self._guilds),
             "pending": dict(sorted(self._pending.items())),
+            "expires": sorted(
+                [[guild_id, user_id, expires] for (guild_id, user_id), expires in self._expiring.items()]
+            ),
         }
         tmp = self.path.with_suffix(self.path.suffix + ".tmp")
         try:

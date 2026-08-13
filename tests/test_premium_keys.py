@@ -185,3 +185,69 @@ class TestPersistence:
         key = store.issue_key(user_id=7)
 
         assert key
+
+
+class TestExpiry:
+    """Die 7-Tage-Premium: Ablaufdatum statt unbefristeter Freischaltung."""
+
+    def test_a_grant_with_expiry_counts_as_premium(self, store):
+        store.grant(1, 7, expires_at=time.time() + 3600)
+
+        assert store.has_access(1, 7)
+        assert store.access_expires(1, 7) is not None
+
+    def test_a_grant_without_expiry_is_permanent(self, store):
+        store.grant(1, 7)
+
+        assert store.access_expires(1, 7) is None
+        assert store.has_access(1, 7)
+
+    def test_expired_access_falls_away(self, store, monkeypatch):
+        now = time.time()
+        store.grant(1, 7, expires_at=now + 100)
+
+        monkeypatch.setattr(time, "time", lambda: now + 101)
+
+        assert not store.has_access(1, 7)
+        assert store.access_expires(1, 7) is None, "Der abgelaufene Eintrag blieb stehen"
+
+    def test_expiring_unlocks_survive_a_restart(self, store, tmp_path):
+        expires = time.time() + 3600
+        store.grant(1, 7, expires_at=expires)
+
+        reloaded = PremiumStore(tmp_path / "premium.json", keys=(MASTER,))
+
+        assert reloaded.has_access(1, 7)
+        assert reloaded.access_expires(1, 7) == expires
+
+    def test_revoking_an_account_clears_expiring_unlocks_too(self, store):
+        store.grant(1, 7, expires_at=time.time() + 3600)
+        store.grant(2, 7, expires_at=time.time() + 3600)
+        store.grant(1, 8)  # dauerhaft, anderes Konto
+
+        assert store.revoke_user(7) == 2
+
+        assert not store.has_access(1, 7)
+        assert not store.has_access(2, 7)
+        assert store.has_access(1, 8), "Das andere Konto wurde mitgeraumt"
+
+    def test_unlock_count_includes_expiring(self, store):
+        store.grant(1, 7, expires_at=time.time() + 3600)
+        store.grant(1, 8)
+
+        assert store.unlock_count == 2
+
+    def test_expiring_does_not_trigger_guild_wide(self, tmp_path):
+        store = PremiumStore(
+            tmp_path / "premium.json", keys=(MASTER,), guild_wide=True
+        )
+        store.grant(1, 7, expires_at=time.time() + 3600)
+
+        assert not store.has_access(1, 99), "Befristete Keys gelten nur dem Konto"
+
+    def test_redeem_key_reports_what_was_redeemed(self, store):
+        personal = store.issue_key(user_id=7)
+
+        assert store.redeem_key(MASTER, user_id=7) == "master"
+        assert store.redeem_key(personal, user_id=7) == "personal"
+        assert store.redeem_key("ABCD-EFGH", user_id=7) is None
