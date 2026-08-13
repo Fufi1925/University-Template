@@ -23,7 +23,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Protocol
 
 import discord
 
@@ -48,7 +48,15 @@ from .small_caps import strip_decoration
 
 LOGGER = logging.getLogger("architect.builder")
 
-__all__ = ["BuildError", "BuildMode", "BuildReport", "ServerBuilder", "with_retry"]
+__all__ = [
+    "BuildError",
+    "BuildMode",
+    "BuildReport",
+    "RemovalReport",
+    "ServerBuilder",
+    "wipe_guild",
+    "with_retry",
+]
 
 # Discord tolerates bursts but sustained creation gets rate limited hard. A
 # small delay between mutations keeps large templates (60+ channels) smooth.
@@ -150,6 +158,42 @@ class BuildReport:
             self.warnings.append(message)
 
 
+@dataclass(slots=True)
+class RemovalReport:
+    """Was das Entfernen einer Vorlage bzw. ein Wipe bewirkt hat."""
+
+    template_key: str | None = None
+    deleted_channels: int = 0
+    deleted_categories: int = 0
+    deleted_roles: int = 0
+    undeletable: int = 0
+    kept_categories: int = 0
+    warnings: list[str] = field(default_factory=list)
+
+    @property
+    def total_deleted(self) -> int:
+        return self.deleted_channels + self.deleted_categories + self.deleted_roles
+
+    def warn(self, message: str) -> None:
+        if message not in self.warnings:
+            self.warnings.append(message)
+
+
+class _WipeSink(Protocol):
+    """Ein Bericht, den :func:`_wipe_guild` mit Zahlen und Warnungen fuellt.
+
+    Sowohl :class:`BuildReport` als auch :class:`RemovalReport` erfuellen
+    diese Form — der Wipe muss nicht wissen, in welchem Zusammenhang er
+    laeuft.
+    """
+
+    deleted_channels: int
+    deleted_roles: int
+    undeletable: int
+
+    def warn(self, message: str) -> None: ...
+
+
 ProgressHook = Callable[[str, int, int], Awaitable[None]]
 
 # Feinmeldung: eine Zeile pro angelegtem Objekt, ohne Zaehler.
@@ -159,6 +203,76 @@ ProgressHook = Callable[[str, int, int], Awaitable[None]]
 # in denen im Terminal des Dashboards nichts passiert. Es sieht dann aus,
 # als haenge der Bau. Diese Meldung schliesst die Luecke.
 DetailHook = Callable[[str], Awaitable[None]]
+
+
+def _drop_from_cache(guild: discord.Guild, channel: discord.abc.GuildChannel) -> None:
+    """Einen geloeschten Kanal sofort aus dem Guild-Cache nehmen.
+
+    Siehe :meth:`ServerBuilder._forget_channel` — gleiche Logik, nur
+    modulweit verfuegbar, weil auch ``wipe_guild`` ausserhalb des Builders
+    loescht.
+    """
+
+    cache = getattr(guild, "_channels", None)
+    if isinstance(cache, dict):
+        cache.pop(channel.id, None)
+
+
+async def _wipe_guild(guild: discord.Guild, report: _WipeSink) -> None:
+    """Alles loeschen, was Discord uns loeschen laesst."""
+
+    # Kinder vor Kategorien, damit nichts mitten im Lauf verwaist.
+    channels = sorted(
+        guild.channels,
+        key=lambda ch: isinstance(ch, discord.CategoryChannel),
+    )
+    for channel in channels:
+        try:
+            await channel.delete(reason=SETUP_REASON)
+            _drop_from_cache(guild, channel)
+            report.deleted_channels += 1
+            await asyncio.sleep(_THROTTLE)
+        except discord.NotFound:
+            # Schon weg — trotzdem aus dem Cache nehmen.
+            _drop_from_cache(guild, channel)
+            continue
+        except (discord.Forbidden, discord.HTTPException):
+            report.undeletable += 1
+            LOGGER.warning("Kanal '%s' nicht löschbar", channel.name)
+
+    for role in sorted(guild.roles, key=lambda r: r.position, reverse=True):
+        # @everyone, Integrationsrollen und Rollen ueber dem Bot sind tabu.
+        if role.is_default() or role.managed or not role.is_assignable():
+            if not role.is_default() and not role.managed:
+                report.undeletable += 1
+            continue
+        try:
+            await role.delete(reason=SETUP_REASON)
+            report.deleted_roles += 1
+            await asyncio.sleep(_THROTTLE)
+        except discord.NotFound:
+            continue
+        except (discord.Forbidden, discord.HTTPException):
+            report.undeletable += 1
+            LOGGER.warning("Rolle '%s' nicht löschbar", role.name)
+
+    if report.undeletable:
+        report.warn(
+            f"{report.undeletable} Objekt(e) konnten nicht gelöscht werden — "
+            "sie stehen über der Bot-Rolle oder gehören zu einer Integration."
+        )
+
+
+async def wipe_guild(guild: discord.Guild) -> RemovalReport:
+    """Loescht alle Kanaele und Rollen, die der Bot entfernen darf.
+
+    Der Wipe-Teil von ``Neu aufsetzen`` ohne den Neuaufbau — fuer
+    ``/template löschen``.
+    """
+
+    report = RemovalReport()
+    await _wipe_guild(guild, report)
+    return report
 
 
 class ServerBuilder:
@@ -298,9 +412,7 @@ class ServerBuilder:
         deshalb selbst auf, statt auf das Gateway zu warten.
         """
 
-        cache = getattr(self.guild, "_channels", None)
-        if isinstance(cache, dict):
-            cache.pop(channel.id, None)
+        _drop_from_cache(self.guild, channel)
 
     def _find_category(self, spec: CategorySpec) -> discord.CategoryChannel | None:
         target = strip_decoration(spec.display_name)
@@ -323,46 +435,7 @@ class ServerBuilder:
     async def _wipe(self, report: BuildReport) -> None:
         """Delete everything Discord lets us delete."""
 
-        # Children before categories, so nothing is orphaned mid-run.
-        channels = sorted(
-            self.guild.channels,
-            key=lambda ch: isinstance(ch, discord.CategoryChannel),
-        )
-        for channel in channels:
-            try:
-                await channel.delete(reason=SETUP_REASON)
-                self._forget_channel(channel)
-                report.deleted_channels += 1
-                await asyncio.sleep(_THROTTLE)
-            except discord.NotFound:
-                # Schon weg — trotzdem aus dem Cache nehmen.
-                self._forget_channel(channel)
-                continue
-            except (discord.Forbidden, discord.HTTPException):
-                report.undeletable += 1
-                LOGGER.warning("Kanal '%s' nicht löschbar", channel.name)
-
-        for role in sorted(self.guild.roles, key=lambda r: r.position, reverse=True):
-            # @everyone, integration roles and roles above the bot are off limits.
-            if role.is_default() or role.managed or not role.is_assignable():
-                if not role.is_default() and not role.managed:
-                    report.undeletable += 1
-                continue
-            try:
-                await role.delete(reason=SETUP_REASON)
-                report.deleted_roles += 1
-                await asyncio.sleep(_THROTTLE)
-            except discord.NotFound:
-                continue
-            except (discord.Forbidden, discord.HTTPException):
-                report.undeletable += 1
-                LOGGER.warning("Rolle '%s' nicht löschbar", role.name)
-
-        if report.undeletable:
-            report.warn(
-                f"{report.undeletable} Objekt(e) konnten nicht gelöscht werden — "
-                "sie stehen über der Bot-Rolle oder gehören zu einer Integration."
-            )
+        await _wipe_guild(self.guild, report)
 
     # ------------------------------------------------------------ building --
     async def _ensure_roles(self, report: BuildReport, *, update: bool) -> None:
@@ -826,6 +899,93 @@ class ServerBuilder:
         if write_intros:
             await self._write_all_intros(report, tick)
 
+        return report
+
+    async def unapply(self) -> RemovalReport:
+        """Macht die Struktur dieser Vorlage rueckgaengig.
+
+        Loescht Kanaele und Kategorien, die zur Vorlage passen — derselbe
+        Namensabgleich (dekoriert *oder* schlicht) wie beim Bauen — plus
+        die eigenen Rollen der Vorlage.
+
+        Zwei Dinge bleiben bewusst stehen:
+
+        * **Die geteilte Basis-Leiter** (Verified, Moderation, ...). Sie
+          gehoert jeder Vorlage; sie zu entfernen kaeme einem Wipe gleich
+          und risse anderen Vorlagen die Rollen unter den Kanaelen weg.
+        * **Fremde Kanaele** in einer passenden Kategorie. Die Kategorie
+          wird nur geloescht, wenn sie danach leer ist.
+        """
+
+        report = RemovalReport(template_key=self.template.key)
+
+        for category_spec in self.template.categories:
+            category = self._find_category(category_spec)
+            if category is None:
+                continue
+            for spec in category_spec.channels:
+                channel = self._find_channel(category, spec)
+                if channel is None:
+                    continue
+                try:
+                    await channel.delete(reason=SETUP_REASON)
+                    report.deleted_channels += 1
+                    self._forget_channel(channel)
+                    await asyncio.sleep(_THROTTLE)
+                except discord.NotFound:
+                    # Schon weg — trotzdem aus dem Cache nehmen.
+                    self._forget_channel(channel)
+                    continue
+                except (discord.Forbidden, discord.HTTPException):
+                    report.undeletable += 1
+                    LOGGER.warning("Kanal '%s' nicht löschbar", channel.name)
+
+            # Erst wenn wirklich nichts mehr darin liegt, faellt auch die
+            # Kategorie. Sonst wuerden fremde Kanaele mitsamt Inhalt
+            # verwaist zurueckbleiben.
+            if category.channels:
+                report.kept_categories += 1
+                continue
+            try:
+                await category.delete(reason=SETUP_REASON)
+                report.deleted_categories += 1
+                self._forget_channel(category)
+                await asyncio.sleep(_THROTTLE)
+            except discord.NotFound:
+                self._forget_channel(category)
+                continue
+            except (discord.Forbidden, discord.HTTPException):
+                report.undeletable += 1
+                LOGGER.warning("Kategorie '%s' nicht löschbar", category.name)
+
+        # Nur die eigenen Rollen der Vorlage — die Basis-Leiter bleibt.
+        for role_spec in self.template.roles:
+            role = self._find_role(role_spec)
+            if role is None:
+                continue
+            if role.is_default() or role.managed or not role.is_assignable():
+                report.undeletable += 1
+                continue
+            try:
+                await role.delete(reason=SETUP_REASON)
+                report.deleted_roles += 1
+                await asyncio.sleep(_THROTTLE)
+            except discord.NotFound:
+                continue
+            except (discord.Forbidden, discord.HTTPException):
+                report.undeletable += 1
+                LOGGER.warning("Rolle '%s' nicht löschbar", role.name)
+
+        if report.undeletable:
+            report.warn(
+                f"{report.undeletable} Objekt(e) konnten nicht gelöscht werden — "
+                "sie stehen über der Bot-Rolle oder gehören zu einer Integration."
+            )
+        if report.kept_categories:
+            report.warn(
+                f"{report.kept_categories} Kategorie(n) blieben stehen, "
+                "weil fremde Kanäle darin liegen."
+            )
         return report
 
     async def _recover_category(

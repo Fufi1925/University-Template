@@ -120,9 +120,9 @@ class ArchitectBot(commands.Bot):
 
         if not config.ENABLE_PRIVILEGED_INTENTS:
             LOGGER.warning(
-                "Privileged Intents sind aus — '%sstart' funktioniert nicht. "
-                "Nutze /start oder setze ENABLE_PRIVILEGED_INTENTS=true.",
-                config.COMMAND_PREFIX,
+                "Privileged Intents sind aus — Kanal-Modi und die "
+                "Eingangsschleuse arbeiten nur mit aktivierten Intents. "
+                "Setze ENABLE_PRIVILEGED_INTENTS=true."
             )
 
         # Sagt, ob Freischaltungen einen Deploy ueberleben. Railway loggt
@@ -197,7 +197,7 @@ class ArchitectBot(commands.Bot):
             activities = (
                 discord.Activity(
                     type=discord.ActivityType.watching,
-                    name=f"{config.COMMAND_PREFIX}start · {templates} Templates",
+                    name=f"/template start · {templates} Templates",
                 ),
                 discord.Activity(
                     type=discord.ActivityType.playing,
@@ -228,12 +228,6 @@ class ArchitectBot(commands.Bot):
             return
         with contextlib.suppress(discord.HTTPException):
             await member.add_roles(role, reason="Neues Mitglied")
-
-    @property
-    def command_prefix_display(self) -> str:
-        """Der Prefix, wie er in Meldungen erscheinen soll."""
-
-        return config.COMMAND_PREFIX
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """Automatische Einrichtung, wenn der Server von einem Partner kam."""
@@ -317,103 +311,130 @@ bot = ArchitectBot()
 
 
 # --------------------------------------------------------------------------- #
-# Commands
+# Commands: /template ... plus /ping
 # --------------------------------------------------------------------------- #
 
-async def _require_guild(ctx: commands.Context) -> discord.Guild | None:
-    """Den Server aus dem Kontext holen, oder freundlich abbrechen.
-
-    ``@commands.guild_only()`` schuetzt das zur Laufzeit bereits, aber der
-    Typ bleibt ``Guild | None``. Statt die Pruefung in jedem Befehl zu
-    wiederholen — oder sie wegzucasten und beim naechsten Umbau zu verlieren —
-    steht sie hier einmal.
-    """
-
-    if ctx.guild is not None:
-        return ctx.guild
-    await ctx.send(
-        view=notice(
-            "Nur auf Servern verfügbar",
-            "Dieser Befehl funktioniert nur innerhalb eines Servers.",
-            tone="error",
-        )
-    )
-    return None
-
-@bot.command(name="start", aliases=["templates", "setup", "menu"])
-@commands.guild_only()
-async def start_prefix(ctx: commands.Context) -> None:
-    """Open the template menu."""
-
-    await ctx.send(view=build_start_view(bot, premium=await bot.has_premium(ctx)))
+template_group = discord.app_commands.Group(
+    name="template",
+    description="Server-Vorlagen ansehen, anwenden und verwalten",
+    guild_only=True,
+)
 
 
-@bot.tree.command(name="start", description="Öffnet das Server-Template-Menü")
-@discord.app_commands.guild_only()
-async def start_slash(interaction: discord.Interaction) -> None:
+@template_group.command(name="start", description="Öffnet das Vorlagen-Menü")
+async def template_start(interaction: discord.Interaction) -> None:
+    """Das Vorlagen-Menü — Auswählen, Ansehen, Anwenden."""
+
     await interaction.response.send_message(
         view=build_start_view(bot, premium=await bot.has_premium(interaction))
     )
 
 
-@bot.command(name="regeln", aliases=["rules", "regelwerk"])
-@commands.guild_only()
-async def rules_prefix(ctx: commands.Context) -> None:
-    """Öffnet den Regelwerk-Assistenten."""
+@template_group.command(name="list", description="Zeigt alle Vorlagen mit Details")
+async def template_list(interaction: discord.Interaction) -> None:
+    """Alle Vorlagen auf einen Blick — mit Vorschau je Vorlage."""
 
-    from ui.rules import RulesetPicker, find_rules_channel
+    from ui.management import TemplateListView
 
-    guild = await _require_guild(ctx)
-    if guild is None:
-        return
+    await interaction.response.send_message(view=TemplateListView(bot))
 
-    channel = find_rules_channel(guild)
-    if channel is None:
-        await ctx.send(
-            view=notice(
-                "Kein Regelkanal gefunden",
-                "Auf diesem Server gibt es keinen Kanal für Regeln.",
-                tone="error",
-                hint=f"Wende zuerst eine Vorlage mit {config.COMMAND_PREFIX}start an.",
+
+@template_group.command(
+    name="löschen",
+    description="Macht eine Vorlage rückgängig oder leert den Server",
+)
+@discord.app_commands.default_permissions(manage_guild=True)
+@discord.app_commands.describe(
+    vorlage="Welche Vorlage rückgängig gemacht werden soll (leer lassen für eine Auswahl)"
+)
+async def template_delete(
+    interaction: discord.Interaction, vorlage: str | None = None
+) -> None:
+    """Struktur einer Vorlage entfernen — oder alles Löschbare."""
+
+    from ui.management import DeleteConfirmView, DeletePickerView
+
+    if vorlage:
+        template = bot.registry.get(vorlage)
+        if template is None:
+            await interaction.response.send_message(
+                view=notice(
+                    "Vorlage nicht gefunden",
+                    f"`{vorlage}` ist keine bekannte Vorlage.",
+                    tone="error",
+                    hint="Ohne Argument öffnet sich die Auswahl aller Vorlagen.",
+                ),
+                ephemeral=True,
             )
+            return
+        await interaction.response.send_message(
+            view=DeleteConfirmView(bot, template), ephemeral=True
         )
         return
-    await ctx.send(view=RulesetPicker(bot, channel))
+
+    await interaction.response.send_message(view=DeletePickerView(bot), ephemeral=True)
 
 
-@bot.tree.command(name="regeln", description="Regelwerk für den Regelkanal einrichten")
-@discord.app_commands.guild_only()
-async def rules_slash(interaction: discord.Interaction) -> None:
+@template_delete.autocomplete("vorlage")
+async def template_delete_autocomplete(
+    interaction: discord.Interaction, current: str
+) -> list[discord.app_commands.Choice[str]]:
+    """Vorlagen passend zur Eingabe vorschlagen."""
+
+    needle = current.lower()
+    return [
+        discord.app_commands.Choice(name=f"{tpl.emoji} {tpl.name}", value=tpl.key)
+        for tpl in bot.registry.all
+        if needle in tpl.name.lower() or needle in tpl.key
+    ][:25]
+
+
+@template_group.command(
+    name="ai", description="Stellt eine Vorlage aus deiner Beschreibung zusammen"
+)
+async def template_ai(interaction: discord.Interaction) -> None:
+    """Regelbasierter Assistent: Beschreibung → fertige Vorlage."""
+
+    from ui.management import AiTemplateModal
+
+    await interaction.response.send_modal(AiTemplateModal(bot))
+
+
+@template_group.command(
+    name="regeln", description="Regelwerk für den Regelkanal einrichten"
+)
+async def template_regeln(interaction: discord.Interaction) -> None:
     from ui.rules import open_rules_assistant
 
     await open_rules_assistant(interaction, bot)
 
 
-@bot.command(name="partner-setup", aliases=["autosetup"])
-@commands.guild_only()
-@commands.has_guild_permissions(manage_guild=True)
-async def partner_setup(ctx: commands.Context) -> None:
+@template_group.command(
+    name="partner-setup", description="Die Partner-Vorlage erneut anwenden"
+)
+@discord.app_commands.default_permissions(manage_guild=True)
+async def template_partner_setup(interaction: discord.Interaction) -> None:
     """Die Partner-Vorlage bewusst erneut anwenden."""
 
-    guild = await _require_guild(ctx)
-    if guild is None:
+    guild = interaction.guild
+    if guild is None:  # pragma: no cover - die Gruppe ist guild_only
         return
 
     previous = bot.setup_ledger.details(guild.id)
-
     if previous is not None:
-        await ctx.send(
+        await interaction.response.send_message(
             view=notice(
                 "Wird erneut aufgebaut",
                 f"Die Vorlage lief hier bereits (**{previous.get('template', '?')}**). "
                 "Bestehende Kanäle und Rollen bleiben erhalten, es wird nur ergänzt.",
                 tone="neutral",
-            )
+            ),
+            ephemeral=True,
         )
 
     handoff = Handoff(
         guild_id=guild.id,
-        user_id=ctx.author.id,
+        user_id=interaction.user.id,
         issued_at=int(time.time()),
         source="manual",
         guild_name=guild.name,
@@ -421,35 +442,75 @@ async def partner_setup(ctx: commands.Context) -> None:
     await bot.autosetup.run(guild, handoff, force=True)
 
 
-@partner_setup.error
-async def partner_setup_error(ctx: commands.Context, error: commands.CommandError) -> None:
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send(
+backup_group = discord.app_commands.Group(
+    name="backup",
+    description="Backups der Serverstruktur",
+    parent=template_group,
+)
+
+
+@backup_group.command(
+    name="erstellen",
+    description="Sichert Rollen, Kanäle und Berechtigungen als JSON",
+)
+@discord.app_commands.default_permissions(manage_guild=True)
+async def backup_erstellen(interaction: discord.Interaction) -> None:
+    """Serverstruktur als JSON-Datei sichern."""
+
+    from config import BACKUP_DIR
+    from core.backup import save_backup
+
+    guild = interaction.guild
+    if guild is None:  # pragma: no cover - die Gruppe ist guild_only
+        return
+
+    await interaction.response.defer(thinking=True, ephemeral=True)
+
+    try:
+        path = await save_backup(guild, BACKUP_DIR)
+    except OSError as exc:
+        await interaction.followup.send(
             view=notice(
-                "Keine Berechtigung",
-                "Dafür brauchst du **Server verwalten**.",
+                "Backup fehlgeschlagen",
+                f"Die Datei konnte nicht geschrieben werden: {exc}",
                 tone="error",
-            )
+            ),
+            ephemeral=True,
         )
         return
-    raise error
+
+    await interaction.followup.send(
+        view=notice(
+            "Backup erstellt",
+            f"**{path.name}** — Rollen, Kategorien, Kanäle und "
+            "Berechtigungen dieses Servers.",
+            tone="success",
+            hint=f"Serverseitig liegt eine Kopie unter `{BACKUP_DIR}`.",
+        ),
+        file=discord.File(path, filename=path.name),
+        ephemeral=True,
+    )
 
 
-@bot.command(name="ping")
-async def ping(ctx: commands.Context) -> None:
+bot.tree.add_command(template_group)
+
+
+@bot.tree.command(name="ping", description="Antwortet mit der Latenz")
+async def ping_slash(interaction: discord.Interaction) -> None:
     # Vor dem ersten Heartbeat liefert discord.py NaN — round() wirft darauf
     # einen ValueError. Das Zeitfenster ist klein, aber ausgerechnet direkt
-    # nach dem Start greift man am ehesten zu !ping.
+    # nach dem Start greift man am ehesten zu /ping.
     latency = bot.latency
     measured = "—" if math.isnan(latency) else f"{round(latency * 1000)} ms"
 
-    await ctx.send(
+    await interaction.response.send_message(
         view=notice(
             "Pong",
             f"Latenz **{measured}**",
             tone="neutral",
             hint=f"{len(bot.registry)} Vorlagen geladen",
-        )
+        ),
+        ephemeral=True,
     )
 
 
@@ -491,7 +552,8 @@ def main() -> None:
         print(
             "\n  ❌  Privileged Intents nicht aktiviert.\n\n"
             "     Developer Portal → Bot → Server Members + Message Content einschalten,\n"
-            "     oder ENABLE_PRIVILEGED_INTENTS=false setzen (dann nur /start).\n",
+            "     oder ENABLE_PRIVILEGED_INTENTS=false setzen (dann ohne\n"
+            "     Kanal-Modi und Eingangsschleuse).\n",
             file=sys.stderr,
         )
         raise SystemExit(1) from None

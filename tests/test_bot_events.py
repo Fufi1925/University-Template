@@ -12,7 +12,7 @@ Was hier hängt, ist nicht nebensächlich:
   alles.
 * ``on_message`` setzt die Kanal-Modi durch **und** verarbeitet Befehle. Ein
   früher Rücksprung an der falschen Stelle legt entweder die Moderation oder
-  alle Prefix-Befehle lahm.
+  alle Befehle lahm.
 * ``has_premium`` entscheidet über den Zugang zu sieben Vorlagen und muss mit
   zwei verschiedenen Objektarten umgehen (Interaction und Context).
 """
@@ -20,9 +20,10 @@ Was hier hängt, ist nicht nebensächlich:
 from __future__ import annotations
 
 import asyncio
+import runpy
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import discord
 import pytest
@@ -119,6 +120,45 @@ class FakeContext:
 
     async def send(self, *args, view=None, **kwargs) -> None:
         self.sent.append(view if view is not None else (args[0] if args else None))
+
+
+class FakeResponse:
+    def __init__(self) -> None:
+        self.sent: list[object] = []
+        self.edited: list[object] = []
+        self.modals: list[object] = []
+        self.deferred = False
+
+    def is_done(self) -> bool:
+        return bool(self.sent or self.edited or self.modals or self.deferred)
+
+    async def send_message(self, *, view=None, **kwargs) -> None:
+        self.sent.append(view)
+
+    async def edit_message(self, *, view=None, **kwargs) -> None:
+        self.edited.append(view)
+
+    async def send_modal(self, modal) -> None:
+        self.modals.append(modal)
+
+    async def defer(self, *, ephemeral: bool = False, thinking: bool = False) -> None:
+        self.deferred = True
+
+
+class FakeFollowup:
+    def __init__(self) -> None:
+        self.sent: list[tuple[object, object]] = []
+
+    async def send(self, *, view=None, file=None, **kwargs) -> None:
+        self.sent.append((view, file))
+
+
+class FakeInteraction:
+    def __init__(self, guild: FakeGuild | None = None, user=None) -> None:
+        self.guild = guild if guild is not None else FakeGuild()
+        self.user = user if user is not None else FakeMember(self.guild)
+        self.response = FakeResponse()
+        self.followup = FakeFollowup()
 
 
 def rendered(view) -> str:
@@ -332,7 +372,7 @@ class TestOnMessage:
     async def test_enforcement_failure_does_not_block_commands(
         self, architect, _spy, monkeypatch
     ):
-        """Ein Discord-Fehler in der Moderation darf `!start` nicht lahmlegen."""
+        """Ein Discord-Fehler in der Moderation darf Befehle nicht lahmlegen."""
 
         import core.enforcement as enforcement
 
@@ -427,22 +467,77 @@ class TestHasPremium:
 
 
 # --------------------------------------------------------------------------- #
-# Guild-Wächter
+# Befehlsfläche
 # --------------------------------------------------------------------------- #
 
-class TestRequireGuild:
-    async def test_returns_the_guild(self):
-        guild = FakeGuild()
-        ctx = FakeContext(guild)
+def slash_command(*path: str):
+    """Der Callback eines Befehls aus der /template-Gruppe."""
 
-        assert await bot_module._require_guild(cast("Any", ctx)) is guild
-        assert not ctx.sent
+    current: Any = bot_module.template_group
+    for name in path:
+        current = current.get_command(name)
+        assert current is not None, f"Unterbefehl '{name}' fehlt"
+    return current.callback
 
-    async def test_explains_itself_outside_a_server(self):
-        ctx = FakeContext(None)
 
-        assert await bot_module._require_guild(cast("Any", ctx)) is None
-        assert "Nur auf Servern" in texts(ctx)
+def tree_command(name: str):
+    """Der Callback eines Slash-Befehls auf oberster Baumebene."""
+
+    command = bot_module.bot.tree.get_command(name)
+    assert command is not None, f"Slash-Befehl '{name}' fehlt"
+    return cast("Any", command).callback
+
+
+class TestCommandSurface:
+    """Die /template-Gruppe ersetzt die alten Prefix-Befehle komplett."""
+
+    def test_prefix_commands_are_gone(self, architect):
+        for name in ("start", "regeln", "partner-setup", "ping"):
+            assert architect.get_command(name) is None, f"!{name} existiert noch"
+
+    def test_the_group_is_registered(self, architect):
+        names = {command.name for command in architect.tree.get_commands()}
+
+        assert names >= {"template", "ping"}
+
+    def test_the_group_has_all_subcommands(self, architect):
+        group = architect.tree.get_command("template")
+        assert group is not None
+
+        names = {command.name for command in group.commands}
+        assert names == {
+            "start",
+            "list",
+            "löschen",
+            "ai",
+            "regeln",
+            "partner-setup",
+            "backup",
+        }
+
+    def test_backup_has_erstellen(self, architect):
+        group = architect.tree.get_command("template")
+        assert group is not None
+
+        backup = group.get_command("backup")
+        assert isinstance(backup, discord.app_commands.Group)
+        assert backup.get_command("erstellen") is not None
+
+    def test_destructive_commands_need_manage_guild(self, architect):
+        """Loeschen, Wipe und Partner-Setup gehoeren hinter die Huerde."""
+
+        group = architect.tree.get_command("template")
+        assert group is not None
+
+        protected = [
+            group.get_command("löschen"),
+            group.get_command("partner-setup"),
+            group.get_command("backup").get_command("erstellen"),
+        ]
+        for command in protected:
+            permissions = getattr(command, "default_permissions", None)
+            assert permissions is not None, f"{command.name} hat keine Huerde"
+            assert permissions.manage_guild
 
 
 # --------------------------------------------------------------------------- #
@@ -450,13 +545,6 @@ class TestRequireGuild:
 # --------------------------------------------------------------------------- #
 
 class TestBotBasics:
-    def test_prefix_is_exposed_for_messages(self, architect):
-        """Meldungen zeigen den Prefix — er darf nicht hartkodiert sein."""
-
-        import config
-
-        assert architect.command_prefix_display == config.COMMAND_PREFIX
-
     def test_no_mentions_are_allowed_by_default(self, architect):
         """Ein Bot, der 900 Kanäle anlegt, darf niemanden anpingen."""
 
@@ -471,14 +559,6 @@ class TestBotBasics:
 
         assert architect.help_command is None
 
-    def test_every_command_has_a_slash_counterpart(self, architect):
-        """Prefix-Befehle brauchen die Message-Content-Berechtigung."""
-
-        slash = {command.name for command in architect.tree.get_commands()}
-
-        for name in ("start", "regeln"):
-            assert name in slash, f"/{name} fehlt"
-
     def test_scheduling_without_a_handoff_does_nothing(self, architect):
         """Kein vorgemerkter Handoff heißt: kein automatischer Umbau."""
 
@@ -487,119 +567,125 @@ class TestBotBasics:
 
 
 # --------------------------------------------------------------------------- #
-# Befehle
+# Befehle: /template start, list, löschen, ai, regeln, partner-setup, backup
 # --------------------------------------------------------------------------- #
 
-def callback(command_name: str):
-    """Die reine Funktion eines Befehls, ohne discord.py-Dekoratoren.
+class TestTemplateStartCommand:
+    """``/template start`` ist der Einstieg ins Vorlagen-Menü."""
 
-    ``@commands.guild_only()`` und Berechtigungspruefungen laufen sonst durch
-    die Bibliothek; hier interessiert, was der Befehl selbst tut.
-    """
+    async def test_shows_the_template_menu(self, monkeypatch):
+        shown: list[tuple] = []
 
-    command = bot_module.bot.get_command(command_name)
-    assert command is not None, f"Befehl '{command_name}' fehlt"
-    return command.callback
+        def fake_view(bot, *, premium):
+            shown.append(premium)
+            return "MENÜ"
 
+        monkeypatch.setattr(bot_module, "build_start_view", fake_view)
 
-class TestStartCommand:
-    async def test_shows_the_template_menu(self):
-        ctx = FakeContext(FakeGuild())
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("start")(cast("Any", interaction))
 
-        await callback("start")(cast("Any", ctx))
+        assert interaction.response.sent == ["MENÜ"]
+        assert shown == [False], "Der Premium-Status wurde nicht uebergeben"
 
-        text = texts(ctx)
-        assert "Kostenlos" in text or "Vorlage" in text
+    async def test_premium_is_passed_along(self, architect, monkeypatch):
+        shown: list[tuple] = []
 
-    async def test_has_the_expected_aliases(self):
-        """Die Aliase stehen in der README — sie duerfen nicht verschwinden."""
+        def fake_view(bot, *, premium):
+            shown.append(premium)
+            return object()
 
-        command = bot_module.bot.get_command("start")
+        monkeypatch.setattr(bot_module, "build_start_view", fake_view)
+        monkeypatch.setattr(architect.premium, "has_access", lambda *a: True)
 
-        assert set(command.aliases) >= {"templates", "setup", "menu"}
+        await slash_command("start")(cast("Any", FakeInteraction(FakeGuild())))
 
-    async def test_free_user_sees_only_free_templates(self, architect, monkeypatch):
-        monkeypatch.setattr(architect.premium, "has_access", lambda *a: False)
-        ctx = FakeContext(FakeGuild())
-
-        await callback("start")(cast("Any", ctx))
-
-        text = texts(ctx)
-        for template in architect.registry.premium:
-            assert template.name not in text or "Premium" in text
+        assert shown == [True]
 
 
-class TestPingCommand:
-    async def test_reports_latency_and_template_count(self, architect, monkeypatch):
-        monkeypatch.setattr(type(architect), "latency", property(lambda self: 0.042))
-        ctx = FakeContext(FakeGuild())
+class TestTemplateListCommand:
+    async def test_shows_the_list_view(self, monkeypatch):
+        import ui.management as management
 
-        await callback("ping")(cast("Any", ctx))
+        created: list = []
 
-        text = texts(ctx)
-        assert "Pong" in text
-        assert "42 ms" in text
-        assert str(len(architect.registry)) in text
+        class FakeListView:
+            def __init__(self, bot):
+                created.append(bot)
 
-    async def test_survives_an_unmeasured_latency(self, architect):
-        """Vor dem ersten Heartbeat liefert discord.py NaN.
+        monkeypatch.setattr(management, "TemplateListView", FakeListView)
 
-        ``round(nan)`` wirft einen ValueError — und ausgerechnet direkt nach
-        dem Start greift man am ehesten zu !ping.
-        """
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("list")(cast("Any", interaction))
 
-        import math
-
-        assert math.isnan(architect.latency), "Testannahme stimmt nicht mehr"
-
-        ctx = FakeContext(FakeGuild())
-        await callback("ping")(cast("Any", ctx))
-
-        text = texts(ctx)
-        assert "Pong" in text
-        assert "nan" not in text.lower()
+        assert created == [bot_module.bot]
+        assert isinstance(interaction.response.sent[0], FakeListView)
 
 
-class TestRulesCommand:
-    async def test_without_a_guild_it_refuses(self):
-        ctx = FakeContext(None)
+class TestTemplateDeleteCommand:
+    async def test_with_a_template_it_asks_for_confirmation(self):
+        import ui.management as management
 
-        await callback("regeln")(cast("Any", ctx))
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("löschen")(cast("Any", interaction), "community")
 
-        assert "Nur auf Servern" in texts(ctx)
+        view = interaction.response.sent[0]
+        assert isinstance(view, management.DeleteConfirmView)
+        assert view.template is bot_module.bot.registry.get("community")
 
-    async def test_without_a_rules_channel_it_explains(self, monkeypatch):
+    async def test_an_unknown_template_is_explained(self):
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("löschen")(cast("Any", interaction), "gibt-es-nicht")
+
+        assert "Vorlage nicht gefunden" in rendered(interaction.response.sent[0])
+
+    async def test_without_an_argument_it_opens_the_picker(self):
+        import ui.management as management
+
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("löschen")(cast("Any", interaction), None)
+
+        assert isinstance(interaction.response.sent[0], management.DeletePickerView)
+
+    async def test_autocomplete_suggests_matching_templates(self):
+        choices = await bot_module.template_delete_autocomplete(cast("Any", None), "anime")
+
+        assert [choice.value for choice in choices] == ["anime"]
+
+    async def test_autocomplete_lists_everything_when_empty(self):
+        choices = await bot_module.template_delete_autocomplete(cast("Any", None), "")
+
+        assert len(choices) == len(bot_module.bot.registry)
+
+
+class TestTemplateAiCommand:
+    async def test_opens_the_description_modal(self):
+        import ui.management as management
+
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("ai")(cast("Any", interaction))
+
+        assert isinstance(interaction.response.modals[0], management.AiTemplateModal)
+
+
+class TestTemplateRegelnCommand:
+    async def test_delegates_to_the_assistant(self, monkeypatch):
         import ui.rules as rules_module
 
-        monkeypatch.setattr(rules_module, "find_rules_channel", lambda guild: None)
-        ctx = FakeContext(FakeGuild())
+        seen: list = []
 
-        await callback("regeln")(cast("Any", ctx))
+        async def spy(interaction, bot):
+            seen.append((interaction, bot))
 
-        text = texts(ctx)
-        assert "Kein Regelkanal" in text
-        assert "start" in text, "Der Hinweis nennt den Ausweg nicht"
+        monkeypatch.setattr(rules_module, "open_rules_assistant", spy)
 
-    async def test_with_a_rules_channel_it_opens_the_picker(self, monkeypatch):
-        import ui.rules as rules_module
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("regeln")(cast("Any", interaction))
 
-        channel = type("C", (), {"name": "regeln", "mention": "#regeln"})()
-        monkeypatch.setattr(rules_module, "find_rules_channel", lambda guild: channel)
-        ctx = FakeContext(FakeGuild())
-
-        await callback("regeln")(cast("Any", ctx))
-
-        assert ctx.sent, "Der Assistent wurde nicht geoeffnet"
+        assert seen == [(interaction, bot_module.bot)]
 
 
-class TestPartnerSetupCommand:
-    async def test_without_a_guild_it_refuses(self):
-        ctx = FakeContext(None)
-
-        await callback("partner-setup")(cast("Any", ctx))
-
-        assert "Nur auf Servern" in texts(ctx)
-
+class TestTemplatePartnerSetupCommand:
     async def test_a_previous_run_is_announced(self, architect, monkeypatch):
         """Wer den Befehl zweimal nutzt, soll wissen, was ihn erwartet."""
 
@@ -614,10 +700,10 @@ class TestPartnerSetupCommand:
 
         monkeypatch.setattr(architect.autosetup, "run", fake_run)
 
-        ctx = FakeContext(FakeGuild())
-        await callback("partner-setup")(cast("Any", ctx))
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("partner-setup")(cast("Any", interaction))
 
-        text = texts(ctx)
+        text = rendered(interaction.response.sent[0])
         assert "erneut" in text.lower()
         assert "community" in text
         assert ran == [True], "Der erneute Aufbau wurde nicht erzwungen"
@@ -632,22 +718,113 @@ class TestPartnerSetupCommand:
 
         monkeypatch.setattr(architect.autosetup, "run", fake_run)
 
-        ctx = FakeContext(FakeGuild())
-        await callback("partner-setup")(cast("Any", ctx))
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("partner-setup")(cast("Any", interaction))
 
-        assert not ctx.sent, "Beim ersten Lauf braucht es keine Vorwarnung"
+        assert not interaction.response.sent, "Beim ersten Lauf braucht es keine Vorwarnung"
         assert ran, "Die Einrichtung wurde nicht angestossen"
         assert ran[0].source == "manual", "Der Handoff ist nicht als manuell markiert"
 
-    async def test_requires_manage_guild(self):
-        """Der Befehl baut einen Server um — nicht fuer jeden."""
 
-        command = bot_module.bot.get_command("partner-setup")
-        checks = [repr(check) for check in command.checks]
+class TestPingCommand:
+    async def test_reports_latency_and_template_count(self, architect, monkeypatch):
+        monkeypatch.setattr(type(architect), "latency", property(lambda self: 0.042))
 
-        assert any("permission" in check.lower() for check in checks), (
-            "Keine Berechtigungspruefung am Befehl"
-        )
+        interaction = FakeInteraction(FakeGuild())
+        await tree_command("ping")(cast("Any", interaction))
+
+        text = rendered(interaction.response.sent[0])
+        assert "Pong" in text
+        assert "42 ms" in text
+        assert str(len(architect.registry)) in text
+
+    async def test_survives_an_unmeasured_latency(self, architect):
+        """Vor dem ersten Heartbeat liefert discord.py NaN.
+
+        ``round(nan)`` wirft einen ValueError — und ausgerechnet direkt nach
+        dem Start greift man am ehesten zu /ping.
+        """
+
+        import math
+
+        assert math.isnan(architect.latency), "Testannahme stimmt nicht mehr"
+
+        interaction = FakeInteraction(FakeGuild())
+        await tree_command("ping")(cast("Any", interaction))
+
+        text = rendered(interaction.response.sent[0])
+        assert "Pong" in text
+        assert "nan" not in text.lower()
+
+
+class _BackupRole:
+    id = 1
+    name = "Moderator"
+    position = 3
+    colour = 0
+    permissions = discord.Permissions.none()
+    hoist = False
+    mentionable = False
+    managed = False
+
+    def is_default(self) -> bool:
+        return False
+
+
+class _BackupChannel:
+    id = 2
+    name = "allgemein"
+    position = 0
+    type = discord.ChannelType.text
+    category = None
+    topic = "Plauderecke"
+    slowmode_delay = 0
+    nsfw = False
+    user_limit = 0
+    overwrites: ClassVar[dict] = {}
+
+
+class _BackupGuild:
+    def __init__(self) -> None:
+        self.id = 4242
+        self.name = "Testserver"
+        self.member_count = 12
+        self.roles = [_BackupRole()]
+        self.channels = [_BackupChannel()]
+        self.me = None
+
+
+class TestBackupCommand:
+    async def test_writes_and_attaches_the_backup(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(bot_module.config, "BACKUP_DIR", tmp_path)
+
+        interaction = FakeInteraction(_BackupGuild())
+        await slash_command("backup", "erstellen")(cast("Any", interaction))
+
+        assert interaction.response.deferred, "Der Befehl hat nicht zuerst geantwortet"
+        view, file = interaction.followup.sent[0]
+        assert file is not None
+        assert "Backup erstellt" in rendered(view)
+
+        backups = list(tmp_path.glob("backup-*.json"))
+        assert len(backups) == 1
+        assert backups[0].name == file.filename
+
+    async def test_a_failed_write_is_explained(self, monkeypatch, tmp_path):
+        import core.backup as backup_module
+
+        async def broken(guild, directory):
+            raise OSError("kein Platz")
+
+        monkeypatch.setattr(backup_module, "save_backup", broken)
+        monkeypatch.setattr(bot_module.config, "BACKUP_DIR", tmp_path)
+
+        interaction = FakeInteraction(_BackupGuild())
+        await slash_command("backup", "erstellen")(cast("Any", interaction))
+
+        view, file = interaction.followup.sent[0]
+        assert file is None
+        assert "Backup fehlgeschlagen" in rendered(view)
 
 
 # --------------------------------------------------------------------------- #
@@ -697,25 +874,6 @@ class TestCommandErrors:
 
         assert not ctx.sent
         assert "Command-Fehler" in caplog.text
-
-    async def test_partner_setup_permission_error_is_friendly(self):
-        ctx = FakeContext(FakeGuild())
-
-        await bot_module.partner_setup_error(
-            cast("Any", ctx), commands.MissingPermissions(["manage_guild"])
-        )
-
-        assert "Server verwalten" in texts(ctx)
-
-    async def test_other_errors_are_reraised(self):
-        """Was der Handler nicht kennt, gehoert nach oben."""
-
-        ctx = FakeContext(FakeGuild())
-
-        with pytest.raises(commands.CommandError):
-            await bot_module.partner_setup_error(
-                cast("Any", ctx), commands.CommandError("etwas anderes")
-            )
 
 
 # --------------------------------------------------------------------------- #
@@ -1069,6 +1227,31 @@ class TestSetupHook:
 
         assert "PREMIUM_KEY" in caplog.text
 
+    async def test_a_configured_licence_is_announced(
+        self, architect, quiet_start, monkeypatch, caplog
+    ):
+        monkeypatch.setattr(
+            type(architect.licence), "is_configured", property(lambda self: True)
+        )
+
+        with caplog.at_level("INFO"):
+            await architect.setup_hook()
+
+        assert "Lizenzabfrage aktiv" in caplog.text
+
+    async def test_transferred_emojis_are_announced(
+        self, architect, quiet_start, monkeypatch, caplog
+    ):
+        import ui.emojis as emojis
+
+        monkeypatch.setattr(emojis, "has_emojis", lambda: True)
+        monkeypatch.setattr(emojis, "EMOJIS", {"premium": "123"})
+
+        with caplog.at_level("INFO"):
+            await architect.setup_hook()
+
+        assert "eigene Emojis aktiv" in caplog.text
+
 
 class TestMain:
     """``main()`` uebersetzt Startfehler in Klartext statt Stacktraces."""
@@ -1134,3 +1317,45 @@ class TestMain:
         monkeypatch.setattr(bot_module.bot, "run", lambda token, **kwargs: None)
 
         bot_module.main()
+
+
+class TestMainGuard:
+    """Der ``__main__``-Block: Template-Fehler und Ctrl-C bleiben hoeflich.
+
+    ``runpy.run_path`` fuehrt bot.py in einem frischen Namensraum aus —
+    Module wie ``config`` und die Klasse ``Bot`` kommen aber aus dem Cache
+    und lassen sich deshalb hier ueber ``bot_module`` steuern.
+    """
+
+    def test_the_guard_runs_main(self, monkeypatch):
+        monkeypatch.setattr(bot_module.config, "DISCORD_TOKEN", "x")
+        monkeypatch.setattr(
+            bot_module.commands.Bot, "run", lambda self, token, **kwargs: None
+        )
+
+        runpy.run_path(str(BASE_DIR / "bot.py"), run_name="__main__")
+
+    def test_a_template_error_exits_cleanly(self, monkeypatch):
+        from core.schema import TemplateError
+
+        monkeypatch.setattr(bot_module.config, "DISCORD_TOKEN", "x")
+
+        def boom(self, token, **kwargs):
+            raise TemplateError("kaputte Vorlage")
+
+        monkeypatch.setattr(bot_module.commands.Bot, "run", boom)
+
+        with pytest.raises(SystemExit) as excinfo:
+            runpy.run_path(str(BASE_DIR / "bot.py"), run_name="__main__")
+
+        assert excinfo.value.code == 1
+
+    def test_keyboard_interrupt_is_silent(self, monkeypatch):
+        monkeypatch.setattr(bot_module.config, "DISCORD_TOKEN", "x")
+
+        def boom(self, token, **kwargs):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(bot_module.commands.Bot, "run", boom)
+
+        runpy.run_path(str(BASE_DIR / "bot.py"), run_name="__main__")

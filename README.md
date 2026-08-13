@@ -1,36 +1,73 @@
 # 🏛️ Discord Architect
 
 Ein Discord-Bot, der komplette Server-Strukturen aus fertigen Vorlagen baut —
-**10 Templates, 886 Kanäle, 195 Voice-Räume** — komplett auf Deutsch, in
+**14 Templates, 1138 Kanäle, 269 Voice-Räume** — komplett auf Deutsch, in
 Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 
 ```
-!start
+/template start
 ```
 
 ---
 
 ## Was der Bot macht
 
-Nach `!start` erscheint ein Menü mit drei kostenlosen Vorlagen. Ein Klick auf
-„Premium freischalten" öffnet ein Key-Fenster; nach Eingabe des Keys stehen
-sieben weitere Vorlagen zur Verfügung.
+Nach `/template start` erscheint ein Menü mit sechs kostenlosen Vorlagen.
+Ein Klick auf „Premium freischalten" öffnet ein Key-Fenster; nach Eingabe
+des Keys stehen acht weitere Vorlagen zur Verfügung.
 
 | | Template | Kategorien | Kanäle | Voice |
 |---|---|---:|---:|---:|
-| 🆓 | **Community Discord** — der Allrounder | 15 | 93 | 21 |
-| 🆓 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 100 | 27 |
-| 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 95 | 22 |
-| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 99 | 26 |
-| 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 17 | 96 | 22 |
-| 💎 | **Study & University** — Fächer, Pomodoro-Räume | 16 | 96 | 19 |
-| 💎 | **Creator Studio** — Produktionsablauf | 15 | 83 | 16 |
-| 💎 | **Support Center** — Tickets, Eskalation | 13 | 67 | 14 |
-| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 82 | 15 |
-| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 75 | 13 |
+| 🆓 | **Community Discord** — der Allrounder | 15 | 95 | 22 |
+| 🆓 | **Entwickler & Open Source** — Code-Hilfe, Projekte | 11 | 62 | 14 |
+| 🆓 | **Kleiner Server** — nur das Nötigste | 6 | 18 | 6 |
+| 🆓 | **Musik & DJ** — Hörsessions, Tracks, Bühnenabende | 13 | 67 | 18 |
+| 🆓 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 102 | 28 |
+| 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 97 | 23 |
+| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 101 | 27 |
+| 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 17 | 98 | 23 |
+| 💎 | **Study & University** — Fächer, Pomodoro-Räume | 16 | 98 | 20 |
+| 💎 | **Creator Studio** — Inhalte planen, produzieren | 15 | 85 | 17 |
+| 💎 | **Support Center** — Tickets, Eskalation | 13 | 69 | 15 |
+| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 84 | 16 |
+| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 76 | 14 |
+| 💎 | **Clan Server** — Clan Talk, Fight Calls | 15 | 86 | 26 |
 
 Jeder Textkanal bekommt eine **angeheftete Startnachricht**, die seinen Zweck
 erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
+
+## Die Befehle
+
+Alle Befehle sind Slash-Commands unter einer Gruppe:
+
+| Befehl | Wirkung |
+|---|---|
+| `/template start` | öffnet das Vorlagen-Menü (Auswählen, Ansehen, Anwenden) |
+| `/template list` | zeigt alle 14 Vorlagen mit Kategorien, Kanälen und Rollen |
+| `/template löschen [vorlage]` | macht eine Vorlage rückgängig — oder leert den Server komplett (Wipe). Beides erst nach Bestätigung |
+| `/template ai` | fragt Name und Beschreibung ab und stellt daraus eine Vorlage zusammen (regelbasiert, ohne externe API) |
+| `/template regeln` | öffnet den Regelwerk-Assistenten |
+| `/template partner-setup` | wendet die Partner-Vorlage bewusst erneut an (Server verwalten) |
+| `/template backup erstellen` | sichert Rollen, Kanäle und Berechtigungen als JSON-Datei (Server verwalten) |
+| `/ping` | antwortet mit der Latenz |
+
+`/template löschen` bietet beide Wege an: **eine Vorlage rückgängig machen**
+löscht nur Kategorien, Kanäle und Rollen, die zur gewählten Vorlage passen —
+fremde Kanäle bleiben unangetastet, die geteilten Basis-Rollen (Verified,
+Moderation, …) ebenso. **Alles löschen (Wipe)** entfernt dagegen alle Kanäle
+und Rollen, die der Bot löschen darf, ohne Neuaufbau.
+
+`/template ai` arbeitet bewusst **ohne Sprachmodell**: Die Beschreibung wird
+nach Themen durchsucht (Gaming, Musik, Studium, RP, …), die beste Vorlage
+liefert die Basis, bis zu zwei weitere Themen steuern Kategorien und Rollen
+bei. Das Ergebnis ist eine normale Vorlage — dieselbe Vorschau, dieselben
+Anwenden-Optionen, dieselbe Validierung.
+
+`/template backup erstellen` schreibt die Serverstruktur als lesbare
+JSON-Datei (Rollen mit Berechtigungen, Kategorien, Kanäle mit Topic und
+Overwrites). Sie hängt an der Antwort und liegt zusätzlich serverseitig
+unter `BACKUP_DIR` — auf Railway auf ein Volume legen, damit Backups ein
+Redeploy überleben.
 
 ---
 
@@ -170,7 +207,7 @@ Datenbank.
 ### 5 · Regelwerk-Assistent
 
 Nach dem Bau bietet der Bot an, den Regelkanal zu füllen — oder später
-jederzeit mit `!regeln`. Zur Auswahl stehen **22 fertige Regelwerke** im
+jederzeit mit `/template regeln`. Zur Auswahl stehen **22 fertige Regelwerke** im
 Paragraphen-Stil:
 
 ```
@@ -267,7 +304,7 @@ ist schon auf dem Server, zieht der Endpunkt die Einrichtung nach.
 `data/setup_ledger.json`. Wird der Bot entfernt und neu hinzugefügt, baut er
 nicht alles erneut auf. Der Vermerk entsteht **erst nach dem Erfolg** —
 bricht der Aufbau ab, ist ein zweiter Versuch nicht blockiert. Bewusst
-wiederholen lässt es sich mit `!partner-setup`.
+wiederholen lässt es sich mit `/template partner-setup`.
 
 Vor dem Aufbau prüft der Bot Rechte (`manage_channels`, `manage_roles`) und
 beide Discord-Limits (**500 Kanäle**, **250 Rollen**) — und meldet ein
@@ -313,7 +350,8 @@ python bot.py
 ```
 
 Ohne aktivierte Intents startet der Bot trotzdem — setze
-`ENABLE_PRIVILEGED_INTENTS=false` und nutze `/start` statt `!start`.
+`ENABLE_PRIVILEGED_INTENTS=false` (dann laufen Kanal-Modi und
+Eingangsschleuse nicht).
 
 ### 3 · Railway
 
@@ -390,7 +428,7 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 `/health` liefert Live-Status:
 
 ```json
-{"status":"online","guilds":3,"templates":10,"channels":886,"active_builds":0}
+{"status":"online","guilds":3,"templates":14,"channels":1138,"active_builds":0}
 ```
 
 ---
@@ -445,7 +483,7 @@ Beide Modi kann nur starten, wer **Server verwalten** darf.
 ## Projektstruktur
 
 ```
-bot.py                  Einstiegspunkt, Commands, Fehlerbehandlung
+bot.py                  Einstiegspunkt, die /template-Befehlsgruppe, Fehlerbehandlung
 config.py               Konfiguration aus Umgebungsvariablen
 web.py                  Health-Endpunkt + OAuth-Callback
 
@@ -461,7 +499,9 @@ core/
   permissions.py        Rollenstufen und Sichtbarkeitsregeln
   registry.py           Lädt und indexiert templates/*.json
   premium.py            Key-Prüfung und atomarer Unlock-Speicher
-  builder.py            Die Engine: erstellt Rollen, Kategorien, Kanäle
+  builder.py            Die Engine: erstellt und entfernt Rollen, Kategorien, Kanäle
+  ai_templates.py       Regelbasierter Assistent hinter /template ai
+  backup.py             Serverstruktur als JSON sichern (atomar)
 
 ui/
   components.py         Components-V2-Bausteine
@@ -469,8 +509,9 @@ ui/
   widgets.py            Verify, Regeln, Rollen, Ticket, Checkliste
   channel_intro.py      Die angeheftete Startnachricht
   rules.py              Regelwerk-Assistent und Baukasten
+  management.py         /template list, löschen und ai (Listen-, Lösch- und Formular-Views)
 
-templates/*.json        Die 10 Vorlagen — reine Daten
+templates/*.json        Die 14 Vorlagen — reine Daten
 tools/
   generate_templates.py Erzeugt die JSONs aus gemeinsamen Bausteinen
   enrich_content.py     Weist Modi, Widgets und Reaktionen regelbasiert zu
@@ -533,7 +574,7 @@ Die Testsuite prüft unter anderem:
 
 - **Components V2** — jede View wird zu echtem API-Payload serialisiert und
   gegen Discords Limits geprüft (40 Komponenten, 4.000 Zeichen, 25 Select-Optionen)
-- **Bau-Simulation** — alle 10 Templates werden gegen ein nachgebildetes Guild
+- **Bau-Simulation** — alle 14 Templates werden gegen ein nachgebildetes Guild
   gebaut; geprüft werden Idempotenz, Wipe-Verhalten und dass private
   Kategorien für `@everyone` unsichtbar sind
 - **Berechtigungen** — dass jede Stufe eine Obermenge der vorherigen ist und

@@ -3,6 +3,46 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.2.0] — 2026-08-14
+
+### Hinzugefügt
+
+- **`/template`-Befehlsgruppe** ersetzt die Prefix-Befehle. `!start`,
+  `!regeln`, `!partner-setup`, `!ping` und die alten `/start`- und
+  `/regeln`-Slash-Befehle sind entfernt; alles lebt jetzt unter
+  `/template …` plus einem eigenständigen `/ping`.
+- **`/template list`** — alle Vorlagen mit Kategorien, Kanälen und Rollen;
+  die Auswahl öffnet die Detailansicht mit Strukturvorschau.
+- **`/template löschen [vorlage]`** — mit Argument oder Auswahl-Dialog:
+  eine Vorlage rückgängig machen (nur passende Kategorien, Kanäle und
+  eigene Rollen — fremde Kanäle und die geteilte Basis-Leiter bleiben)
+  oder kompletter Wipe. Beides erst nach Bestätigung, mit derselben
+  Bausperre wie ein Build.
+- **`/template ai`** — regelbasierter Assistent ohne externe API:
+  Beschreibung abfragen, Themen per Keywords erkennen, bis zu drei zu
+  einer Vorlage kombinieren. Das Ergebnis läuft durch dieselbe
+  Validierung wie jede JSON-Vorlage.
+- **`/template backup erstellen`** — Serverstruktur (Rollen, Kategorien,
+  Kanäle, Topics, Overwrites) als lesbare JSON-Datei, atomar geschrieben
+  unter `BACKUP_DIR`; IDs als Strings, damit Snowflakes keine Stellen
+  verlieren.
+- **`ServerBuilder.unapply()` und `wipe_guild()`** — das Entfernen teilt
+  Namensabgleich, Throttle, Cache-Aufräumen und Berichtswarnungen mit
+  dem Bauen; 404/403 auf einzelnen Objekten brechen den Durchlauf nicht ab.
+
+### Geändert
+
+- Meldungen in UI, Webserver, Autosetup und Statusrotation nennen
+  `/template …` statt `!start`.
+- Mypy: `explicit_package_bases = true` in `pyproject.toml`. Neuere
+  Mypy-Versionen entdeckten die Testdateien unter zwei Modulnamen
+  (``test_x`` und ``tests.test_x``) und brachen die Prüfung ab — die CI
+  lief dadurch auf Rot. Zusätzlich eine umbenannte Schleifenvariable in
+  `core/handover.py`, damit die Typenprüfung wieder durchläuft.
+- `.env.example`: `COMMAND_PREFIX` entfernt, `BACKUP_DIR` dokumentiert,
+  der Intent-Kommentar beschreibt jetzt Kanal-Modi und Eingangsschleuse
+  statt Prefix-Befehle.
+
 ## [3.1.0] — 2026-07-31
 
 Diese Version ändert nichts an dem, was der Bot *tut*. Sie schließt die Lücke

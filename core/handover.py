@@ -126,10 +126,10 @@ def build_handover(
     category_ids = {category.id for category in guild.categories}
 
     by_slug: dict[str, discord.abc.GuildChannel] = {}
-    for channel in guild.channels:
-        if channel.id in category_ids:
+    for guild_channel in guild.channels:
+        if guild_channel.id in category_ids:
             continue
-        by_slug.setdefault(slugify(channel.name), channel)
+        by_slug.setdefault(slugify(guild_channel.name), guild_channel)
 
     verify_channel = None
     rules_channel = None

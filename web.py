@@ -162,7 +162,7 @@ async def start_web_server(bot: ArchitectBot) -> web.AppRunner:
             return _ok(
                 "Bot hinzugefügt",
                 "Der Bot ist auf deinem Server. Richte ihn mit "
-                f"{config.COMMAND_PREFIX}start ein.",
+                "/template start ein.",
             )
 
         # Discord haengt guild_id separat an. Weicht sie vom Token ab, wurde

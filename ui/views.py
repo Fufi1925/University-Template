@@ -16,7 +16,6 @@ from config import (
     COLOR_BRAND,
     COLOR_PREMIUM,
     COLOR_SUCCESS,
-    COMMAND_PREFIX,
 )
 from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
 from core.permissions import BASE_ROLES
@@ -136,7 +135,7 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         container.add_item(RULE())
         container.add_item(
             ui.TextDisplay(
-                f"-# Öffne das Menü mit `{COMMAND_PREFIX}start` erneut — "
+                "-# Öffne das Menü mit `/template start` erneut — "
                 "die Vorlagen stehen jetzt im Auswahlmenü."
             )
         )
@@ -185,7 +184,7 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
                     "Bereits freigeschaltet",
                     "Premium ist für dich aktiv.",
                     tone="premium",
-                    hint=f"Öffne {COMMAND_PREFIX}start erneut, "
+                    hint="Öffne /template start erneut, "
                     "um alle Vorlagen zu sehen.",
                 ),
                 ephemeral=True,
@@ -867,7 +866,7 @@ class TemplateSelect(ui.Select["StartView"]):
 
 
 class StartView(ui.LayoutView):
-    """The screen behind ``!start`` / ``/start``."""
+    """The screen behind ``/template start``."""
 
     def __init__(self, bot: ArchitectBot, *, premium: bool) -> None:
         super().__init__(timeout=None)
@@ -997,8 +996,8 @@ def partner_summary_view(template: Template, report: BuildReport) -> ui.LayoutVi
         ui.TextDisplay(
             quote(
                 "**Nächste Schritte**",
-                f"Weitere Vorlagen ansehen: `{COMMAND_PREFIX}start`",
-                f"Regelwerk einrichten: `{COMMAND_PREFIX}regeln`",
+                "Weitere Vorlagen ansehen: `/template start`",
+                "Regelwerk einrichten: `/template regeln`",
             )
         )
     )

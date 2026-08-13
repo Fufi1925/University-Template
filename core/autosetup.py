@@ -97,7 +97,7 @@ class AutoSetup:
                 "Bereits eingerichtet",
                 "Auf diesem Server lief die Vorlage schon einmal. "
                 "Es wurde nichts verändert.",
-                hint=f"Erneut aufbauen: {self.bot.command_prefix_display}partner-setup",
+                hint="Erneut aufbauen: /template partner-setup",
                 tone="neutral",
             )
             return
@@ -136,8 +136,7 @@ class AutoSetup:
                     guild,
                     "Automatische Einrichtung nicht möglich",
                     str(exc),
-                    hint="Nach dem Beheben: "
-                    f"{self.bot.command_prefix_display}partner-setup",
+                    hint="Nach dem Beheben: /template partner-setup",
                     tone="error",
                 )
                 return

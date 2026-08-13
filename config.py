@@ -43,9 +43,10 @@ DISCORD_TOKEN: str | None = os.getenv("DISCORD_TOKEN") or os.getenv("DISCORD_BOT
 COMMAND_PREFIX: str = os.getenv("COMMAND_PREFIX", "!")
 DISCORD_GUILD_ID: str | None = os.getenv("DISCORD_GUILD_ID")
 
-# Prefix commands (`!start`) need the message content intent, and the automatic
-# join role needs the members intent. Both are opt-in so a fresh deployment can
-# still connect and expose `/start` before the Developer Portal is configured.
+# Die Kanal-Modi (media/counting) lesen Nachrichteninhalte und die
+# Eingangsschleuse vergibt die Unverified-Rolle beim Beitritt — beides
+# braucht privilegierte Intents. Sie sind bewusst abschaltbar, damit eine
+# frische Installation auch vor der Freigabe im Developer Portal startet.
 ENABLE_PRIVILEGED_INTENTS: bool = _flag("ENABLE_PRIVILEGED_INTENTS", default=True)
 
 # --------------------------------------------------------------------------- #
@@ -126,6 +127,12 @@ PARTNER_TEMPLATE: str = os.getenv("PARTNER_TEMPLATE", "community")
 # Dauerhafter Vermerk, wo das Template schon lief (Volume-Pfad auf Railway).
 SETUP_LEDGER: Path = Path(
     os.getenv("SETUP_LEDGER", str(BASE_DIR / "data" / "setup_ledger.json"))
+).expanduser()
+
+# Wohin ``/template backup erstellen`` die JSON-Dateien legt (Volume-Pfad
+# auf Railway, damit Backups ein Redeploy ueberleben).
+BACKUP_DIR: Path = Path(
+    os.getenv("BACKUP_DIR", str(BASE_DIR / "data" / "backups"))
 ).expanduser()
 
 # --------------------------------------------------------------------------- #
