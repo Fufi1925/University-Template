@@ -383,25 +383,99 @@ def submit_key(bot: FakeBot, value: str):
 # --------------------------------------------------------------------------- #
 
 class TestPremiumButton:
-    async def test_sends_the_key_by_dm_and_opens_the_modal(self, bot):
-        from ui.views import PremiumButton
+    async def test_opens_the_tiktok_gate(self, bot):
+        """Vor dem Key steht das Gate: TikTok folgen, dann bestaetigen."""
+
+        from ui.views import PremiumButton, PremiumGateView
 
         interaction = FakeInteraction()
         await PremiumButton(bot).callback(interaction)
 
-        assert interaction.response.modals, "Es wurde kein Key-Fenster geoeffnet"
-        assert not interaction.response.sent
+        assert isinstance(interaction.response.sent[0], PremiumGateView)
+        assert not interaction.response.modals, "Das Gate darf kein Key-Fenster oeffnen"
+        assert not interaction.user.dms, "Vor der Bestaetigung fliegt kein Key"
+
+    async def test_the_gate_names_the_tiktok_account(self, bot):
+        from ui.views import PremiumGateView
+
+        interaction = FakeInteraction()
+        interaction.response.sent.append(PremiumGateView(bot))
+
+        assert "@university6421" in all_text(interaction)
+
+    async def test_the_gate_links_to_the_tiktok_profile(self, bot):
+        from ui.views import PremiumGateView
+
+        payload = PremiumGateView(bot).to_components()
+        urls: list[str] = []
+
+        def walk(items) -> None:
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("type") == 2 and item.get("url"):
+                    urls.append(item["url"])
+                walk(item.get("components", []) or [])
+
+        walk(payload)
+        assert any("tiktok.com/@university6421" in url for url in urls), (
+            "Der Link-Knopf fehlt"
+        )
+
+    async def test_claiming_sends_the_key_by_dm(self, bot):
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate  # wie discord.py beim Ausliefern der Interaktion
+
+        interaction = FakeInteraction()
+        await button.callback(interaction)
 
         user = interaction.user
         assert user.dms, "Der Key wurde nicht per DM geschickt"
         dm = user.dms[0]
         assert "Premium-Key" in dm
-        # Die DM traegt genau einen Key — und den kann man direkt einloesen.
+        assert "/template key" in dm, "Die DM erklaert den Einloeseweg nicht"
         key = dm.split("`")[1]
         assert bot.premium.redeem_key(key, user_id=user.id)
 
+    async def test_claiming_points_to_the_key_command(self, bot):
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate
+
+        interaction = FakeInteraction()
+        await button.callback(interaction)
+
+        text = all_text(interaction)
+        assert "Key ist unterwegs" in text
+        assert "/template key" in text
+
+    async def test_claiming_twice_replaces_the_old_key(self, bot):
+        """Wer mehrmals klickt, bekommt den neuesten Key — die alten sterben."""
+
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate
+
+        first = FakeInteraction()
+        await button.callback(first)
+        first_key = first.user.dms[0].split("`")[1]
+
+        second = FakeInteraction()
+        await button.callback(second)
+        second_key = second.user.dms[0].split("`")[1]
+
+        assert not bot.premium.redeem_key(first_key, user_id=second.user.id)
+        assert bot.premium.redeem_key(second_key, user_id=second.user.id)
+
     async def test_tells_existing_users_they_already_have_it(self, bot):
-        """Ein zweites Key-Fenster waere nur verwirrend."""
+        """Ein zweites Gate waere nur verwirrend."""
 
         from ui.views import PremiumButton
 
@@ -411,12 +485,15 @@ class TestPremiumButton:
         interaction = FakeInteraction(user=user, guild=None)
         await PremiumButton(bot).callback(interaction)
 
-        assert not interaction.response.modals
         assert not user.dms, "Wer Premium hat, braucht keinen neuen Key"
         assert "Bereits freigeschaltet" in all_text(interaction)
 
     async def test_closed_dms_fall_back_to_a_notice_with_button(self, bot):
-        from ui.views import PremiumButton
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate
 
         user = FakeUser()
         user.dm_raises = discord.Forbidden(
@@ -424,23 +501,22 @@ class TestPremiumButton:
         )
 
         interaction = FakeInteraction(user=user)
-        await PremiumButton(bot).callback(interaction)
+        await button.callback(interaction)
 
-        assert not interaction.response.modals
         text = all_text(interaction)
         assert "DMs sind geschlossen" in text
         assert "Key eingeben" in text, "Der manuelle Ausweg fehlt"
 
     async def test_a_dm_error_never_leaks_the_key(self, bot):
-        """Auch bei kaputtem DM-Versand steht der Key in keinem Kanal.
-
-        Keys tragen im Klartext die Form ``ABCD-EFGH-…`` — solche Gruppen
-        duerfen in keiner Antwort auftauchen, nur in der DM.
-        """
+        """Auch bei kaputtem DM-Versand steht der Key in keinem Kanal."""
 
         import re
 
-        from ui.views import PremiumButton
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate
 
         user = FakeUser()
         user.dm_raises = discord.HTTPException(
@@ -448,7 +524,7 @@ class TestPremiumButton:
         )
 
         interaction = FakeInteraction(user=user)
-        await PremiumButton(bot).callback(interaction)
+        await button.callback(interaction)
 
         text = all_text(interaction)
         assert not re.search(r"\b[A-Za-z0-9]{4}(?:-[A-Za-z0-9]{4}){3,}\b", text)

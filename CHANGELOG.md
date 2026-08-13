@@ -3,6 +3,37 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.4.0] — 2026-08-14
+
+### Hinzugefügt
+
+- **TikTok-Gate vor dem Premium-Key.** „Jetzt mehr Templates mit Premium
+  freischalten" öffnet jetzt ein Fenster mit dem TikTok-Account
+  (`@university6421`, konfigurierbar über `TIKTOK_HANDLE`/`TIKTOK_URL`),
+  einem Link-Knopf und dem Knopf **„Ich habe abonniert"**. Der Klick
+  darauf schickt den persönlichen Key per Direktnachricht — mit einer
+  ausführlichen Anleitung, wie er einzulösen ist.
+- **`/template key`** — öffnet das Key-Fenster direkt, damit der Key aus
+  der DM ohne Umweg eingelöst werden kann. Wer bereits Premium hat,
+  bekommt das gesagt statt eines leeren Fensters.
+
+### Geändert
+
+- **Template-Angebot gestrafft.** Neun Nischen-Vorlagen sind entfernt
+  (Film & Serien, Reisen, Sammeln, Bücher, Kunst, Kochen, Haustiere,
+  Finanzen, Wissenschaft) — geblieben sind 15 Vorlagen, die einen echten
+  Server tragen: die 14 bewährten plus Fitness & Sport. Der
+  AI-Assistent kennt entsprechend nur noch die vorhandenen Themen.
+- Die Direktnachricht mit dem Key erklärt den Einlöseweg jetzt
+  vollständig (`/template key`), statt nur den Key zu zeigen.
+
+### Hinweis
+
+- Der TikTok-Follow ist technisch nicht prüfbar (Discord und TikTok
+  sprechen nicht miteinander; die TikTok-API verlangt eine
+  Partnerfreigabe). Die Bestätigung läuft deshalb über den Knopf
+  „Ich habe abonniert" — dokumentiert in der README.
+
 ## [3.3.0] — 2026-08-14
 
 ### Hinzugefügt

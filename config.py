@@ -136,6 +136,18 @@ BACKUP_DIR: Path = Path(
 ).expanduser()
 
 # --------------------------------------------------------------------------- #
+# Premium-Gate (TikTok)
+# --------------------------------------------------------------------------- #
+
+# Der TikTok-Account, dem man folgen soll, bevor der persoenliche
+# Premium-Key per DM verschickt wird. Der Bot kann den Follow technisch
+# nicht pruefen — der Nutzer bestaetigt ihn selbst per Knopf.
+TIKTOK_HANDLE: str = os.getenv("TIKTOK_HANDLE", "@university6421")
+TIKTOK_URL: str = os.getenv(
+    "TIKTOK_URL", "https://www.tiktok.com/@university6421"
+)
+
+# --------------------------------------------------------------------------- #
 # Branding
 # --------------------------------------------------------------------------- #
 

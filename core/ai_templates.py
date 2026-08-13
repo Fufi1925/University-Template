@@ -123,60 +123,6 @@ TOPICS: tuple[Topic, ...] = (
         "fitness",
         ("fitness", "workout", "training", "sport", "gym"),
     ),
-    Topic(
-        "pets",
-        "Haustiere",
-        "pets",
-        ("haustier", "hunde", "katzen", "tierheim", "aquarium"),
-    ),
-    Topic(
-        "food",
-        "Kochen & Genuss",
-        "food",
-        ("kochen", "rezept", "backen", "grillen", "food"),
-    ),
-    Topic(
-        "travel",
-        "Reisen",
-        "travel",
-        ("reisen", "urlaub", "travel", "fernweh", "backpacking"),
-    ),
-    Topic(
-        "art",
-        "Kunst & Kreativ",
-        "art",
-        ("kunst", "zeichnen", "malen", "skizze", "kreativ"),
-    ),
-    Topic(
-        "books",
-        "Bücher",
-        "books",
-        ("buecher", "lesen", "buchclub", "literatur", "roman"),
-    ),
-    Topic(
-        "movies",
-        "Film & Serien",
-        "movies",
-        ("filme", "serien", "kino", "watch", "marvel"),
-    ),
-    Topic(
-        "science",
-        "Wissenschaft",
-        "science",
-        ("wissenschaft", "physik", "chemie", "astronomie", "science"),
-    ),
-    Topic(
-        "finance",
-        "Finanzen & Krypto",
-        "finance",
-        ("finanzen", "aktien", "krypto", "boerse", "investieren", "geld"),
-    ),
-    Topic(
-        "collect",
-        "Sammeln & Tauschen",
-        "collect",
-        ("sammeln", "tausch", "karten", "muenzen", "modellbau"),
-    ),
 )
 
 

@@ -16,6 +16,8 @@ from config import (
     COLOR_BRAND,
     COLOR_PREMIUM,
     COLOR_SUCCESS,
+    TIKTOK_HANDLE,
+    TIKTOK_URL,
 )
 from core.builder import BuildError, BuildMode, BuildReport, ServerBuilder
 from core.permissions import BASE_ROLES
@@ -177,12 +179,17 @@ def _premium_dm_content(key: str) -> str:
 
     days = PERSONAL_KEY_TTL // 86400
     return (
-        "## Dein Premium-Key\n"
+        "## 💎 Dein Premium-Key ist da!\n"
+        "Danke, dass du unserem TikTok folgst — willkommen im Premium-Club. "
+        "Mit diesem Key schaltest du alle Premium-Vorlagen frei.\n"
+        "-# Dein persönlicher Key:\n"
         f"> `{key}`\n"
-        f"Dieser Key ist **{days} Tage** gültig und nur für dein Konto.\n"
-        "Gib ihn im geöffneten Fenster ein — danach stehen dir alle "
-        "Premium-Vorlagen offen.\n"
-        "-# Gib den Key niemals weiter: er funktioniert nur bei dir."
+        "**So löst du ihn ein:**\n"
+        "1. Geh auf einen Server mit diesem Bot\n"
+        "2. Nutze `/template key`\n"
+        "3. Füge den Key ins Fenster ein — fertig\n"
+        f"Der Key ist **{days} Tage** gültig und nur für dein Konto.\n"
+        "-# Gib ihn nicht weiter: er funktioniert nur bei dir."
     )
 
 
@@ -201,21 +208,35 @@ class _ManualKeyButton(ui.Button["ui.LayoutView"]):
         await interaction.response.send_modal(PremiumModal(self.bot))
 
 
-class PremiumButton(ui.Button["ui.LayoutView"]):
+class _TikTokButton(ui.Button["PremiumGateView"]):
+    """Oeffnet den TikTok-Account im Browser — ein reiner Link-Knopf."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            label="TikTok öffnen",
+            style=discord.ButtonStyle.link,
+            url=TIKTOK_URL,
+        )
+
+
+class _ClaimFollowButton(ui.Button["PremiumGateView"]):
+    """„Ich habe abonniert": Key ausgeben und per DM verschicken.
+
+    Der Follow selbst laesst sich von einem Discord-Bot technisch nicht
+    pruefen — der Nutzer bestaetigt ihn hier selbst.
+    """
+
     def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(
-            label="Jetzt mehr Templates mit Premium freischalten",
-            style=discord.ButtonStyle.secondary,
-            # App-Emoji wenn uebertragen, sonst der Unicode-Diamant. Ein
-            # fehlendes Emoji darf den Knopf nicht kaputt machen.
+            label="Ich habe abonniert",
+            style=discord.ButtonStyle.primary,
             emoji=button_emoji("premium", "💎"),
-            custom_id="architect:premium",
+            custom_id="architect:premium:claim",
         )
         self.bot = bot
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        # Auch der University Bot zaehlt, nicht nur der lokale Store —
-        # sonst bekaeme jemand mit gekaufter Lizenz hier das Key-Formular.
+        # Auch der University Bot zaehlt, nicht nur der lokale Store.
         if await self.bot.has_premium(interaction):
             await interaction.response.send_message(
                 view=notice(
@@ -229,7 +250,6 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
             )
             return
 
-        # Der Key kommt per DM — und wird danach im Fenster eingeloest.
         key = self.bot.premium.issue_key(interaction.user.id)
         try:
             await interaction.user.send(_premium_dm_content(key))
@@ -249,7 +269,60 @@ class PremiumButton(ui.Button["ui.LayoutView"]):
             )
             return
 
-        await interaction.response.send_modal(PremiumModal(self.bot))
+        await interaction.response.send_message(
+            view=notice(
+                "Key ist unterwegs",
+                "Dein persönlicher Premium-Key liegt jetzt in deinen "
+                "Direktnachrichten.",
+                tone="premium",
+                hint="Öffne `/template key` und füge den Key ein — danach "
+                "stehen dir alle Premium-Vorlagen offen.",
+            ),
+            ephemeral=True,
+        )
+
+
+class PremiumGateView(ui.LayoutView):
+    """Der Schritt vor dem Key: TikTok folgen, dann bestaetigen.
+
+    Mehr Zwischenschritte waeren nur Reibung. Ein Klick oeffnet das
+    Profil, ein zweiter bestaetigt — dann kommt der Key per DM.
+    """
+
+    def __init__(self, bot: ArchitectBot) -> None:
+        super().__init__(timeout=None)
+        self.bot = bot
+
+        container = ui.Container(accent_colour=discord.Colour(COLOR_PREMIUM))
+        container.add_item(
+            ui.TextDisplay(
+                "### Premium freischalten\n"
+                "-# Ein Follow, ein Klick — fertig."
+            )
+        )
+        container.add_item(RULE())
+        container.add_item(
+            ui.TextDisplay(
+                quote(
+                    f"1. Folge uns auf TikTok: **{TIKTOK_HANDLE}**",
+                    "2. Klick danach auf **Ich habe abonniert**",
+                    "3. Dein Key kommt per Direktnachricht — "
+                    "löse ihn mit `/template key` ein.",
+                )
+            )
+        )
+        container.add_item(RULE())
+
+        row = ui.ActionRow()
+        row.add_item(_TikTokButton())
+        container.add_item(row)
+
+        row = ui.ActionRow()
+        row.add_item(_ClaimFollowButton(bot))
+        container.add_item(row)
+
+        container.add_item(footer())
+        self.add_item(container)
 
 
 def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
@@ -258,6 +331,39 @@ def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
     row = ui.ActionRow()
     row.add_item(_ManualKeyButton(bot))
     return row
+
+
+class PremiumButton(ui.Button["ui.LayoutView"]):
+    def __init__(self, bot: ArchitectBot) -> None:
+        super().__init__(
+            label="Jetzt mehr Templates mit Premium freischalten",
+            style=discord.ButtonStyle.secondary,
+            # App-Emoji wenn uebertragen, sonst der Unicode-Diamant. Ein
+            # fehlendes Emoji darf den Knopf nicht kaputt machen.
+            emoji=button_emoji("premium", "💎"),
+            custom_id="architect:premium",
+        )
+        self.bot = bot
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        # Auch der University Bot zaehlt, nicht nur der lokale Store —
+        # sonst bekaeme jemand mit gekaufter Lizenz hier das Gate.
+        if await self.bot.has_premium(interaction):
+            await interaction.response.send_message(
+                view=notice(
+                    "Bereits freigeschaltet",
+                    "Premium ist für dich aktiv.",
+                    tone="premium",
+                    hint="Öffne /template start erneut, "
+                    "um alle Vorlagen zu sehen.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            view=PremiumGateView(self.bot), ephemeral=True
+        )
 
 
 # --------------------------------------------------------------------------- #

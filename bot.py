@@ -415,6 +415,32 @@ async def template_ai(interaction: discord.Interaction) -> None:
 
 
 @template_group.command(
+    name="key", description="Löst einen Premium-Key ein"
+)
+async def template_key(interaction: discord.Interaction) -> None:
+    """Oeffnet das Key-Fenster — fuer den Key aus der Direktnachricht.
+
+    Wer bereits Premium hat, bekommt das gesagt statt ein leeres Fenster.
+    """
+
+    if await bot.has_premium(interaction):
+        await interaction.response.send_message(
+            view=notice(
+                "Bereits freigeschaltet",
+                "Premium ist für dich aktiv.",
+                tone="premium",
+                hint="Öffne /template start, um alle Vorlagen zu sehen.",
+            ),
+            ephemeral=True,
+        )
+        return
+
+    from ui.views import PremiumModal
+
+    await interaction.response.send_modal(PremiumModal(bot))
+
+
+@template_group.command(
     name="regeln", description="Regelwerk für den Regelkanal einrichten"
 )
 async def template_regeln(interaction: discord.Interaction) -> None:

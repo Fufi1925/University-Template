@@ -510,6 +510,7 @@ class TestCommandSurface:
             "list",
             "löschen",
             "ai",
+            "key",
             "regeln",
             "partner-setup",
             "backup",
@@ -666,6 +667,27 @@ class TestTemplateAiCommand:
         await slash_command("ai")(cast("Any", interaction))
 
         assert isinstance(interaction.response.modals[0], management.AiTemplateModal)
+
+
+class TestTemplateKeyCommand:
+    async def test_opens_the_key_modal_for_new_users(self):
+        from ui.views import PremiumModal
+
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("key")(cast("Any", interaction))
+
+        assert isinstance(interaction.response.modals[0], PremiumModal)
+
+    async def test_premium_users_are_told_instead_of_asked(self, architect, monkeypatch):
+        """Wer schon Premium hat, braucht kein leeres Key-Fenster."""
+
+        monkeypatch.setattr(architect.premium, "has_access", lambda *a: True)
+
+        interaction = FakeInteraction(FakeGuild())
+        await slash_command("key")(cast("Any", interaction))
+
+        assert not interaction.response.modals
+        assert "Bereits freigeschaltet" in rendered(interaction.response.sent[0])
 
 
 class TestTemplateRegelnCommand:
