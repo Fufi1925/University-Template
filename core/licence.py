@@ -190,11 +190,31 @@ class LicenceClient:
                             user_id,
                         )
                         return "already_used"
-                    LOGGER.warning(
-                        "Premium-Meldung abgelehnt (HTTP %s) — stimmt "
-                        "PREMIUM_PARTNER_TOKEN auf beiden Seiten?",
-                        response.status,
-                    )
+                    # Die Meldung nennt beide moeglichen Ursachen.
+                    #
+                    # Frueher stand hier nur "stimmt das Token?" -- und
+                    # genau das war beim ersten Auftreten NICHT die
+                    # Ursache: der University Bot kannte die Route
+                    # /premium/grant nicht in seiner Ausnahmeliste und
+                    # wies sie ab, bevor das Token ueberhaupt geprueft
+                    # wurde. Wer der alten Meldung folgte, tauschte
+                    # stundenlang ein Token, das stimmte.
+                    if response.status == 401:
+                        LOGGER.warning(
+                            "Premium-Meldung abgelehnt (HTTP 401). Zwei "
+                            "moegliche Ursachen: (1) PREMIUM_PARTNER_TOKEN "
+                            "stimmt nicht auf beiden Seiten, oder (2) der "
+                            "University Bot laesst POST /premium/grant "
+                            "nicht ohne Dashboard-Schluessel durch — dort "
+                            "muss die Route in PARTNER_ROUTES stehen "
+                            "(api/dependencies.py)."
+                        )
+                    else:
+                        LOGGER.warning(
+                            "Premium-Meldung abgelehnt (HTTP %s) — antwortet "
+                            "der University Bot unter MAIN_BOT_URL richtig?",
+                            response.status,
+                        )
         except aiohttp.ClientError as exc:
             LOGGER.warning("Premium-Meldung fehlgeschlagen: %s", exc)
         except Exception as exc:

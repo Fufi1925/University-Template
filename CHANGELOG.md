@@ -3,6 +3,17 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.5.2] — 2026-08-14
+
+### Behoben
+
+- **Die Log-Meldung bei HTTP 401 führte auf eine falsche Fährte.** Sie
+  nannte nur „stimmt `PREMIUM_PARTNER_TOKEN` auf beiden Seiten?" — beim
+  ersten Auftreten war das Token aber korrekt. Der University Bot ließ
+  `POST /premium/grant` nicht ohne Dashboard-Schlüssel durch, weil die
+  Route dort nicht in der Ausnahmeliste stand (behoben in dessen
+  Commit `678161a`). Die Meldung nennt jetzt beide Ursachen.
+
 ## [3.5.1] — 2026-08-14
 
 ### Geändert
