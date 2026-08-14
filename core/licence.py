@@ -126,7 +126,7 @@ class LicenceClient:
         guild_id: int | None,
         expires_at: float,
         duration_days: int,
-    ) -> bool:
+    ) -> str:
         """Meldet dem University Bot eine Einloesung fuer dessen Dashboard.
 
         Der University Bot weiss nichts von den persoenlichen Keys dieses
@@ -140,12 +140,24 @@ class LicenceClient:
         Mit ``expires_at`` zeigt das Dashboard „7 Tage Premium" statt
         eines unbefristeten Eintrags.
 
-        Wirft nie: schlaegt die Meldung fehl, gilt die Freischaltung
-        lokal trotzdem — nur das Dashboard weiss dann nichts davon.
+        Rueckgabe -- der Aufrufer entscheidet daran, was der Nutzer zu
+        sehen bekommt:
+
+            "granted"       die Probewoche ist eingetragen
+            "already_used"  dieses Konto hatte seine Probewoche schon.
+                            Der University Bot fuehrt die Liste; er ist
+                            die einzige Stelle, die das ueber alle
+                            Server hinweg weiss.
+            "error"         nicht erreichbar, Token falsch, o. ae.
+
+        Wirft nie. Bei ``"error"`` gilt die Freischaltung lokal
+        trotzdem — nur das Dashboard weiss dann nichts davon. Ein
+        Ausfall des University Bots darf niemandem seine bezahlte
+        Freischaltung wegnehmen.
         """
 
         if not self.is_configured:
-            return False
+            return "error"
 
         url = f"{self.base_url}/api/v1/premium/grant"
         payload = {
@@ -161,13 +173,23 @@ class LicenceClient:
                     url, json=payload, headers={"X-Partner-Token": self.token}
                 ) as response:
                     if response.status == 200:
+                        # HTTP 200 heisst „verstanden", nicht
+                        # „gewaehrt": eine verbrauchte Probewoche ist
+                        # kein Fehler, sondern eine Antwort.
+                        payload = await response.json()
+                        if payload.get("granted"):
+                            LOGGER.info(
+                                "Premium-Meldung an den University Bot: "
+                                "user=%s für %d Tage",
+                                user_id,
+                                duration_days,
+                            )
+                            return "granted"
                         LOGGER.info(
-                            "Premium-Meldung an den University Bot: "
-                            "user=%s für %d Tage",
+                            "Probewoche abgelehnt: user=%s hatte schon eine",
                             user_id,
-                            duration_days,
                         )
-                        return True
+                        return "already_used"
                     LOGGER.warning(
                         "Premium-Meldung abgelehnt (HTTP %s) — stimmt "
                         "PREMIUM_PARTNER_TOKEN auf beiden Seiten?",
@@ -177,4 +199,4 @@ class LicenceClient:
             LOGGER.warning("Premium-Meldung fehlgeschlagen: %s", exc)
         except Exception as exc:
             LOGGER.warning("Premium-Meldung unerwartet fehlgeschlagen: %s", exc)
-        return False
+        return "error"

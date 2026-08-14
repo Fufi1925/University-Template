@@ -137,10 +137,16 @@ class FakeInteraction:
 
 
 class FakeLicence:
-    """Merkt sich, was dem University Bot gemeldet wurde."""
+    """Merkt sich, was dem University Bot gemeldet wurde.
 
-    def __init__(self) -> None:
+    `antwort` steuert, was zurueckkommt: "granted", "already_used" oder
+    "error". Der University Bot fuehrt die Liste der Probewochen --
+    dieser Bot erfaehrt sein Nein nur ueber diese Antwort.
+    """
+
+    def __init__(self, antwort: str = "granted") -> None:
         self.reported: list[dict] = []
+        self.antwort = antwort
 
     async def report_grant(
         self,
@@ -149,7 +155,7 @@ class FakeLicence:
         guild_id: int | None = None,
         expires_at: float | None = None,
         duration_days: int | None = None,
-    ) -> bool:
+    ) -> str:
         self.reported.append(
             {
                 "user_id": user_id,
@@ -158,7 +164,7 @@ class FakeLicence:
                 "duration_days": duration_days,
             }
         )
-        return True
+        return self.antwort
 
 
 class FakeBot:
@@ -684,11 +690,55 @@ class TestPremiumModal:
         assert bot.premium.access_expires(interaction.guild.id, interaction.user.id) is None
         assert bot.licence.reported == [], "Der Master-Key wurde gemeldet"
 
+    async def test_a_used_up_trial_is_refused(self, bot, monkeypatch):
+        """Eine zweite Probewoche gibt es nicht.
+
+        Der University Bot fuehrt die Liste ueber alle Server hinweg --
+        dieser Bot sieht immer nur seinen eigenen Speicher, und der ist
+        nach einem Neustart ohne Volume leer. Sein Nein muss deshalb
+        wirken, nicht nur ankommen.
+        """
+
+        bot.licence.antwort = "already_used"
+
+        user = FakeUser(5)
+        guild = FakeGuild()
+        personal = bot.premium.issue_key(user.id)
+        interaction = FakeInteraction(guild=guild, user=user)
+        await submit_key(bot, personal).on_submit(interaction)
+
+        assert not bot.premium.has_access(guild.id, user.id), (
+            "Trotz verbrauchter Probewoche freigeschaltet"
+        )
+        text = all_text(interaction)
+        assert "Probewoche" in text
+        assert "einmal pro" in text
+
+    async def test_a_refused_trial_gives_the_key_back(self, bot):
+        """Der Key ist beim Einloesen schon verbraucht.
+
+        Ohne Rueckgabe haette der Nutzer nichts bekommen UND seinen Key
+        verloren -- der aergerlichste denkbare Ausgang.
+        """
+
+        bot.licence.antwort = "already_used"
+
+        user = FakeUser(5)
+        personal = bot.premium.issue_key(user.id)
+        await submit_key(bot, personal).on_submit(
+            FakeInteraction(guild=FakeGuild(), user=user)
+        )
+
+        # Der Key muss weiterhin einloesbar sein.
+        assert bot.premium.redeem_key(personal, user_id=user.id) == "personal", (
+            "Der Key wurde verbraucht, obwohl nichts freigeschaltet wurde"
+        )
+
     async def test_a_failed_report_does_not_block_the_unlock(self, bot, monkeypatch):
         """Ist der University Bot nicht erreichbar, gilt Premium lokal trotzdem."""
 
         async def broken(*args, **kwargs):
-            return False
+            return "error"
 
         monkeypatch.setattr(bot.licence, "report_grant", broken)
 

@@ -124,12 +124,42 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
         expires_at: float | None = None
         if kind == "personal":
             expires_at = time.time() + PERSONAL_KEY_TTL
-            await self.bot.licence.report_grant(
+            antwort = await self.bot.licence.report_grant(
                 interaction.user.id,
                 guild_id=guild_id,
                 expires_at=expires_at,
                 duration_days=PERSONAL_KEY_TTL // 86400,
             )
+
+            # Die Probewoche gibt es einmal pro Konto. Wer sie schon
+            # hatte, bekommt keine zweite -- und erfaehrt auch, warum.
+            #
+            # Die Liste fuehrt der University Bot: er ist die einzige
+            # Stelle, die das ueber alle Server hinweg weiss. Dieser Bot
+            # sieht immer nur seinen eigenen Speicher, und der ist nach
+            # einem Neustart ohne Volume leer.
+            if antwort == "already_used":
+                LOGGER.info(
+                    "Probewoche verweigert: user=%s hatte schon eine",
+                    interaction.user.id,
+                )
+                # Der Key ist beim Einloesen schon verbraucht worden.
+                # Ohne diese Zeile haette der Nutzer nichts bekommen
+                # UND seinen Key verloren.
+                self.bot.premium.restore_key(supplied, user_id=interaction.user.id)
+                await interaction.response.send_message(
+                    view=notice(
+                        "Probewoche schon verbraucht",
+                        "Die sieben Tage kostenlos gibt es einmal pro "
+                        "Konto — deine hattest du bereits.",
+                        tone="error",
+                        hint="Einen dauerhaften Key bekommst du im "
+                        "Support-Server. Wenn du glaubst, das ist ein "
+                        "Irrtum, meldet sich das Team gern.",
+                    ),
+                    ephemeral=True,
+                )
+                return
 
         self.bot.premium.grant(guild_id, interaction.user.id, expires_at=expires_at)
         LOGGER.info(

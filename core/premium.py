@@ -232,6 +232,32 @@ class PremiumStore:
             self._persist()
         return "personal"
 
+    def restore_key(self, candidate: str, *, user_id: int) -> bool:
+        """Einen gerade eingeloesten Key wieder gueltig machen.
+
+        ``redeem_key`` verbraucht den Key sofort -- richtig so, sonst
+        koennte man ihn zweimal einreichen. Wird die Freischaltung
+        danach aber doch abgelehnt (der University Bot meldet, dass die
+        Probewoche schon verbraucht ist), waere der Key ersatzlos weg:
+        der Nutzer haette nichts bekommen und trotzdem seinen Key
+        verloren. Deshalb wird er hier zurueckgelegt.
+
+        Die urspruengliche Gueltigkeit wird nicht verlaengert: der Key
+        laeuft ab, wann er ohnehin abgelaufen waere.
+        """
+
+        digest = _digest(_normalise_key(candidate))
+        with self._lock:
+            if digest in self._pending:
+                return False
+            self._pending[digest] = {
+                "user": int(user_id),
+                "issued": int(time.time()),
+                "expires": int(time.time() + PERSONAL_KEY_TTL),
+            }
+            self._persist()
+        return True
+
     @property
     def pending_key_count(self) -> int:
         """Wie viele Einmal-Keys derzeit offen sind — fuer Tests und Status."""

@@ -3,6 +3,29 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.5.1] — 2026-08-14
+
+### Geändert
+
+- **Die Probewoche gibt es wirklich nur einmal.** Der University Bot
+  führt die Liste und antwortet auf `POST /premium/grant` mit
+  `granted: true` oder `already_used`. Bisher wurde jede HTTP-200-
+  Antwort als Zusage gelesen — wer den Bot auf einen zweiten Server
+  holte, bekam dort erneut sieben Tage, weil dieser Bot immer nur
+  seinen eigenen Speicher sieht (und der ist nach einem Neustart ohne
+  Volume leer).
+- `report_grant()` liefert jetzt `"granted"`, `"already_used"` oder
+  `"error"` statt eines Wahrheitswerts. Ein Ausfall bleibt `"error"`
+  und schaltet lokal trotzdem frei — er darf niemandem seine
+  Freischaltung wegnehmen.
+
+### Behoben
+
+- **Ein abgelehnter Key ging verloren.** `redeem_key()` verbraucht den
+  Key sofort. Wurde die Freischaltung danach abgelehnt, hatte der
+  Nutzer nichts bekommen und trotzdem seinen Key verloren. Neu:
+  `PremiumStore.restore_key()` legt ihn zurück.
+
 ## [3.5.0] — 2026-08-14
 
 ### Hinzugefügt

@@ -296,12 +296,12 @@ class TestReportGrant:
     """Die Meldung ans Dashboard: '7 Tage Premium' statt stiller Unlock."""
 
     async def test_a_grant_is_posted_with_token_and_expiry(self, patched):
-        session = patched(FakeSession(FakeResponse(200)))
+        session = patched(FakeSession(FakeResponse(200, {"granted": True})))
         client = LicenceClient("https://bot.example", "geheim")
 
         assert await client.report_grant(
             USER, guild_id=111, expires_at=1_800_000_000, duration_days=7
-        ) is True
+        ) == "granted"
 
         url, payload, headers = session.posts[0]
         assert url == "https://bot.example/api/v1/premium/grant"
@@ -314,23 +314,40 @@ class TestReportGrant:
         }
 
     async def test_a_direct_message_grant_has_no_guild(self, patched):
-        session = patched(FakeSession(FakeResponse(200)))
+        session = patched(FakeSession(FakeResponse(200, {"granted": True})))
         client = LicenceClient("https://bot.example", "geheim")
 
         await client.report_grant(USER, guild_id=None, expires_at=1, duration_days=7)
 
         assert session.posts[0][1]["guild_id"] is None
 
-    @pytest.mark.parametrize("status", [401, 403, 500, 503])
-    async def test_a_rejected_report_is_false_not_fatal(self, patched, status):
-        patched(FakeSession(FakeResponse(status)))
+    async def test_a_used_up_trial_is_reported_back(self, patched):
+        """Der University Bot fuehrt die Liste — hier kommt sein Nein an.
+
+        HTTP 200 heisst „verstanden", nicht „gewaehrt". Wer das
+        gleichsetzt, gibt jedem beliebig viele Probewochen.
+        """
+
+        patched(FakeSession(FakeResponse(200, {"granted": False,
+                                               "status": "already_used"})))
         client = LicenceClient("https://bot.example", "geheim")
 
         assert await client.report_grant(
             USER, guild_id=None, expires_at=1, duration_days=7
-        ) is False
+        ) == "already_used"
 
-    async def test_a_network_error_is_false_not_fatal(self, patched):
+    @pytest.mark.parametrize("status", [401, 403, 500, 503])
+    async def test_a_rejected_report_is_an_error_not_fatal(self, patched, status):
+        patched(FakeSession(FakeResponse(status)))
+        client = LicenceClient("https://bot.example", "geheim")
+
+        # "error" und nicht "already_used": ein Ausfall darf niemandem
+        # seine Freischaltung wegnehmen.
+        assert await client.report_grant(
+            USER, guild_id=None, expires_at=1, duration_days=7
+        ) == "error"
+
+    async def test_a_network_error_is_an_error_not_fatal(self, patched):
         import aiohttp
 
         patched(FakeSession(error=aiohttp.ClientError("keine Verbindung")))
@@ -338,7 +355,7 @@ class TestReportGrant:
 
         assert await client.report_grant(
             USER, guild_id=None, expires_at=1, duration_days=7
-        ) is False
+        ) == "error"
 
     async def test_unconfigured_reports_nothing(self, patched):
         session = patched(FakeSession(FakeResponse(200)))
@@ -346,5 +363,5 @@ class TestReportGrant:
 
         assert await client.report_grant(
             USER, guild_id=None, expires_at=1, duration_days=7
-        ) is False
+        ) == "error"
         assert session.posts == []
