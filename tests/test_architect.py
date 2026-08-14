@@ -592,6 +592,35 @@ class TestComponentsV2:
         # Kopf + Premium-Vorschau + eine Karte je kostenloser Vorlage.
         assert len(containers) == 2 + len(registry.free)
 
+    def test_premium_templates_render_as_their_own_cards_too(self, registry):
+        """Nach dem Unlock sehen Premium-Vorlagen aus wie die kostenlosen.
+
+        Kein gemeinsamer Textblock: jede Vorlage bekommt ihre eigene
+        Karte mit dem Akzent ihrer Vorlage.
+        """
+
+        from ui.views import StartView
+
+        payload = StartView(_FakeBot(registry), premium=True).to_components()
+        containers = [c for c in payload if c.get("type") == 17]
+
+        # Kopf + eine Karte je Vorlage — Free und Premium gleich.
+        assert len(containers) == 1 + len(registry.free) + len(registry.premium)
+
+    def test_premium_cards_carry_their_own_accent(self, registry):
+        """Die Akzentfarbe der Vorlage, nicht das Gold der Sektion."""
+
+        from ui.views import StartView
+
+        payload = StartView(_FakeBot(registry), premium=True).to_components()
+        accents = {
+            container["accent_color"]
+            for container in payload
+            if container.get("type") == 17
+        }
+        expected = {template.accent for template in registry}
+        assert expected <= accents, "Eine Premium-Karte traegt nicht ihre Farbe"
+
     def test_the_premium_section_lists_every_template_when_unlocked(self, registry):
         from ui.views import StartView
 

@@ -3,6 +3,17 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.5.3] — 2026-08-15
+
+### Geändert
+
+- **Premium-Vorlagen erscheinen nach dem Freischalten als eigene
+  Karten** — genauso wie die kostenlosen, mit der Akzentfarbe ihrer
+  Vorlage statt eines gemeinsamen Textblocks. Der Kopf des Startmenüs
+  trägt die Kennzahlen jetzt kompakter, damit das Layout unter Discords
+  40-Komponenten-Limit bleibt (39/40 freigeschaltet). Die gesperrte
+  Premium-Sektion zeigt weiterhin nur die Vorschau.
+
 ## [3.5.2] — 2026-08-14
 
 ### Behoben

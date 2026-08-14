@@ -1090,18 +1090,39 @@ class TemplateSelect(ui.Select["StartView"]):
         )
 
 
+def _template_card(template: Template) -> ui.Container:
+    """Eine Vorlagen-Karte: eigener Container mit dem Akzent der Vorlage.
+
+    Free und Premium sehen gleich aus — die Sektion und die Akzentfarbe
+    unterscheiden, nicht das Kartenlayout.
+    """
+
+    card = ui.Container(accent_colour=discord.Colour(template.accent))
+    card.add_item(
+        ui.TextDisplay(
+            f"{template.emoji}  **{template.name}**\n"
+            f"-# {template.tagline}\n"
+            f"-# {template.category_count} Kategorien  ·  "
+            f"{template.channel_count} Kanäle  ·  "
+            f"{template.voice_count} Sprachkanäle"
+        )
+    )
+    return card
+
+
 class StartView(ui.LayoutView):
     """The screen behind ``/template start``.
 
-    Aufbau: Kopf mit Kennzahlen, die kostenlosen Vorlagen als Karten —
-    jede mit dem Akzent ihrer Vorlage —, darunter die Premium-Sektion.
-    Solange sie gesperrt ist, steht dort nur eine Vorschau mit dem
-    Freischalt-Knopf. Ganz unten das Auswahlmenue.
+    Aufbau: Kopf mit Kennzahlen, dann die kostenlosen Vorlagen als
+    Karten — jede mit dem Akzent ihrer Vorlage. Die Premium-Vorlagen
+    stehen nach dem Freischalten **genauso** als eigene Karten darunter.
+    Solange sie gesperrt sind, zeigt die Sektion nur eine Vorschau mit
+    dem Freischalt-Knopf. Ganz unten das Auswahlmenue.
 
     Eine harte Grenze praegt das Layout: Discord zaehlt Container samt
-    Inhalt gegen das Limit von 40 Komponenten je Nachricht. Einzelne
-    Karten fuer alle 19 Premium-Vorlagen wuerden es sprengen, deshalb
-    stehen die Premium-Vorlagen in einem gemeinsamen goldenen Container.
+    Inhalt gegen das Limit von 40 Komponenten je Nachricht. Karten fuer
+    alle Vorlagen passen hinein, aber ohne Luft — eine weitere Vorlage
+    braucht deshalb ein zweites Auswahlmenue statt einer weiteren Karte.
     """
 
     def __init__(self, bot: ArchitectBot, *, premium: bool) -> None:
@@ -1115,14 +1136,17 @@ class StartView(ui.LayoutView):
         totals = registry.totals
 
         # --- Kopf ---------------------------------------------------------
+        # Ueberschrift und Kennzahlen in einem Textblock: jede weitere
+        # Komponente fehlt hier unten bei den Karten — das 40er-Limit
+        # ist mit 15 Karten fast erreicht.
         header = ui.Container(
             accent_colour=discord.Colour(COLOR_PREMIUM if premium else COLOR_BRAND)
         )
-        header.add_item(ui.TextDisplay(f"## {BRAND_NAME}\n-# {BRAND_TAGLINE}"))
-        header.add_item(RULE())
         header.add_item(
             ui.TextDisplay(
-                quote(
+                f"## {BRAND_NAME}\n"
+                f"-# {BRAND_TAGLINE}\n"
+                + quote(
                     f"{totals['templates']} Vorlagen  ·  "
                     f"{totals['categories']} Kategorien  ·  "
                     f"{totals['channels']} Kanäle",
@@ -1132,42 +1156,30 @@ class StartView(ui.LayoutView):
                 )
             )
         )
+        header.add_item(RULE())
         self.add_item(header)
 
         # --- kostenlos: jede Vorlage als eigene Karte ---------------------
         self.add_item(ui.TextDisplay(f"**Kostenlos**  ·  {len(free)} Vorlagen"))
         for template in free:
-            card = ui.Container(accent_colour=discord.Colour(template.accent))
-            card.add_item(
-                ui.TextDisplay(
-                    f"{template.emoji}  **{template.name}**\n"
-                    f"-# {template.tagline}\n"
-                    f"-# {template.category_count} Kategorien  ·  "
-                    f"{template.channel_count} Kanäle  ·  "
-                    f"{template.voice_count} Sprachkanäle"
-                )
-            )
-            self.add_item(card)
+            self.add_item(_template_card(template))
 
-        # --- premium -------------------------------------------------------
+        # --- premium: gesperrt als Vorschau, danach dieselben Karten ------
         if locked:
-            self.add_item(SPACE())
-            premium_box = ui.Container(accent_colour=discord.Colour(COLOR_PREMIUM))
             if premium:
-                premium_box.add_item(
+                self.add_item(
                     ui.TextDisplay(
-                        f"**Premium**  ·  {len(locked)} Vorlagen  ·  freigeschaltet\n"
-                        + "\n".join(
-                            f"{t.emoji}  **{t.name}** — {t.tagline}\n"
-                            f"-# {t.category_count} Kategorien  ·  "
-                            f"{t.channel_count} Kanäle  ·  "
-                            f"{t.voice_count} Sprachkanäle"
-                            for t in locked
-                        )
+                        f"**Premium**  ·  {len(locked)} Vorlagen  ·  freigeschaltet"
                     )
                 )
+                for template in locked:
+                    self.add_item(_template_card(template))
             else:
+                self.add_item(SPACE())
                 preview = " · ".join(t.name for t in locked[:4])
+                premium_box = ui.Container(
+                    accent_colour=discord.Colour(COLOR_PREMIUM)
+                )
                 premium_box.add_item(
                     ui.TextDisplay(
                         f"**Premium**  ·  {len(locked)} Vorlagen\n"
@@ -1179,9 +1191,8 @@ class StartView(ui.LayoutView):
                         )
                     )
                 )
-            self.add_item(premium_box)
-
-        self.add_item(RULE())
+                self.add_item(premium_box)
+            self.add_item(RULE())
 
         # --- Auswahl und Freischaltung ------------------------------------
         select_row = ui.ActionRow()

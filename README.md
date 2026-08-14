@@ -134,21 +134,29 @@ Baukasten aussieht:
 - **Eine Betonungsebene**: fett nur für Zahlen und Namen, keine Ausrufezeichen
 - **Grau** (`-#`) für alles Nebensächliche
 
-So sieht das Startmenü aus:
+So sieht das Startmenü aus — jede Vorlage als eigene Karte mit der
+Akzentfarbe ihrer Vorlage, Free und Premium gleich:
 
 ```
 ## Discord Architect
 -# Server-Templates in Sekunden
+> 15 Vorlagen · 208 Kategorien · 1207 Kanäle
+> 5 kostenlos · 10 mit Premium
 ────────────────────────────────────────────────
-**Kostenlos**
-> 🌐  Community Discord — Der Allrounder
-> -# 15 Kategorien · 93 Kanäle · 21 Sprachkanäle
-> 🎭  RP Server — Fraktionen, Behörden, Wirtschaft
-> -# 17 Kategorien · 100 Kanäle · 27 Sprachkanäle
+**Kostenlos**  ·  5 Vorlagen
+╭──────────────────────────────────────────────╮
+│ 🌐  Community Discord                        │
+│ -# Der Allrounder für jede wachsende Community│
+│ -# 15 Kategorien · 95 Kanäle · 22 Sprachkanäle│
+╰──────────────────────────────────────────────╯
 
-**Premium**  ·  7 weitere
-> 🌸  Anime & Manga Hub — Seasonals, Fanart
-> 🏢  Business & Company — Abteilungen, Kunden
+**Premium**  ·  10 Vorlagen  ·  freigeschaltet
+╭──────────────────────────────────────────────╮
+│ 🎭  RP Server                                │
+│ -# Roleplay mit Fraktionen, Behörden          │
+│ -# 17 Kategorien · 102 Kanäle · 28 Sprachkan. │
+╰──────────────────────────────────────────────╯
+  … jede weitere Premium-Vorlage als eigene Karte
 ────────────────────────────────────────────────
   [ Vorlage auswählen ▾ ]   [ 💎 Premium freischalten ]
 ```
