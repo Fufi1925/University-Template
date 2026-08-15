@@ -334,6 +334,34 @@
       ]
     },
     {
+      "label": "leitung",
+      "emoji": "👑",
+      "visibility": "leadership",
+      "channels": [
+        {
+          "label": "leitungs-chat",
+          "emoji": "🏛️",
+          "topic": "Nur für die Serverleitung"
+        },
+        {
+          "label": "planung",
+          "emoji": "🗺️",
+          "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
+        },
+        {
+          "label": "leitungs-talk",
+          "emoji": "🔐",
+          "kind": "voice",
+          "user_limit": 10
+        }
+      ]
+    },
+    {
       "label": "zusammenarbeit",
       "emoji": "🤝",
       "visibility": "member",

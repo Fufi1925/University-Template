@@ -627,6 +627,18 @@
             "👍",
             "👎"
           ]
+        },
+        {
+          "label": "beschwerden",
+          "emoji": "📣",
+          "topic": "Beschwerden über Mitglieder",
+          "mode": "threads"
+        },
+        {
+          "label": "entbannungsantrag",
+          "emoji": "⚖️",
+          "topic": "Einspruch gegen eine Strafe",
+          "mode": "threads"
         }
       ]
     },

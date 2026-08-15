@@ -204,6 +204,12 @@
           "mode": "announce"
         },
         {
+          "label": "rollen-vergabe",
+          "emoji": "🏷️",
+          "topic": "Rollen selbst vergeben",
+          "widget": "roles"
+        },
+        {
           "label": "charaktere",
           "emoji": "🧑‍🎤",
           "topic": "Stelle deinen Charakter vor",

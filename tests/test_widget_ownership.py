@@ -149,10 +149,11 @@ class TestWidgetsSitOnChannelsThatCanHoldThem:
                 for _category, spec in template.iter_channels()
             )
         }
-        # business: ein Firmen-Server regelt Support über eigene Kanäle.
-        # minimal:  bewusst klein -- kein Ticket-System, keine Verify-
-        #           Schleuse, keine Rollen-Vergabe.
-        expected = {"business", "minimal"}
+        # minimal: bewusst klein -- kein Ticket-System, keine Verify-
+        #          Schleuse, keine Rollen-Vergabe.
+        # business: hat seit 3.6.0 ein Kunden-Ticket-Panel -- Anfragen
+        #          sollen nicht im Chat verloren gehen.
+        expected = {"minimal"}
         assert without == expected, (
             f"ohne Ticket-Kanal: {sorted(without)}, erwartet: {sorted(expected)}"
         )

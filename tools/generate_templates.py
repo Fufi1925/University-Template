@@ -191,7 +191,11 @@ def info_category(*extra: dict[str, Any]) -> dict[str, Any]:
 
 
 def hilfe_category(*extra: dict[str, Any]) -> dict[str, Any]:
-    """Tickets, Community-Hilfe, Fehler und Vorschläge."""
+    """Tickets, Community-Hilfe, Fehler, Vorschläge und die Einspruchswege.
+
+    Der Standard-Baustein: was hier steht, gehoert auf jeden Server —
+    deshalb dieselben sechs Kanäle wie in den älteren Vorlagen.
+    """
 
     return cat("hilfe", "🛟", "public", [
         ch("ticket-eroeffnen", "🎫", topic="Hier ein Support-Ticket öffnen",
@@ -199,6 +203,8 @@ def hilfe_category(*extra: dict[str, Any]) -> dict[str, Any]:
         ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
         ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
         ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
+        ch("beschwerden", "📣", topic="Beschwerden über Mitglieder", mode="threads"),
+        ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe", mode="threads"),
         *(extra or []),
     ])
 
@@ -510,6 +516,7 @@ def rp() -> dict[str, Any]:
             cat("rp start", "🚀", "public", [
                 ch("ankuendigungen", "📢", "news", topic="Server-News", visibility="readonly", mode="announce"),
                 ch("stadt-nachrichten", "📰", topic="Was passiert in der Stadt?", mode="announce"),
+                ch("rollen-vergabe", "🏷️", topic="Rollen selbst vergeben", widget="roles"),
                 ch("charaktere", "🧑‍🎤", topic="Stelle deinen Charakter vor", slowmode=120),
                 ch("steckbriefe", "📇", topic="Charakter-Steckbriefe"),
                 ch("rp-suche", "🔍", topic="Mitspieler für Szenen finden"),
@@ -982,6 +989,8 @@ def gaming() -> dict[str, Any]:
                 ch("technik-hilfe", "🛠️", topic="Technische Probleme"),
                 ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
                 ch("vorschlaege", "💡", topic="Vorschläge", mode="threads", reactions=["👍", "👎"]),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder", mode="threads"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe", mode="threads"),
             ]),
             cat("team", "🛡️", "staff", [
                 ch("team-chat", "💼", topic="Interner Teamchat"),
@@ -1297,7 +1306,17 @@ def business() -> dict[str, Any]:
                 ch("veroeffentlichungen", "🚀", topic="Release-Ankündigungen", visibility="readonly", mode="announce"),
             ]),
             cat("kunden", "🤝", "public", [
-                ch("kunden-willkommen", "👋", topic="Willkommen, Kunden", visibility="readonly"),
+                ch("kunden-willkommen", "👋", topic="Willkommen, Kunden", visibility="readonly",
+                    guide=[
+                        (
+                            "Schön, dass du da bist. Für Anfragen öffnest "
+                            "du am besten ein Ticket — dann geht nichts "
+                            "verloren."
+                        ),
+                    ],
+                ),
+                ch("ticket-eroeffnen", "🎫", topic="Hier ein Kunden-Ticket öffnen",
+                   visibility="readonly", widget="ticket"),
                 ch("kunden-anfragen", "📥", "forum", topic="Anfragen einreichen"),
                 ch("kunden-updates", "📢", topic="Statusmeldungen", visibility="readonly", mode="announce"),
                 ch("kunden-rueckmeldung", "💬", topic="Rückmeldungen"),
@@ -1322,6 +1341,9 @@ def business() -> dict[str, Any]:
                 ch("werkzeuge", "🛠️", topic="Werkzeuge und Zugänge"),
                 ch("archiv", "🗄️", topic="Abgeschlossenes", visibility="archive"),
             ]),
+            hilfe_category(
+                ch("it-hilfe", "🖥️", topic="Technik-Probleme intern"),
+            ),
             cat("sprachen", "🌍", "public", [
                 ch("deutsch", "🇩🇪", topic="Deutschsprachiger Chat — die Hauptsprache", slowmode=3),
                 ch("english", "🇬🇧", topic="English speaking chat", slowmode=3),
@@ -1329,8 +1351,10 @@ def business() -> dict[str, Any]:
             cat("sprach-talks", "🗣️", "public", [
                 ch("deutsch-talk", "🇩🇪", "voice"),
                 ch("english-talk", "🇬🇧", "voice"),
+                ch("deutsch-talk-2", "🇩🇪", "voice", user_limit=10),
+                ch("english-talk-2", "🇬🇧", "voice", user_limit=10),
             ]),
-            cat("interne leitung", "🛡️", "staff", [
+            cat("team", "🛡️", "staff", [
                 ch("team-chat", "💼", topic="Interner Teamchat"),
                 ch("team-ankuendigungen", "📣", topic="Ankündigungen fürs Team", mode="announce"),
                 ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten", widget="checklist"),
@@ -1659,6 +1683,7 @@ def creator() -> dict[str, Any]:
                 ch("rechnungen", "🧾", topic="Rechnungen"),
                 ch("geschaefts-talk", "🔐", "voice", user_limit=8),
             ]),
+            leitung_category(),
             cat("zusammenarbeit", "🤝", "member", [
                 ch("kooperations-boerse", "📌", topic="Offene Kooperationen"),
                 ch("creator-lounge", "☕", topic="Austausch unter Creators"),
@@ -2008,6 +2033,7 @@ def esports() -> dict[str, Any]:
                 ch("budget", "🧾", topic="Budget"),
                 ch("orga-talk", "🔐", "voice", user_limit=10),
             ]),
+            leitung_category(),
             cat("social media", "📱", "public", [
                 ch("instagram", "📸", topic="Instagram-Beiträge", mode="media"),
                 ch("tiktok", "🎵", topic="TikTok-Clips", mode="media"),
@@ -2191,7 +2217,12 @@ def music() -> dict[str, Any]:
             cat("hilfe", "🛟", "public", [
                 ch("ticket-eroeffnen", "🎫", topic="Hier ein Ticket öffnen",
                    visibility="readonly", widget="ticket"),
+                ch("hilfe-und-support", "❓", "forum", topic="Frag die Community"),
                 ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
+                ch("fehler-melden", "🐛", topic="Fehler melden", mode="threads"),
+                ch("vorschlaege", "💡", topic="Ideen für den Server", mode="threads", reactions=["👍", "👎"]),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder", mode="threads"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe", mode="threads"),
             ]),
             cat("team", "🛡️", "staff", [
                 ch("team-chat", "💼", topic="Interner Teamchat"),
@@ -2199,11 +2230,14 @@ def music() -> dict[str, Any]:
                 ch("aufgaben", "📋", topic="Aufgaben und Zuständigkeiten", widget="checklist"),
                 ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
                 ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
+                ch("schichtplan", "🗓️", topic="Wer hat wann Dienst?"),
                 ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
             ]),
             cat("leitung", "👑", "leadership", [
                 ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
                 ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
                 ch("leitungs-talk", "🔐", "voice", user_limit=10),
             ]),
             cat("logs", "📜", "staff", [
@@ -2349,10 +2383,12 @@ def dev() -> dict[str, Any]:
                 ch("bewerbungen", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
                 ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
                 ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
             ]),
             cat("leitung", "👑", "leadership", [
                 ch("leitungs-chat", "🏛️", topic="Nur für die Serverleitung"),
                 ch("planung", "🗺️", topic="Planung und Ausrichtung"),
+                ch("personal", "🧑‍💼", topic="Personalthemen"),
                 ch("leitungs-talk", "🔐", "voice", user_limit=10),
             ]),
             cat("logs", "📜", "staff", [
@@ -2615,8 +2651,12 @@ def clan() -> dict[str, Any]:
             cat("hilfe", "🛟", "public", [
                 ch("ticket-eroeffnen", "🎫", topic="Hier ein Ticket öffnen",
                    visibility="readonly", widget="ticket"),
+                ch("hilfe-und-support", "❓", "forum", topic="Frag den Clan und die Community"),
                 ch("kurze-fragen", "⚡", topic="Kurze Fragen ohne Ticket"),
                 ch("fehler-melden", "🐛", topic="Probleme auf dem Server melden"),
+                ch("vorschlaege", "💡", topic="Ideen für den Clan", mode="threads", reactions=["👍", "👎"]),
+                ch("beschwerden", "📣", topic="Beschwerden über Mitglieder", mode="threads"),
+                ch("entbannungsantrag", "⚖️", topic="Einspruch gegen eine Strafe", mode="threads"),
             ]),
             cat("team", "🛡️", "staff", [
                 ch("team-chat", "💼", topic="Interner Teamchat"),
@@ -2625,6 +2665,7 @@ def clan() -> dict[str, Any]:
                 ch("bewerbungs-sichtung", "🧾", topic="Eingehende Bewerbungen", mode="threads"),
                 ch("meldungen", "🚨", topic="Gemeldete Vorfälle"),
                 ch("team-talk", "🎙️", "voice", user_limit=15),
+                ch("besprechungsraum", "🪑", "voice", user_limit=25),
             ]),
             cat("leitung", "👑", "leadership", [
                 ch("leitungs-chat", "🏛️", topic="Nur für die Clanleitung"),

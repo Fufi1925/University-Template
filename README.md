@@ -1,7 +1,7 @@
 # 🏛️ Discord Architect
 
 Ein Discord-Bot, der komplette Server-Strukturen aus fertigen Vorlagen baut —
-**15 Templates, 1207 Kanäle, 282 Voice-Räume** — komplett auf Deutsch, in
+**15 Templates, 1245 Kanäle, 289 Voice-Räume** — komplett auf Deutsch, in
 Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 
 ```
@@ -23,19 +23,19 @@ der persönliche Key kommt per Direktnachricht. Eingelöst wird er mit
 |---|---|---:|---:|---:|
 | 🆓 | **Community Discord** — der Allrounder | 15 | 95 | 22 |
 | 🆓 | **Social Lounge** — Gespräche, Medien, Aktivitäten | 15 | 97 | 23 |
-| 🆓 | **Musik & DJ** — Hörsessions, Tracks, Bühnenabende | 13 | 67 | 18 |
-| 🆓 | **Entwickler & Open Source** — Code-Hilfe, Projekte | 11 | 62 | 14 |
+| 🆓 | **Musik & DJ** — Hörsessions, Tracks, Bühnenabende | 13 | 75 | 19 |
+| 🆓 | **Entwickler & Open Source** — Code-Hilfe, Projekte | 11 | 64 | 15 |
 | 🆓 | **Kleiner Server** — nur das Nötigste | 6 | 18 | 6 |
-| 💎 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 102 | 28 |
-| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 101 | 27 |
+| 💎 | **RP Server** — Fraktionen, Behörden, Wirtschaft | 17 | 103 | 28 |
+| 💎 | **Gaming Pro Hub** — Squads, Turniere, Scrims | 15 | 103 | 27 |
 | 💎 | **Anime & Manga Hub** — Seasonals, Watch-Partys | 17 | 98 | 23 |
 | 💎 | **Study & University** — Fächer, Pomodoro-Räume | 16 | 98 | 20 |
-| 💎 | **Clan Server** — Clan Talk, Fight Calls | 15 | 86 | 26 |
-| 💎 | **Creator Studio** — Inhalte planen, produzieren | 15 | 85 | 17 |
-| 💎 | **Business & Company** — Abteilungen, Kunden | 13 | 76 | 14 |
-| 💎 | **Esports Organisation** — Kader, Spieltag | 14 | 84 | 16 |
+| 💎 | **Clan Server** — Clan Talk, Fight Calls | 15 | 91 | 27 |
+| 💎 | **Creator Studio** — Inhalte planen, produzieren | 16 | 89 | 18 |
+| 💎 | **Esports Organisation** — Kader, Spieltag | 15 | 88 | 17 |
+| 💎 | **Business & Company** — Abteilungen, Kunden | 14 | 86 | 16 |
+| 💎 | **Fitness & Sport** — Trainingspläne, Challenges | 13 | 71 | 13 |
 | 💎 | **Support Center** — Tickets, Eskalation | 13 | 69 | 15 |
-| 💎 | **Fitness & Sport** — Trainingspläne, Challenges | 13 | 69 | 13 |
 
 Jeder Textkanal bekommt eine **angeheftete Startnachricht**, die seinen Zweck
 erklärt — abschaltbar mit einem Klick, falls die Kanäle leer bleiben sollen.
@@ -140,7 +140,7 @@ Akzentfarbe ihrer Vorlage, Free und Premium gleich:
 ```
 ## Discord Architect
 -# Server-Templates in Sekunden
-> 15 Vorlagen · 208 Kategorien · 1207 Kanäle
+> 15 Vorlagen · 211 Kategorien · 1245 Kanäle
 > 5 kostenlos · 10 mit Premium
 ────────────────────────────────────────────────
 **Kostenlos**  ·  5 Vorlagen
@@ -441,7 +441,7 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 `/health` liefert Live-Status:
 
 ```json
-{"status":"online","guilds":3,"templates":15,"channels":1207,"active_builds":0}
+{"status":"online","guilds":3,"templates":15,"channels":1245,"active_builds":0}
 ```
 
 ---

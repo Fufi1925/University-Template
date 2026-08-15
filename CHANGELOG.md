@@ -3,6 +3,39 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.6.0] — 2026-08-15
+
+### Geändert
+
+- **Alle Vorlagen überarbeitet — Konsistenz statt Flickwerk.** Die
+  Pflichtbereiche sehen jetzt in jeder Vorlage gleich aus:
+  - **Hilfe:** jede große Vorlage hat das Ticket-Panel, ein
+    Hilfeforum, Fehler-Meldung, Vorschläge mit Abstimmung, Beschwerden
+    und Entbannungsantrag (Musik & DJ, Clan, Gaming und Fitness waren
+    unvollständig).
+  - **Team:** überall Bewerbungs-Kanal, Checkliste und ein
+    Besprechungsraum (Musik & DJ, Dev und Clan ergänzt).
+  - **Leitung:** überall Planung, Personal und Leitungstalk — Creator
+    Studio und Esports hatten gar keine eigene Leitung.
+  - **Sprach-Talks:** überall dieselben vier Räume (Business hatte nur
+    zwei).
+- **Business & Company:** Kunden-Ticket-Panel (Anfragen gehen nicht
+  mehr im Chat verloren), interne Hilfe-Sektion inklusive IT-Hilfe,
+  zwei zusätzliche Sprachräume.
+- **RP Server:** Rollen-Vergabe-Widget ergänzt — Selbstrollen für
+  Interessen gab es dort als einzige große Vorlage nicht.
+- **38 neue, sinnvolle Kanäle** über alle Vorlagen (1245 statt 1207).
+
+### Hinzugefügt
+
+- **`tests/test_template_quality.py`** nagelt den Anspruch fest:
+  kein toter Textkanal ohne Intro, die fünf Kern-Widgets (Verify,
+  Regeln, Rollen, Tickets, Checkliste) in jeder großen Vorlage,
+  mindestens ein Forum und ein Join-to-Create-Raum, vollständige
+  Team-/Leitungs-/Hilfe-Bereiche, identische Sprach-Talks,
+  Abstimmungs-Reaktionen auf allen Vorschlags-Kanälen. Ausnahme
+  bleibt bewusst `minimal`.
+
 ## [3.5.3] — 2026-08-15
 
 ### Geändert

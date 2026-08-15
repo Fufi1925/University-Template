@@ -420,9 +420,43 @@
           "widget": "ticket"
         },
         {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
           "label": "kurze-fragen",
           "emoji": "⚡",
           "topic": "Kurze Fragen ohne Ticket"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        },
+        {
+          "label": "beschwerden",
+          "emoji": "📣",
+          "topic": "Beschwerden über Mitglieder",
+          "mode": "threads"
+        },
+        {
+          "label": "entbannungsantrag",
+          "emoji": "⚖️",
+          "topic": "Einspruch gegen eine Strafe",
+          "mode": "threads"
         }
       ]
     },
@@ -460,10 +494,21 @@
           "topic": "Gemeldete Vorfälle"
         },
         {
+          "label": "schichtplan",
+          "emoji": "🗓️",
+          "topic": "Wer hat wann Dienst?"
+        },
+        {
           "label": "team-talk",
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
         }
       ]
     },
@@ -481,6 +526,11 @@
           "label": "planung",
           "emoji": "🗺️",
           "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
         },
         {
           "label": "leitungs-talk",

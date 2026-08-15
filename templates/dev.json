@@ -448,6 +448,12 @@
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
         }
       ]
     },
@@ -465,6 +471,11 @@
           "label": "planung",
           "emoji": "🗺️",
           "topic": "Planung und Ausrichtung"
+        },
+        {
+          "label": "personal",
+          "emoji": "🧑‍💼",
+          "topic": "Personalthemen"
         },
         {
           "label": "leitungs-talk",

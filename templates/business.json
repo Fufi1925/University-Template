@@ -312,7 +312,17 @@
           "label": "kunden-willkommen",
           "emoji": "👋",
           "topic": "Willkommen, Kunden",
-          "visibility": "readonly"
+          "visibility": "readonly",
+          "guide": [
+            "Schön, dass du da bist. Für Anfragen öffnest du am besten ein Ticket — dann geht nichts verloren."
+          ]
+        },
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Kunden-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
         },
         {
           "label": "kunden-anfragen",
@@ -438,6 +448,59 @@
       ]
     },
     {
+      "label": "hilfe",
+      "emoji": "🛟",
+      "visibility": "public",
+      "channels": [
+        {
+          "label": "ticket-eroeffnen",
+          "emoji": "🎫",
+          "topic": "Hier ein Support-Ticket öffnen",
+          "visibility": "readonly",
+          "widget": "ticket"
+        },
+        {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag die Community"
+        },
+        {
+          "label": "fehler-melden",
+          "emoji": "🐛",
+          "topic": "Fehler melden",
+          "mode": "threads"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Server",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        },
+        {
+          "label": "beschwerden",
+          "emoji": "📣",
+          "topic": "Beschwerden über Mitglieder",
+          "mode": "threads"
+        },
+        {
+          "label": "entbannungsantrag",
+          "emoji": "⚖️",
+          "topic": "Einspruch gegen eine Strafe",
+          "mode": "threads"
+        },
+        {
+          "label": "it-hilfe",
+          "emoji": "🖥️",
+          "topic": "Technik-Probleme intern"
+        }
+      ]
+    },
+    {
       "label": "sprachen",
       "emoji": "🌍",
       "visibility": "public",
@@ -470,11 +533,23 @@
           "label": "english-talk",
           "emoji": "🇬🇧",
           "kind": "voice"
+        },
+        {
+          "label": "deutsch-talk-2",
+          "emoji": "🇩🇪",
+          "kind": "voice",
+          "user_limit": 10
+        },
+        {
+          "label": "english-talk-2",
+          "emoji": "🇬🇧",
+          "kind": "voice",
+          "user_limit": 10
         }
       ]
     },
     {
-      "label": "interne leitung",
+      "label": "team",
       "emoji": "🛡️",
       "visibility": "staff",
       "channels": [

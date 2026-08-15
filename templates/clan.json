@@ -568,6 +568,12 @@
           "widget": "ticket"
         },
         {
+          "label": "hilfe-und-support",
+          "emoji": "❓",
+          "kind": "forum",
+          "topic": "Frag den Clan und die Community"
+        },
+        {
           "label": "kurze-fragen",
           "emoji": "⚡",
           "topic": "Kurze Fragen ohne Ticket"
@@ -576,6 +582,28 @@
           "label": "fehler-melden",
           "emoji": "🐛",
           "topic": "Probleme auf dem Server melden"
+        },
+        {
+          "label": "vorschlaege",
+          "emoji": "💡",
+          "topic": "Ideen für den Clan",
+          "mode": "threads",
+          "reactions": [
+            "👍",
+            "👎"
+          ]
+        },
+        {
+          "label": "beschwerden",
+          "emoji": "📣",
+          "topic": "Beschwerden über Mitglieder",
+          "mode": "threads"
+        },
+        {
+          "label": "entbannungsantrag",
+          "emoji": "⚖️",
+          "topic": "Einspruch gegen eine Strafe",
+          "mode": "threads"
         }
       ]
     },
@@ -617,6 +645,12 @@
           "emoji": "🎙️",
           "kind": "voice",
           "user_limit": 15
+        },
+        {
+          "label": "besprechungsraum",
+          "emoji": "🪑",
+          "kind": "voice",
+          "user_limit": 25
         }
       ]
     },
