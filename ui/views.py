@@ -221,30 +221,6 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
             )
 
 
-def _premium_dm_content(key: str) -> str:
-    """Die Direktnachricht mit dem persoenlichen Key.
-
-    Bewusst reiner Text statt Components V2: eine DM mit genau einer
-    Information braucht keinen Container. Der Key steht nur hier — in
-    keiner Antwort, in keinem Kanal, in keiner Datei.
-    """
-
-    days = PERSONAL_KEY_TTL // 86400
-    return (
-        "## 💎 Dein Premium-Key ist da!\n"
-        "Danke, dass du unserem TikTok folgst — willkommen im Premium-Club. "
-        "Mit diesem Key schaltest du alle Premium-Vorlagen frei.\n"
-        "-# Dein persönlicher Key:\n"
-        f"> `{key}`\n"
-        "**So löst du ihn ein:**\n"
-        "1. Geh auf einen Server mit diesem Bot\n"
-        "2. Nutze `/template key`\n"
-        "3. Füge den Key ins Fenster ein — fertig\n"
-        f"Der Key ist **{days} Tage** gültig und nur für dein Konto.\n"
-        "-# Gib ihn nicht weiter: er funktioniert nur bei dir."
-    )
-
-
 class _ManualKeyButton(ui.Button["ui.LayoutView"]):
     """Oeffnet das Key-Fenster auch ohne DM — z. B. fuer Master-Keys."""
 
@@ -272,15 +248,17 @@ class _TikTokButton(ui.Button["PremiumGateView"]):
 
 
 class _ClaimFollowButton(ui.Button["PremiumGateView"]):
-    """„Ich habe abonniert": Key ausgeben und per DM verschicken.
+    """„Testwoche starten": TikTok-Follow bestaetigen, Testwoche beginnt.
 
     Der Follow selbst laesst sich von einem Discord-Bot technisch nicht
-    pruefen — der Nutzer bestaetigt ihn hier selbst.
+    pruefen — der Nutzer bestaetigt ihn hier selbst. Die Testwoche
+    startet **sofort** mit diesem Klick: kein Key, keine DM, kein
+    Umweg. Sieben Tage spaeter laeuft Premium von selbst ab.
     """
 
     def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(
-            label="Ich habe abonniert",
+            label="Testwoche starten",
             style=discord.ButtonStyle.primary,
             emoji=button_emoji("premium", "💎"),
             custom_id="architect:premium:claim",
@@ -302,43 +280,69 @@ class _ClaimFollowButton(ui.Button["PremiumGateView"]):
             )
             return
 
-        key = self.bot.premium.issue_key(interaction.user.id)
-        try:
-            await interaction.user.send(_premium_dm_content(key))
-        except (discord.Forbidden, discord.HTTPException):
+        guild_id = interaction.guild.id if interaction.guild else None
+        expires_at = time.time() + PERSONAL_KEY_TTL
+
+        # Die Probewoche gibt es einmal pro Konto. Die Liste fuehrt der
+        # University Bot: er ist die einzige Stelle, die das ueber alle
+        # Server hinweg weiss — dieser Bot sieht nur seinen eigenen
+        # Speicher, und der ist nach einem Neustart ohne Volume leer.
+        #
+        # Ein Ausfall ("error") darf die Testwoche nicht verhindern:
+        # lieber sieben Tage geschenkt als ein Nutzer, der nicht
+        # reinkommt.
+        antwort = await self.bot.licence.report_grant(
+            interaction.user.id,
+            guild_id=guild_id,
+            expires_at=expires_at,
+            duration_days=PERSONAL_KEY_TTL // 86400,
+        )
+        if antwort == "already_used":
+            LOGGER.info(
+                "Probewoche verweigert: user=%s hatte schon eine",
+                interaction.user.id,
+            )
             await interaction.response.send_message(
                 view=notice(
-                    "Deine DMs sind geschlossen",
-                    "Ich konnte dir deinen Premium-Key nicht als "
-                    "Direktnachricht senden. Aktiviere DMs in deinen "
-                    "Privatsphäre-Einstellungen und klicke erneut — oder "
-                    "nutze den Knopf **Key eingeben**, wenn du bereits "
-                    "einen Key von der Serverleitung hast.",
+                    "Probewoche schon verbraucht",
+                    "Die sieben Tage kostenlos gibt es einmal pro "
+                    "Konto — deine hattest du bereits.",
                     tone="error",
+                    hint="Einen dauerhaften Key gibst du mit dem Knopf "
+                    "unten ein. Wenn du glaubst, das ist ein Irrtum, "
+                    "meldet sich das Team gern.",
                     extra=[_manual_key_row(self.bot)],
                 ),
                 ephemeral=True,
             )
             return
 
+        self.bot.premium.grant(guild_id, interaction.user.id, expires_at=expires_at)
+        LOGGER.info(
+            "Testwoche gestartet für user=%s guild=%s (7 Tage)",
+            interaction.user.id,
+            guild_id,
+        )
         await interaction.response.send_message(
             view=notice(
-                "Key ist unterwegs",
-                "Dein persönlicher Premium-Key liegt jetzt in deinen "
-                "Direktnachrichten.",
+                "Testwoche gestartet",
+                "**7 Tage Premium** sind jetzt für dich aktiv — alle "
+                "Premium-Vorlagen stehen bereit.",
                 tone="premium",
-                hint="Öffne `/template key` und füge den Key ein — danach "
-                "stehen dir alle Premium-Vorlagen offen.",
+                hint="Öffne /template start erneut — die Vorlagen sind "
+                "freigeschaltet. Nach sieben Tagen endet die Testwoche "
+                "von selbst.",
             ),
             ephemeral=True,
         )
 
 
 class PremiumGateView(ui.LayoutView):
-    """Der Schritt vor dem Key: TikTok folgen, dann bestaetigen.
+    """Der Schritt vor der Testwoche: TikTok folgen, dann starten.
 
     Mehr Zwischenschritte waeren nur Reibung. Ein Klick oeffnet das
-    Profil, ein zweiter bestaetigt — dann kommt der Key per DM.
+    Profil, ein zweiter startet die Testwoche — Premium ist sofort
+    aktiv.
     """
 
     def __init__(self, bot: ArchitectBot) -> None:
@@ -348,7 +352,7 @@ class PremiumGateView(ui.LayoutView):
         container = ui.Container(accent_colour=discord.Colour(COLOR_PREMIUM))
         container.add_item(
             ui.TextDisplay(
-                "### Premium freischalten\n"
+                "### 7 Tage Premium testen\n"
                 "-# Ein Follow, ein Klick — fertig."
             )
         )
@@ -357,9 +361,9 @@ class PremiumGateView(ui.LayoutView):
             ui.TextDisplay(
                 quote(
                     f"1. Folge uns auf TikTok: **{TIKTOK_HANDLE}**",
-                    "2. Klick danach auf **Ich habe abonniert**",
-                    "3. Dein Key kommt per Direktnachricht — "
-                    "löse ihn mit `/template key` ein.",
+                    "2. Klick danach auf **Testwoche starten**",
+                    "3. Premium ist sofort aktiv — 7 Tage lang, "
+                    "danach endet es von selbst.",
                 )
             )
         )
@@ -378,7 +382,7 @@ class PremiumGateView(ui.LayoutView):
 
 
 def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
-    """Die Knopfzeile fuer den Fall, dass die DM nicht zugestellt wurde."""
+    """Die Knopfzeile fuer einen dauerhaften Key der Serverleitung."""
 
     row = ui.ActionRow()
     row.add_item(_ManualKeyButton(bot))
@@ -388,7 +392,7 @@ def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
 class PremiumButton(ui.Button["ui.LayoutView"]):
     def __init__(self, bot: ArchitectBot) -> None:
         super().__init__(
-            label="Jetzt mehr Templates mit Premium freischalten",
+            label="Jetzt 7 Tage Premium Testen",
             style=discord.ButtonStyle.secondary,
             # App-Emoji wenn uebertragen, sonst der Unicode-Diamant. Ein
             # fehlendes Emoji darf den Knopf nicht kaputt machen.
@@ -1185,9 +1189,9 @@ class StartView(ui.LayoutView):
                         f"**Premium**  ·  {len(locked)} Vorlagen\n"
                         + quote(
                             f"🔒  {preview} …",
-                            "-# Nach dem Freischalten stehen alle Vorlagen "
-                            "in diesem Menü — und du erhältst deinen Key "
-                            "per Direktnachricht.",
+                            "-# Starte die Testwoche: 7 Tage lang alle "
+                            "Premium-Vorlagen — danach läuft sie "
+                            "automatisch ab.",
                         )
                     )
                 )

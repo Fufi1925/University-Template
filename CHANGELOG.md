@@ -3,6 +3,22 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.6.1] — 2026-08-15
+
+### Geändert
+
+- **Premium ist jetzt eine 7-Tage-Testwoche mit einem Klick.** Der
+  Knopf im Startmenü heißt „Jetzt 7 Tage Premium Testen" und öffnet
+  das TikTok-Gate; „Testwoche starten" schaltet alle Premium-Vorlagen
+  **sofort** frei — kein Key, keine DM, kein Umweg über
+  `/template key`. Nach sieben Tagen läuft Premium automatisch ab,
+  und der Knopf erscheint wieder im Menü.
+- Die Testwoche gibt es weiterhin **einmal pro Konto** (der University
+  Bot führt die Liste); wer sie verbraucht hat, bekommt die Absage mit
+  dem Knopf „Key eingeben" für einen dauerhaften Key.
+- Der DM-Key-Weg entfällt aus dem Flow — `/template key` bleibt für
+  Master-Keys der Serverleitung bestehen.
+
 ## [3.6.0] — 2026-08-15
 
 ### Geändert

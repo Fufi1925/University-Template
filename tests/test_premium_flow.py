@@ -416,7 +416,7 @@ def submit_key(bot: FakeBot, value: str):
 
 class TestPremiumButton:
     async def test_opens_the_tiktok_gate(self, bot):
-        """Vor dem Key steht das Gate: TikTok folgen, dann bestaetigen."""
+        """Vor der Testwoche steht das Gate: TikTok folgen, dann starten."""
 
         from ui.views import PremiumButton, PremiumGateView
 
@@ -425,7 +425,15 @@ class TestPremiumButton:
 
         assert isinstance(interaction.response.sent[0], PremiumGateView)
         assert not interaction.response.modals, "Das Gate darf kein Key-Fenster oeffnen"
-        assert not interaction.user.dms, "Vor der Bestaetigung fliegt kein Key"
+        assert not interaction.user.dms, "Vor dem Start passiert nichts per DM"
+
+    async def test_the_button_invites_to_a_seven_day_trial(self, bot):
+        from ui.views import PremiumButton
+
+        button = PremiumButton(bot)
+
+        assert "7 Tage" in button.label
+        assert "Premium" in button.label
 
     async def test_the_gate_names_the_tiktok_account(self, bot):
         from ui.views import PremiumGateView
@@ -433,7 +441,9 @@ class TestPremiumButton:
         interaction = FakeInteraction()
         interaction.response.sent.append(PremiumGateView(bot))
 
-        assert "@university6421" in all_text(interaction)
+        text = all_text(interaction)
+        assert "@university6421" in text
+        assert "7 Tage" in text, "Das Gate nennt die Dauer der Testwoche"
 
     async def test_the_gate_links_to_the_tiktok_profile(self, bot):
         from ui.views import PremiumGateView
@@ -454,7 +464,12 @@ class TestPremiumButton:
             "Der Link-Knopf fehlt"
         )
 
-    async def test_claiming_sends_the_key_by_dm(self, bot):
+    async def test_claiming_starts_the_trial_immediately(self, bot):
+        """Der Klick startet die Testwoche — kein Key, keine DM, kein Umweg."""
+
+        import time as time_module
+
+        from core.premium import PERSONAL_KEY_TTL
         from ui.views import PremiumGateView, _ClaimFollowButton
 
         gate = PremiumGateView(bot)
@@ -462,17 +477,26 @@ class TestPremiumButton:
         button._view = gate  # wie discord.py beim Ausliefern der Interaktion
 
         interaction = FakeInteraction()
+        before = time_module.time()
         await button.callback(interaction)
+        after = time_module.time()
 
-        user = interaction.user
-        assert user.dms, "Der Key wurde nicht per DM geschickt"
-        dm = user.dms[0]
-        assert "Premium-Key" in dm
-        assert "/template key" in dm, "Die DM erklaert den Einloeseweg nicht"
-        key = dm.split("`")[1]
-        assert bot.premium.redeem_key(key, user_id=user.id)
+        guild_id = interaction.guild.id
+        user_id = interaction.user.id
 
-    async def test_claiming_points_to_the_key_command(self, bot):
+        assert bot.premium.has_access(guild_id, user_id), "Die Testwoche lief nicht an"
+        expires = bot.premium.access_expires(guild_id, user_id)
+        assert expires is not None
+        assert before + PERSONAL_KEY_TTL <= expires <= after + PERSONAL_KEY_TTL
+
+        assert not interaction.user.dms, "Die Testwoche braucht keine DM"
+        assert len(bot.licence.reported) == 1, "Der Grant wurde nicht gemeldet"
+        report = bot.licence.reported[0]
+        assert report["user_id"] == user_id
+        assert report["guild_id"] == guild_id
+        assert report["duration_days"] == 7
+
+    async def test_claiming_explains_the_seven_days(self, bot):
         from ui.views import PremiumGateView, _ClaimFollowButton
 
         gate = PremiumGateView(bot)
@@ -483,28 +507,59 @@ class TestPremiumButton:
         await button.callback(interaction)
 
         text = all_text(interaction)
-        assert "Key ist unterwegs" in text
-        assert "/template key" in text
+        assert "Testwoche gestartet" in text
+        assert "7 Tage" in text
+        assert "/template start" in text, "Der Weg zurueck fehlt"
 
-    async def test_claiming_twice_replaces_the_old_key(self, bot):
-        """Wer mehrmals klickt, bekommt den neuesten Key — die alten sterben."""
+    async def test_a_used_trial_is_refused(self, bot):
+        """Die Testwoche gibt es einmal pro Konto — der University Bot fuehrt Liste."""
 
         from ui.views import PremiumGateView, _ClaimFollowButton
+
+        bot.licence = FakeLicence(antwort="already_used")
 
         gate = PremiumGateView(bot)
         button = _ClaimFollowButton(bot)
         button._view = gate
 
-        first = FakeInteraction()
-        await button.callback(first)
-        first_key = first.user.dms[0].split("`")[1]
+        interaction = FakeInteraction()
+        await button.callback(interaction)
 
-        second = FakeInteraction()
-        await button.callback(second)
-        second_key = second.user.dms[0].split("`")[1]
+        text = all_text(interaction)
+        assert "Probewoche schon verbraucht" in text
+        assert not bot.premium.has_access(interaction.guild.id, interaction.user.id)
 
-        assert not bot.premium.redeem_key(first_key, user_id=second.user.id)
-        assert bot.premium.redeem_key(second_key, user_id=second.user.id)
+        # Der Ausweg mit einem dauerhaften Key steht als Knopf dabei.
+        payload = interaction.response.sent[0].to_components()
+
+        def walk(items) -> list[str]:
+            labels: list[str] = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("type") == 2:
+                    labels.append(item.get("label") or "")
+                labels.extend(walk(item.get("components", []) or []))
+            return labels
+
+        assert "Key eingeben" in walk(payload)
+
+    async def test_a_report_failure_still_grants_the_trial(self, bot):
+        """Ein Ausfall des University Bots darf die Testwoche nicht verhindern."""
+
+        from ui.views import PremiumGateView, _ClaimFollowButton
+
+        bot.licence = FakeLicence(antwort="error")
+
+        gate = PremiumGateView(bot)
+        button = _ClaimFollowButton(bot)
+        button._view = gate
+
+        interaction = FakeInteraction()
+        await button.callback(interaction)
+
+        assert bot.premium.has_access(interaction.guild.id, interaction.user.id)
+        assert "Testwoche gestartet" in all_text(interaction)
 
     async def test_tells_existing_users_they_already_have_it(self, bot):
         """Ein zweites Gate waere nur verwirrend."""
@@ -517,49 +572,8 @@ class TestPremiumButton:
         interaction = FakeInteraction(user=user, guild=None)
         await PremiumButton(bot).callback(interaction)
 
-        assert not user.dms, "Wer Premium hat, braucht keinen neuen Key"
+        assert not user.dms, "Wer Premium hat, braucht keine neue Testwoche"
         assert "Bereits freigeschaltet" in all_text(interaction)
-
-    async def test_closed_dms_fall_back_to_a_notice_with_button(self, bot):
-        from ui.views import PremiumGateView, _ClaimFollowButton
-
-        gate = PremiumGateView(bot)
-        button = _ClaimFollowButton(bot)
-        button._view = gate
-
-        user = FakeUser()
-        user.dm_raises = discord.Forbidden(
-            type("R", (), {"status": 403, "reason": "Forbidden"})(), "DMs zu"
-        )
-
-        interaction = FakeInteraction(user=user)
-        await button.callback(interaction)
-
-        text = all_text(interaction)
-        assert "DMs sind geschlossen" in text
-        assert "Key eingeben" in text, "Der manuelle Ausweg fehlt"
-
-    async def test_a_dm_error_never_leaks_the_key(self, bot):
-        """Auch bei kaputtem DM-Versand steht der Key in keinem Kanal."""
-
-        import re
-
-        from ui.views import PremiumGateView, _ClaimFollowButton
-
-        gate = PremiumGateView(bot)
-        button = _ClaimFollowButton(bot)
-        button._view = gate
-
-        user = FakeUser()
-        user.dm_raises = discord.HTTPException(
-            type("R", (), {"status": 500, "reason": "kaputt"})(), "kaputt"
-        )
-
-        interaction = FakeInteraction(user=user)
-        await button.callback(interaction)
-
-        text = all_text(interaction)
-        assert not re.search(r"\b[A-Za-z0-9]{4}(?:-[A-Za-z0-9]{4}){3,}\b", text)
 
     async def test_the_manual_button_opens_the_modal(self, bot):
         from ui.views import _manual_key_row

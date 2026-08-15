@@ -13,11 +13,12 @@ Small Caps, mit einer Oberfläche vollständig aus **Components V2**.
 ## Was der Bot macht
 
 Nach `/template start` erscheint ein Menü mit fünf kostenlosen Vorlagen —
-jede als eigene Karte mit Kennzahlen. Darunter sitzt der Knopf **„Jetzt mehr
-Templates mit Premium freischalten": Er öffnet den Weg zum Key — folge
-unserem TikTok (**@university6421**), bestätige den Follow per Knopf, und
-der persönliche Key kommt per Direktnachricht. Eingelöst wird er mit
-`/template key`. Danach stehen alle 10 Premium-Vorlagen im Menü.
+jede als eigene Karte mit Kennzahlen. Darunter sitzt der Knopf **„Jetzt
+7 Tage Premium Testen": Er öffnet das Premium-Gate — folge unserem TikTok
+(**@university6421**), klicke auf **„Testwoche starten"**, und alle
+10 Premium-Vorlagen sind sofort freigeschaltet. Nach sieben Tagen läuft
+Premium automatisch ab, und der Knopf ist wieder da. Die Testwoche gibt
+es einmal pro Konto.
 
 | | Template | Kategorien | Kanäle | Voice |
 |---|---|---:|---:|---:|
@@ -450,25 +451,23 @@ docker run -d --env-file .env -v architect-data:/app/data architect
 
 Premium läuft über **zwei Wege**:
 
-**1 · TikTok-Follow → persönlicher Key per Direktnachricht** *(der
-Standardweg)*. Ein Klick auf „Jetzt mehr Templates mit Premium freischalten"
-im Startmenü öffnet das Premium-Gate:
+**1 · 7 Tage Testwoche** *(der Standardweg)*. Ein Klick auf „Jetzt 7 Tage
+Premium Testen" im Startmenü öffnet das Premium-Gate:
 
 1. Folge unserem TikTok — **@university6421** (Link-Knopf im Fenster)
-2. Klick auf **„Ich habe abonniert"**
-3. Der Bot schickt eine Direktnachricht mit dem persönlichen Key
-4. Einlösen mit **`/template key`** — das Fenster öffnet sich von selbst
+2. Klick auf **„Testwoche starten"**
+3. Premium ist sofort aktiv — alle 10 Premium-Vorlagen, **7 Tage lang**
+4. Danach läuft Premium von selbst ab; der Knopf ist wieder da
 
-Der Key ist an das Konto gebunden, einmalig verwendbar und sieben Tage
-gültig. Ein neuer Klick ersetzt den alten Key — niemand kann sich einen
-Vorrat anlegen. Gespeichert wird nur der Hash des Keys, nie der Klartext;
-der Klartext existiert ausschließlich in der Direktnachricht. Sind die DMs
-eines Nutzers geschlossen, erklärt der Bot das und bietet den Knopf
-„Key eingeben" als Ausweg an.
+Die Testwoche gibt es **einmal pro Konto** — die Liste führt der
+University Bot, damit niemand durch einen Bot-Neustart (oder einen
+zweiten Server) eine zweite Woche erschleicht. Sagt er
+„schon verbraucht", bleibt es bei den fünf kostenlosen Vorlagen, und
+der Knopf **„Key eingeben"** weist auf den dauerhaften Key hin.
 
-**Sichtbar im Dashboard des University Bots.** Beim Einlösen eines
-persönlichen Keys meldet dieser Bot die Freischaltung an den University Bot
-— mit Ablaufdatum und Laufzeit in Tagen:
+**Sichtbar im Dashboard des University Bots.** Beim Start der Testwoche
+meldet dieser Bot die Freischaltung an den University Bot — mit
+Ablaufdatum und Laufzeit in Tagen:
 
 ```
 POST <MAIN_BOT_URL>/api/v1/premium/grant
@@ -478,22 +477,22 @@ X-Partner-Token: <PREMIUM_PARTNER_TOKEN>
 
 Der University Bot kann damit im Dashboard „7 Tage Premium" anzeigen —
 `expires_at` sagt ihm, wann es vorbei ist. Die Freischaltung gilt hier
-lokal ab Einlösung genau diese sieben Tage; nach Ablauf fällt sie von
-selbst weg. Schlägt die Meldung fehl (University Bot nicht erreichbar,
-Token falsch), gilt Premium lokal trotzdem — nur das Dashboard weiß dann
-nichts davon, und dieser Bot warnt im Log. Der Master-Key bleibt
-dauerhaft und wird nicht gemeldet.
+lokal ab dem Klick genau diese sieben Tage; nach Ablauf fällt sie beim
+nächsten Zugriff von selbst weg. Schlägt die Meldung fehl (University Bot
+nicht erreichbar, Token falsch), startet die Testwoche lokal trotzdem —
+nur das Dashboard weiß dann nichts davon, und dieser Bot warnt im Log.
 
 > **Ehrlich gesagt:** Der Bot kann den TikTok-Follow technisch nicht prüfen —
 > Discord und TikTok sprechen nicht miteinander, und die TikTok-API verlangt
 > eine Partnerfreigabe. Die Bestätigung läuft deshalb über den Knopf
-> „Ich habe abonniert". Für ein echtes Bezahlmodell bräuchte es einen
+> „Testwoche starten". Für ein echtes Bezahlmodell bräuchte es einen
 > manuellen oder externen Prüfschritt.
 
 **2 · Master-Key der Serverleitung.** Der Key wird über `PREMIUM_KEY`
-gesetzt. Es gibt **keinen Standardwert**: ohne gesetzte Variable weist der
-Bot beim Start darauf hin. Ein im Quelltext hinterlegter Key wäre keiner —
-er stünde in jedem Klon dieses Repositories.
+gesetzt (Einlösung per `/template key`). Es gibt **keinen Standardwert**:
+ohne gesetzte Variable weist der Bot beim Start darauf hin. Ein im
+Quelltext hinterlegter Key wäre keiner — er stünde in jedem Klon dieses
+Repositories.
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(24))"
