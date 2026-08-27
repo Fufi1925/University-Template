@@ -510,7 +510,10 @@ class TestCommandSurface:
             "list",
             "löschen",
             "ai",
-            "key",
+            # Hiess frueher "key" und oeffnete ein Feld fuer einen
+            # Lizenz-Key. Diese Keys gibt es nicht mehr: es gibt genau
+            # ein Premium, der University Bot verwaltet es.
+            "premium",
             "regeln",
             "partner-setup",
             "backup",

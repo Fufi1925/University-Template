@@ -221,21 +221,6 @@ class PremiumModal(ui.Modal, title="Premium freischalten"):
             )
 
 
-class _ManualKeyButton(ui.Button["ui.LayoutView"]):
-    """Oeffnet das Key-Fenster auch ohne DM — z. B. fuer Master-Keys."""
-
-    def __init__(self, bot: ArchitectBot) -> None:
-        super().__init__(
-            label="Key eingeben",
-            style=discord.ButtonStyle.primary,
-            custom_id="architect:premium:manual",
-        )
-        self.bot = bot
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        await interaction.response.send_modal(PremiumModal(self.bot))
-
-
 class _TikTokButton(ui.Button["PremiumGateView"]):
     """Oeffnet den TikTok-Account im Browser — ein reiner Link-Knopf."""
 
@@ -308,10 +293,9 @@ class _ClaimFollowButton(ui.Button["PremiumGateView"]):
                     "Die sieben Tage kostenlos gibt es einmal pro "
                     "Konto — deine hattest du bereits.",
                     tone="error",
-                    hint="Einen dauerhaften Key gibst du mit dem Knopf "
-                    "unten ein. Wenn du glaubst, das ist ein Irrtum, "
-                    "meldet sich das Team gern.",
-                    extra=[_manual_key_row(self.bot)],
+                    hint="Dauerhaftes Premium bekommst du über einen "
+                    "Beta-Antrag im Dashboard des University Bots. Es "
+                    "gilt dann für beide Bots.",
                 ),
                 ephemeral=True,
             )
@@ -379,14 +363,6 @@ class PremiumGateView(ui.LayoutView):
 
         container.add_item(footer())
         self.add_item(container)
-
-
-def _manual_key_row(bot: ArchitectBot) -> ui.ActionRow:
-    """Die Knopfzeile fuer einen dauerhaften Key der Serverleitung."""
-
-    row = ui.ActionRow()
-    row.add_item(_ManualKeyButton(bot))
-    return row
 
 
 class PremiumButton(ui.Button["ui.LayoutView"]):

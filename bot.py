@@ -415,19 +415,23 @@ async def template_ai(interaction: discord.Interaction) -> None:
 
 
 @template_group.command(
-    name="key", description="Löst einen Premium-Key ein"
+    name="premium", description="Zeigt deinen Premium-Status"
 )
-async def template_key(interaction: discord.Interaction) -> None:
-    """Oeffnet das Key-Fenster — fuer den Key aus der Direktnachricht.
+async def template_premium(interaction: discord.Interaction) -> None:
+    """Wie es um Premium steht — und wie man es bekommt.
 
-    Wer bereits Premium hat, bekommt das gesagt statt ein leeres Fenster.
+    Hiess frueher `/template key` und oeffnete ein Eingabefeld fuer
+    einen Lizenz-Key. Diese Keys gibt es nicht mehr: es gibt genau ein
+    Premium, der University Bot verwaltet es, und man bekommt es dort
+    ueber einen Beta-Antrag. Ein Eingabefeld fuer Keys, die niemand
+    mehr ausstellt, waere eine Sackgasse mit Cursor.
     """
 
     if await bot.has_premium(interaction):
         await interaction.response.send_message(
             view=notice(
-                "Bereits freigeschaltet",
-                "Premium ist für dich aktiv.",
+                "Premium ist aktiv",
+                "Dein Premium gilt für beide Bots.",
                 tone="premium",
                 hint="Öffne /template start, um alle Vorlagen zu sehen.",
             ),
@@ -435,9 +439,24 @@ async def template_key(interaction: discord.Interaction) -> None:
         )
         return
 
-    from ui.views import PremiumModal
-
-    await interaction.response.send_modal(PremiumModal(bot))
+    # Der Weg zum Dashboard. Ohne konfigurierte Adresse steht hier
+    # kein toter Link, sondern nur der Hinweis.
+    ziel = f"{config.DASHBOARD_URL}/dashboard/premium/beta" if config.DASHBOARD_URL else ""
+    await interaction.response.send_message(
+        view=notice(
+            "Kein Premium",
+            "Premium gilt für beide Bots und hängt an deinem "
+            "Discord-Konto.",
+            tone="premium",
+            hint=(
+                f"Stell einen Beta-Antrag im Dashboard: {ziel}"
+                if ziel
+                else "Stell einen Beta-Antrag im Dashboard des "
+                "University Bots."
+            ),
+        ),
+        ephemeral=True,
+    )
 
 
 @template_group.command(
